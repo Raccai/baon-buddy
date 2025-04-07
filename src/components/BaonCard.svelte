@@ -23,12 +23,14 @@
 <div class="baon-card">
     <div class="top-row">
         <span class="emoji">{meal.emoji}</span>
-        <button class="heart-btn" on:click={toggleFavorite}>
-            {#if favorite}
-                ❤️
-            {:else}
-                🤍
-            {/if}
+        <button class="heart-btn" on:click={toggleFavorite} aria-label="Toggle Favorite">
+            <span class:active={favorite}>
+                {#if favorite}
+                    ❤️
+                {:else}
+                    🤍
+                {/if}
+            </span>
         </button>
     </div>
 
@@ -57,6 +59,7 @@
         font-size: 2.5rem;
     }
 
+    /* Heart Button */
     .heart-btn {
         background: none;
         border: none;
@@ -64,6 +67,23 @@
         cursor: pointer;
     }
 
+    .heart-btn span {
+        display: inline-block;
+        transition: transform 0.2s ease-in-out;
+    }
+
+    .heart-btn span.active {
+        animation: pop 0.3s ease;
+    }
+
+    @keyframes pop {
+        0% { transform: scale(1); }
+        40% { transform: scale(1.4); }
+        60% { transform: scale(0.9); }
+        100% { transform: scale(1); }
+    }
+
+    /* Meal Content/Information */
     .meal-name {
         margin: 0.5rem 0 0.25rem;
         font-size: 1.4rem;
