@@ -1,20 +1,22 @@
 <script>
     export let meal;
+    export let favoriteNames = [];
 
+    import { createEventDispatcher } from "svelte";
     import { isFavorite, saveFavorite, removeFavorite } from "../lib/storage";
 
-    let favorite = false;
+    const dispatch = createEventDispatcher();
 
     // Check if already favorited when component loads
-    $: favorite = isFavorite(meal.name);
+    $: favorite = favoriteNames.includes(meal.name);
 
     function toggleFavorite() {
         if (favorite) {
             removeFavorite(meal.name);
         } else {
-            saveFavorite(meal.name);
+            saveFavorite(meal);
         }
-        favorite != favorite;
+        dispatch("faveChange")
     }
 </script>
 
