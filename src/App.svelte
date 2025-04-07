@@ -1,8 +1,10 @@
 <script>
-  import BaonCard from './components/BaonCard.svelte'
-  import Navbar from './components/Navbar.svelte'
-  import TalaQuote from './components/TalaQuote.svelte'
-  import { meals } from "./lib/meals.js"
+  import BaonCard from './components/BaonCard.svelte';
+  import Navbar from './components/Navbar.svelte';
+  import TalaQuote from './components/TalaQuote.svelte';
+  import { meals } from "./lib/meals.js";
+  import { getRandomMeals } from "./lib/utils";
+  import { saveFavorite, isFavorite, removeFavorite } from './lib/storage';
 
   let suggestedMeals = [];
 
