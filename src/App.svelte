@@ -22,8 +22,8 @@
   <h1 class="main-title">Baon Buddy</h1>
   <TalaQuote />
 
-  {each suggestedMeals as meal (meal.name)}
-  <BaonCard {meal} />
+  {#each suggestedMeals as meal (meal.name)}
+    <BaonCard {meal} />
   {/each}
 </main>
 
