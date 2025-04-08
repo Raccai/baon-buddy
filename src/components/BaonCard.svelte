@@ -45,6 +45,7 @@
         border-radius: 1rem;
         padding: 1.5rem;
         margin: 1rem 0;
+        margin-top: 12rem;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         position: relative;
     }
@@ -87,6 +88,7 @@
     .meal-name {
         margin: 0.5rem 0 0.25rem;
         font-size: 1.4rem;
+        color: #000;
     }
 
     .meal-type {

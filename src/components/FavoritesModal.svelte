@@ -16,6 +16,7 @@
 
     export function close() {
         visible = false;
+        dispatch("close");
     }
 
     function remove(mealName) {
@@ -70,7 +71,7 @@
         width: 80%;
         max-width: 350px;
         height: 100vh;
-        background: #fff;
+        background: #181818;
         padding: 1.5rem;
         box-shadow: -2px 0 10px rgba(0, 0, 0, 0.2);
         z-index: 11;
