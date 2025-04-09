@@ -71,7 +71,7 @@
         width: 80%;
         max-width: 350px;
         height: 100vh;
-        background: #181818;
+        background: #191337;
         padding: 1.5rem;
         box-shadow: -2px 0 10px rgba(0, 0, 0, 0.2);
         z-index: 11;
@@ -95,7 +95,13 @@
     button {
         background: none;
         border: none;
-        color: red;
+        color: #FFF5E1;
+        background-color: rgb(196, 12, 12);
         cursor: pointer;
+        transition: all 300ms ease;
+    }
+
+    button:hover {
+        background-color: rgb(240, 45, 45);
     }
 </style>

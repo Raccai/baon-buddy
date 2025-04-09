@@ -28,6 +28,11 @@ body {
   place-items: center;
   min-width: 320px;
   min-height: 100vh;
+  background-color: #332A79;
+}
+
+.navbar-icon {
+  width: 3rem;
 }
 
 h1 {

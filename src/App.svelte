@@ -83,7 +83,7 @@
     left: 0;
     width: 100%;
     height: 60px;
-    background: #181818;
+    background: #191337;
     color: #fff;
     padding: 0.25rem 0;
     text-align: center;
@@ -109,5 +109,6 @@
     justify-content: center;
     align-items: flex-end;
     pointer-events: none;
+    opacity: 0;
   }
 </style>

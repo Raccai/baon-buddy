@@ -1,4 +1,8 @@
 <script>
+    import Favorites from "../assets/Favorites.svelte";
+    import Settings from "../assets/Settings.svelte";
+    import Shuffle from "../assets/Shuffle.svelte";
+
     export let onGenerate;
     export let onToggleFavorites;
     export let onOpenSettings;
@@ -18,13 +22,19 @@
 
 <nav class="navbar">
     <button on:click={() => handleClick('settings', onOpenSettings)} aria-label="Settings">
-        <span class:active={activeButton === 'settings'}>⚙️</span>
+        <span class:active={activeButton === 'settings'}>
+            <Settings />
+        </span>
     </button>
     <button on:click={() => handleClick('favorites', onToggleFavorites)} aria-label="View Favorites">
-        <span class:active={activeButton === 'favorites'}>❤️</span>
+        <span class:active={activeButton === 'favorites'}>
+            <Favorites />
+        </span>
     </button>
     <button on:click={() => handleClick('generate', onGenerate)} aria-label="Generate Meals">
-      <span class:active={activeButton === 'generate'}>🔄</span>
+        <span class:active={activeButton === 'generate'}>
+            <Shuffle />
+        </span>
     </button>
 </nav>
   
@@ -35,7 +45,7 @@
         bottom: 0;
         left: 0;
         width: 100%;
-        background: #181818;
+        background: #191337;
         padding: 0.9rem 0;
         display: flex;
         justify-content: space-around;
@@ -44,10 +54,13 @@
         z-index: 999;
     }
 
+    .navbar button {
+        background-color: #191337;
+    }
+
     .navbar button span {
         background: none;
         border: none;
-        font-size: 1.4rem;
         cursor: pointer;
         display: inline-block;
         transition: transform 0.2s ease-in-out;
