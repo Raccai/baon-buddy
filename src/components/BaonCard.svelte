@@ -20,6 +20,24 @@
         }
         dispatch("faveChange")
     }
+
+    // Determines badge type/class
+    function getBadgeClass(type) {
+        switch (type.toLowerCase()) {
+            case 'classic':
+                return 'badge-classic';
+            case 'budget':
+                return 'badge-budget';
+            case 'quick':
+                return 'badge-quick';
+            case 'healthy':
+                return 'badge-healthy';
+            case 'instant':
+                return 'badge-instant';
+            default:
+                return 'badge-default';
+        }
+    }
 </script>
 
 <div class="baon-card">
@@ -29,7 +47,7 @@
 
     <div class="baon-info">
         <h2 class="meal-name">{meal.name}</h2>
-        <span class="meal-type">{meal.type}</span>
+        <span class="meal-type {getBadgeClass(meal.type)}">{meal.type}</span>
         <p class="meal-message">{meal.message}</p>
         <button class="heart-btn" on:click={toggleFavorite} aria-label="Toggle Favorite">
             <span class:active={favorite}>
@@ -53,6 +71,7 @@
         box-shadow: 0 2px 20px #151032;
         position: relative;
         width: 320px;
+        z-index: 5;
     }
 
     .top-row {
@@ -107,17 +126,47 @@
 
     .meal-type {
         font-size: 0.9rem;
-        background-color: #231F47;
-        color: #fff;
         padding: 8px 16px;
         text-transform: capitalize;
         border-radius: 14px;
         width: fit-content;
+        transition: background-color 0.3s ease, color 0.3s ease;
     }
 
     .meal-message {
         font-style: italic;
         margin-top: 0.5rem;
         color: #231F47;
+    }
+
+    /* Base styles for each type */
+    .badge-classic {
+    background-color: #231F47;
+    color: white;
+    }
+
+    .badge-budget {
+    background-color: #ff4d4f;
+    color: white;
+    }
+
+    .badge-quick {
+    background-color: #ffafcc;
+    color: #231F47;
+    }
+
+    .badge-healthy {
+    background-color: #ffe066;
+    color: #231F47;
+    }
+
+    .badge-instant {
+    background-color: #845ec2;
+    color: white;
+    }
+
+    .badge-default {
+    background-color: #999;
+    color: white;
     }
 </style>

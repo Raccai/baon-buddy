@@ -1,4 +1,6 @@
 <script>
+  import Sparkle from './assets/Sparkle.svelte';
+
   import BaonCard from './components/BaonCard.svelte';
   import Navbar from './components/Navbar.svelte';
   import TalaQuote from './components/TalaQuote.svelte';
@@ -41,25 +43,78 @@
   <header class="topbar">
     <h1 class="main-title">Baon Buddy</h1>
   </header>
-  
+
   <div class="character-space">
     <!-- where Tala and Hanan will be (and future characters... maybe) -->
   </div>
-  
+
   {#each suggestedMeals as meal (meal.name)}
     <BaonCard {meal} {favoriteNames} on:faveChange={() => {
       favoriteNames = getFavorites().map(meal => meal.name);
     }} />
   {/each}
-  
+
   <FavoritesModal 
-  bind:this ={favoritesRef} 
+    bind:this = {favoritesRef} 
     on:faveChange = {() => {
       favoriteNames = getFavorites().map(meal => meal.name);
     }}
     on:close = {() => favoritesVisible = false} 
-    />
+  />
+
+  <!-- Will see if usable -->
   <TalaQuote />
+
+  <!-- Stars (Animated) -->
+  <div class="stars-bg">
+    {#each Array(40) as _, i}
+      <div class="circle-star"
+        style="top: {Math.random() * 100}%; left: {Math.random() * 100}%; animation-delay: {Math.random() * 3}s;"></div>
+    {/each}
+  
+    <!-- SVG Sparkles -->
+    {#each Array(20) as _, i}
+    <div
+      class="sparkle-star"
+      style="
+        top: {Math.random() * 100}%;
+        left: {Math.random() * 100}%;
+        width: {14 + Math.random() * 12}px;
+        height: {14 + Math.random() * 12}px;
+        animation-delay: {Math.random() * 3}s;
+      ">
+      <Sparkle />
+    </div>
+    {/each}
+  </div>
+
+  <!-- Simple background flowy lines -->
+  <div class="flow-lines-bg">
+    <!-- Layer 1 -->
+    <svg viewBox="0 0 100 100" preserveAspectRatio="none" class="flow-svg" style="top: -250px;">
+      <path
+        d="M0,40 C25,20 75,60 100,40 L100,60 C75,80 25,20 0,60 Z"
+        class="flow-fill"
+      />
+    </svg>
+  
+    <!-- Layer 2 -->
+    <svg viewBox="0 0 100 100" preserveAspectRatio="none" class="flow-svg" style="top: 20px;">
+      <path
+        d="M0,40 C40,20 70,70 100,40 L100,60 C20,80 70,50 0,60 Z"
+        class="flow-fill"
+      />
+    </svg>
+  
+    <!-- Layer 3 -->
+    <svg viewBox="0 0 100 100" preserveAspectRatio="none" class="flow-svg" style="top: 340px;">
+      <path
+        d="M0,40 C20,15 80,65 100,40 L100,60 C70,85 30,15 0,60 Z"
+        class="flow-fill"
+      />
+    </svg>
+  </div>
+  
 </main>
 
 <Navbar 
@@ -110,5 +165,75 @@
     align-items: flex-end;
     pointer-events: none;
     opacity: 0;
+  }
+
+  /* Stars, Twinkling, and Clouds Styling */
+  .stars-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    overflow: hidden;
+  }
+
+  .circle-star {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background: white;
+    border-radius: 50%;
+    opacity: 0.6;
+    animation: twinkle 2s infinite ease-in-out;
+    z-index: 3;
+  }
+
+  .sparkle-star {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    opacity: 0.7;
+    animation: twinkle 3s infinite ease-in-out;
+    z-index: 1;
+  }
+
+  @keyframes twinkle {
+    0%, 100% {
+      opacity: 0.3;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.3);
+    }
+  }
+
+  /* BG flowy lines */
+  .flow-lines-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: flex;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    pointer-events: none;
+    opacity: 0.32;
+  }
+
+  .flow-lines-bg svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  .flow-svg {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+  }
+
+  .flow-fill {
+    fill: #231d52a9; /* very subtle white */
   }
 </style>
