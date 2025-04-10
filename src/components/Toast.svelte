@@ -3,14 +3,22 @@
     import { fly, fade } from 'svelte/transition';
 
     $: $toasts;
+
+    function dismissToast(id) {
+        toasts.update(all => all.filter (t => t.id !== id));
+    }
 </script>
 
 <div class="toast-container">
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
     {#each $toasts as toast (toast.id)}
+        <!-- svelte-ignore a11y_click_events_have_key_events -->
         <div 
             class="toast {toast.type}" 
             in:fly={{ y: 20, duration: 200 }} 
             out:fade={{ duration: 200 }}
+            on:click = {() => dismissToast(toast.id)}
+            title="click to dismiss"
         >
             <span class="toast-message">{toast.message}</span>
             <div class="progress-bar"></div>

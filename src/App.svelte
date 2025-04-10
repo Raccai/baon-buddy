@@ -5,7 +5,9 @@
   import Navbar from './components/Navbar.svelte';
   import TalaQuote from './components/TalaQuote.svelte';
   import { meals } from "./lib/meals.js";
+  // @ts-ignore
   import { getRandomMeals } from "./lib/utils";
+  // @ts-ignore
   import { saveFavorite, isFavorite, removeFavorite } from './lib/storage';
   import FavoritesModal from './components/FavoritesModal.svelte';
   import { getFavorites } from './lib/storage';
@@ -17,6 +19,7 @@
   let favoritesRef;
   let favoritesVisible = false;
   let suggestedMeals = [];
+  let bounce = false;
 
   // Toggle Favorites for Each Card
   function toggleFavorites() {
@@ -39,6 +42,9 @@
     suggestedMeals = [...meals]
       .sort(() => 0.5 - Math.random())
       .slice(0, 1);
+    
+    bounce = false; // reset first
+    requestAnimationFrame(() => bounce = true); // allow reactive update
   }
 
   // generates meals on first load
@@ -55,9 +61,14 @@
   </div>
 
   {#each suggestedMeals as meal (meal.name)}
-    <BaonCard {meal} {favoriteNames} on:faveChange={() => {
-      favoriteNames = getFavorites().map(meal => meal.name);
-    }} />
+    <BaonCard
+      {meal} 
+      {favoriteNames} 
+      triggerBounce = {bounce}
+      on:faveChange={() => {
+        favoriteNames = getFavorites().map(meal => meal.name);
+      }} 
+    />
   {/each}
 
   <FavoritesModal 
@@ -120,7 +131,6 @@
       />
     </svg>
   </div>
-  
 </main>
 
 <Navbar 
