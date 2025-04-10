@@ -1,6 +1,8 @@
 <script>
     import AddedFaves from "../assets/AddedFaves.svelte"
     import NotFaves from "../assets/NotFaves.svelte"
+    import { showToast } from "../lib/toast";
+
     export let meal;
     export let favoriteNames = [];
 
@@ -15,8 +17,10 @@
     function toggleFavorite() {
         if (favorite) {
             removeFavorite(meal.name);
+            showToast("Removed from faves!", "info")
         } else {
             saveFavorite(meal);
+            showToast("Added to faves!", "faves")
         }
         dispatch("faveChange")
     }

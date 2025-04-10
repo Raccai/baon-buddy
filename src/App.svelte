@@ -10,6 +10,7 @@
   import FavoritesModal from './components/FavoritesModal.svelte';
   import { getFavorites } from './lib/storage';
   import SettingsModal from './components/SettingsModal.svelte';
+  import Toast from './components/Toast.svelte';
 
   let settingsVisible = false;
   let favoriteNames = getFavorites().map(meal => meal.name);
@@ -136,6 +137,8 @@
     if (favoritesVisible && favoritesRef) favoritesRef.refresh(); // refreshes favorites list if modal is open)
   }}
 />
+
+<Toast />
 
 <style lang="css">
   main {

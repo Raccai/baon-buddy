@@ -2,31 +2,26 @@
     import { createEventDispatcher } from 'svelte';
     import { clearFavorites, resetStorage } from '../lib/storage.js';
     import { fade, fly } from 'svelte/transition';
+    import { showToast } from '../lib/toast.js';
 
     const dispatch = createEventDispatcher();
 
     export let visible = false;
-    let message = "";
-    let showMessage = false;
-
-    function showToast(msg) {
-        message = msg;
-        showMessage = true;
-        setTimeout(() => showMessage = false, 2500);
-    }
 
     function clearFaves() {
         clearFavorites();
         dispatch("faveChange"); // to refresh any UI
-        dispatch("close") // closes settings
-        showToast("Favorites cleared!");
+        showToast("Favorites cleared!", "success");
+
+        setTimeout(() => dispatch("close"), 500); // closes settings with delay for smoothness 
     }
 
     function resetApp() {
         resetStorage(); // a function you’ll define to wipe all app data
-        dispatch('faveChange');
-        dispatch("close") // closes settings
-        showToast('App reset!');
+        dispatch("faveChange");
+        showToast("App reset!", "success");
+
+        setTimeout(() => dispatch("close"), 500); // closes settings with delay for smoothness
     }
 
     function closeModal() {
@@ -48,22 +43,32 @@
         in:fly={{ y: 40, duration: 250 }}
         out:fly={{ y: 40, duration: 250 }}
         >
-        <header class="modal-header">
-            <h2>⚙️ Settings</h2>
-        </header>
+            <header class="modal-header">
+                <h2>⚙️ Settings</h2>
+            </header>
 
-        <section class="setting">
-            <button class="danger" on:click={clearFaves}>🗑️ Clear Favorites</button>
-        </section>
+            <section class="setting">
+                <button class="danger" on:click={clearFaves}>🗑️ Clear Favorites</button>
+            </section>
 
-        <section class="setting">
-            <button class="danger" on:click={resetApp}>🔄 Reset App</button>
-        </section>
+            <section class="setting">
+                <button class="danger" on:click={resetApp}>🔄 Reset App</button>
+            </section>
 
-        <button class="close-btn" on:click={closeModal}>Close</button>
+            <button class="close-btn" on:click={closeModal}>Close</button>
+
+            <section class="more-links">
+                <p>
+                    <a href="https://shop.angwikanatin.com/raccaian-portfolio/" target="_blank">🌐 My Portfolio</a><br>
+                </p>
+            </section>
+              
+
+            <section class="version-info">
+                <p>📦 Version 1.0.0</p>
+            </section>
         </div>
     </div>
-    <div class="toast">{message}</div>
 {/if}
 
 <style>
@@ -80,7 +85,7 @@
 
     .modal {
         background: #fff5e1;
-        padding: 2rem;
+        padding: 1rem;
         border-radius: 1rem;
         width: 90%;
         max-width: 340px;
@@ -123,25 +128,11 @@
         cursor: pointer;
     }
 
-    /* Styling for Toast Messages */
-    .toast {
-        position: absolute;
-        bottom: 1.5rem;
-        left: 50%;
-        transform: translateX(-50%);
-        background: #231F47;
-        color: white;
-        padding: 0.6rem 1rem;
-        border-radius: 10px;
-        font-size: 0.95rem;
-        animation: fadeInOut 2.5s ease-in-out;
-        z-index: 999;
-    }
-
-    @keyframes fadeInOut {
-        0% { opacity: 0; transform: translate(-50%, 20px); }
-        10% { opacity: 1; transform: translate(-50%, 0); }
-        90% { opacity: 1; transform: translate(-50%, 0); }
-        100% { opacity: 0; transform: translate(-50%, 20px); }
+    /* Version Info */
+    .version-info {
+        text-align: center;
+        font-size: 0.8rem;
+        color: #6c648b;
+        margin-top: 2rem;
     }
 </style>  
