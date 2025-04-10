@@ -23,7 +23,18 @@ export const removeFavorite = (mealName) => {
     localStorage.setItem(FAVORITES_KEY, JSON.stringify(updated));
 };
 
-// Check if meal is a;ready a fave
+// Check if meal is already a fave
 export const isFavorite = (mealName) => {
     return getFavorites().some(fave => fave.name === mealName);
 };
+
+// Clears list of favorites
+export function clearFavorites() {
+    localStorage.removeItem(FAVORITES_KEY);
+}
+
+// For a complete wipeout of data (settings + favorites)
+export function resetStorage() {
+    localStorage.removeItem(FAVORITES_KEY);
+    localStorage.clear(); // wipes everything stored in this app
+}

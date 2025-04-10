@@ -8,21 +8,31 @@
     export let visible = false;
     let favorites = [];
 
-    // Public method for parent to call
+    // Public method for parent to call to open modal
     export function open() {
         favorites = getFavorites();
         visible = true;
     }
 
+    // Public method for parent to call to close modal
     export function close() {
         visible = false;
         dispatch("close");
+    }
+
+    // Public method for parent to call to refresh modal
+    export function refresh() {
+        favorites = getFavorites();
     }
 
     function remove(mealName) {
         removeFavorite(mealName);
         favorites = getFavorites();
         dispatch("faveChange"); // This tells App.svelte to refresh the global favoriteNames
+    }
+
+    $: if (visible) {
+        favorites = getFavorites();
     }
 </script>
 

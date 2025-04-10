@@ -40,7 +40,8 @@
     }
 </script>
 
-<div class="baon-card">
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<div class="baon-card" on:dblclick={toggleFavorite}>
     <div class="top-row">
         <span class="emoji">{meal.emoji}</span>
     </div>
@@ -49,7 +50,7 @@
         <h2 class="meal-name">{meal.name}</h2>
         <span class="meal-type {getBadgeClass(meal.type)}">{meal.type}</span>
         <p class="meal-message">{meal.message}</p>
-        <button class="heart-btn" on:click={toggleFavorite} aria-label="Toggle Favorite">
+        <button class="heart-btn" on:click|stopPropagation={toggleFavorite} aria-label="Toggle Favorite">
             <span class:active={favorite}>
                 {#if favorite}
                     <AddedFaves />

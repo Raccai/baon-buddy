@@ -9,12 +9,15 @@
   import { saveFavorite, isFavorite, removeFavorite } from './lib/storage';
   import FavoritesModal from './components/FavoritesModal.svelte';
   import { getFavorites } from './lib/storage';
+  import SettingsModal from './components/SettingsModal.svelte';
 
+  let settingsVisible = false;
   let favoriteNames = getFavorites().map(meal => meal.name);
   let favoritesRef;
   let favoritesVisible = false;
   let suggestedMeals = [];
 
+  // Toggle Favorites for Each Card
   function toggleFavorites() {
     if (favoritesVisible) {
       favoritesRef.close();
@@ -25,10 +28,12 @@
     }
   }
 
+  // Open Settings Modal
   function openSettings() {
-    console.log("settings coming soon");
+    settingsVisible = true;
   }
 
+  // Generate Meal Cards
   function generateMeals() {
     suggestedMeals = [...meals]
       .sort(() => 0.5 - Math.random())
@@ -121,6 +126,15 @@
   onGenerate = {generateMeals}
   onToggleFavorites = {toggleFavorites}
   onOpenSettings = {openSettings}
+/>
+
+<SettingsModal 
+  visible = {settingsVisible} 
+  on:close = {() => settingsVisible = false} 
+  on:faveChange = {() => {
+    favoriteNames = getFavorites().map(meal => meal.name);
+    if (favoritesVisible && favoritesRef) favoritesRef.refresh(); // refreshes favorites list if modal is open)
+  }}
 />
 
 <style lang="css">
