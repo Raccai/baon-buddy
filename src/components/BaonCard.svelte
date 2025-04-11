@@ -119,7 +119,11 @@
     {/if}
 
     <div class="top-row">
-        <span class="emoji">{meal.emoji}</span>
+        {#if meal.image}
+            <img src={meal.image} alt={meal.name} class="meal-image" />
+        {:else}
+            <span class="emoji">{meal.emoji}</span>
+        {/if}
     </div>
 
     <div class="baon-info">
@@ -154,11 +158,12 @@
 
 <style>
     .baon-card {
+        display: flex;
+        flex-direction: row;
         background: #fff5e1;
         border-radius: 1rem;
         padding: 1.5rem;
         margin: 1rem 0;
-        margin-top: 18rem;
         box-shadow: 0 2px 20px #151032;
         position: relative;
         width: 320px;
@@ -167,12 +172,16 @@
 
     .top-row {
         display: flex;
+        flex-direction: column;
         justify-content: center;
         align-items: center;
     }
 
-    .emoji {
-        font-size: 2.5rem;
+    .meal-image {
+        width: 120px;
+        height: 120px;
+        object-fit: contain;
+        border-radius: 12px;
     }
 
     /* Heart Button */
@@ -345,7 +354,7 @@
         100% { transform: rotate(0); }
     }
 
-    @media (max-width: 420px) {
+    @media (max-width: 410px) {
         .baon-card {
             width: 70vw;
             padding: 1rem;
@@ -364,6 +373,13 @@
         .meal-type {
             font-size: 0.8rem;
             padding: 6px 12px;
+        }
+
+        .meal-image {
+            width: 80px;
+            height: 80px;
+            object-fit: contain;
+            border-radius: 12px;
         }
 
         .emoji {

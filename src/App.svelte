@@ -88,16 +88,18 @@
     <!-- where Tala and Hanan will be (and future characters... maybe) -->
   </div>
 
-  {#each suggestedMeals as meal (meal.name)}
-    <BaonCard
-      {meal} 
-      {favoriteNames} 
-      triggerBounce = {bounce}
-      on:faveChange={() => {
-        favoriteNames = getFavorites().map(meal => meal.name);
-      }} 
-    />
-  {/each}
+  <div class="card-container">
+    {#each suggestedMeals as meal (meal.name)}
+      <BaonCard
+        {meal} 
+        {favoriteNames} 
+        triggerBounce = {bounce}
+        on:faveChange={() => {
+          favoriteNames = getFavorites().map(meal => meal.name);
+        }} 
+      />
+    {/each}
+  </div>
 
   <FavoritesModal 
     bind:this = {favoritesRef} 
@@ -328,5 +330,18 @@
     0% { transform: translateX(0) translateY(0); opacity: 0.2; }
     50% { opacity: 0.6; }
     100% { transform: translateX(-100vw) translateY(-100vh); opacity: 0; }
+  }
+
+  /* Baon Card Container */
+  .card-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    position: absolute;
+    bottom: 140px;
+    left: 0;
+    right: 0;
+    z-index: 5;
   }
 </style>
