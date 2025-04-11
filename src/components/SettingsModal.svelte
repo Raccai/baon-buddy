@@ -67,7 +67,11 @@
             <section class="main-settings">
                 <div class="setting toggle-setting">
                     <label class="toggle">
-                        <input type="checkbox" class:checked={musicEnabled} on:change={toggleMusicSetting} />
+                        <input 
+                            type="checkbox" 
+                            checked={musicEnabled} 
+                            on:change={toggleMusicSetting} 
+                        />
                         <span class="slider"></span>
                         <span class="toggle-label">{musicEnabled ? 'Music On 🎶' : 'Music Off 🔇'}</span>
                     </label>
