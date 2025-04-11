@@ -7,6 +7,7 @@
   import { meals } from "./lib/meals.js";
   import { incrementCounter } from './lib/storage';
   import { onMount } from 'svelte';
+  import BaonBuddyTitle from "/titles/BaonBuddyTitle.png";
 
   import FavoritesModal from './components/FavoritesModal.svelte';
   import { getFavorites } from './lib/storage';
@@ -81,7 +82,7 @@
 
 <main>
   <header class="topbar">
-    <h1 class="main-title">Baon Buddy</h1>
+    <img src={BaonBuddyTitle} alt="Baon Buddy" class="app-title">
   </header>
 
   <div class="character-space">
@@ -207,12 +208,10 @@
     top: 0;
     left: 0;
     width: 100%;
-    height: 60px;
+    height: 64px;
     background: #191337;
     color: #fff;
-    padding: 0.25rem 0;
-    text-align: center;
-    font-size: 0.48rem;
+    padding: 1rem 0;
     font-weight: bold;
     z-index: 9;
     box-shadow: 0 2px 40px rgba(0, 0, 0, 0.4);
@@ -220,6 +219,12 @@
     justify-content: center;
     align-items: center;
     line-height: 60px;
+  }
+
+  .app-title {
+    width: 100%;
+    max-width: 140px;
+    display: block;
   }
 
   .character-space {

@@ -2,6 +2,7 @@
     import { getFavorites, saveFavorite, removeFavorite } from "../lib/storage";
     import { createEventDispatcher } from "svelte";
     import { fly, fade } from "svelte/transition";
+    import BaonBuddyFavorites from "/titles/BaonBuddyFavorites.png";
 
     const dispatch = createEventDispatcher();
 
@@ -50,7 +51,7 @@
         in:fly={{ x: 400, duration: 300 }}
         out:fly={{ x: 400, duration: 300}}
     >
-        <h2>⭐ Favorites</h2>
+        <img src={BaonBuddyFavorites} alt="Favorites" class="favorites-title">
         {#if favorites.length === 0}
             <p>No saved baon yet 😢</p>
         {:else}
@@ -87,8 +88,11 @@
         z-index: 11;
     }
 
-    h2 {
-        margin-top: 0;
+    .favorites-title {
+        width: 100%;
+        max-width: 220px;
+        margin: 0 auto 1rem;
+        display: block;
     }
 
     ul {

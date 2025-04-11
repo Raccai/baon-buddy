@@ -4,6 +4,7 @@
     import { fade, fly } from 'svelte/transition';
     import { showToast } from '../lib/toast.js';
     import { getCounter } from '../lib/storage.js';
+    import BaonBuddySettings from "/titles/BaonBuddySettings.png"
 
     const dispatch = createEventDispatcher();
     let timesOpened = 0;
@@ -61,7 +62,7 @@
         out:fly={{ y: 40, duration: 250 }}
         >
             <header class="modal-header">
-                <h2>⚙️ Settings</h2>
+                <img src={BaonBuddySettings} alt="Settings" class="settings-title-image">
             </header>
 
             <section class="main-settings">
@@ -130,11 +131,11 @@
         box-shadow: 0 4px 16px rgba(0,0,0,0.2);
     }
 
-    .modal-header h2 {
-        margin-bottom: 1rem;
-        font-size: 1.5rem;
-        color: #231F47;
-        text-align: center;
+    .settings-title-image {
+        width: 100%;
+        max-width: 220px;
+        margin: 0 auto 1rem;
+        display: block;
     }
 
     .setting {
