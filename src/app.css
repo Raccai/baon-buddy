@@ -28,8 +28,16 @@ body {
   place-items: center;
   min-width: 320px;
   min-height: 100vh;
-  background-color: #332A79;
   overflow: hidden;
+  background: linear-gradient(135deg, #281e6e, #332A79, #673397);
+  background-size: 400% 400%;
+  animation: gradientShift 15s ease infinite;
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
 .navbar-icon {

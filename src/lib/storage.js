@@ -1,4 +1,5 @@
 const FAVORITES_KEY = "baonFavorites";
+const SEEN_KEY = "seenMeals";
 
 // Get favorites from localStorage
 export const getFavorites = () => {
@@ -37,4 +38,29 @@ export function clearFavorites() {
 export function resetStorage() {
     localStorage.removeItem(FAVORITES_KEY);
     localStorage.clear(); // wipes everything stored in this app
+}
+
+// App Open Counter
+export function incrementCounter(key) {
+    let count = parseInt(localStorage.getItem(key) || "0", 10);
+    localStorage.setItem(key, String(count + 1))
+}
+export function getCounter(key) {
+    return parseInt(localStorage.getItem(key) || "0", 10);
+}
+
+// For Seen Baon Meals
+export function getSeenMEals() {
+    const stored = localStorage.getItem(SEEN_KEY);
+    return stored ? JSON.parse(stored) : [];
+}
+export function markMealAsSeen(mealName) {
+    const current = getSeenMEals();
+    if(!current.includes(mealName)) {
+        const updated = [...current, mealName];
+        localStorage.setItem(SEEN_KEY, JSON.stringify(updated));
+    }
+} 
+export function clearSeenMEals() {
+    localStorage.removeItem(SEEN_KEY);
 }

@@ -2,28 +2,59 @@
     import AddedFaves from "../assets/AddedFaves.svelte"
     import NotFaves from "../assets/NotFaves.svelte"
     import { showToast } from "../lib/toast";
-
+    import { markMealAsSeen, getSeenMEals } from "../lib/storage";
+    import { createEventDispatcher } from "svelte";
+    import { isFavorite, saveFavorite, removeFavorite } from "../lib/storage";
+    
+    export let triggerBounce = false;
     export let meal;
     export let favoriteNames = [];
     
-    import { createEventDispatcher } from "svelte";
-    import { isFavorite, saveFavorite, removeFavorite } from "../lib/storage";
-
     const dispatch = createEventDispatcher();
+    let hasBeenSeen = false;
+    let glowClass = "";
+    let triggerGlow = false;
+    let bounceClass = "";
+    let sparkles = [];
+    let wiggle = false;
+    let longPressTimer;
+
+    // Handles user long press
+    function handlePointerDown() {
+        longPressTimer = setTimeout(() => {
+            wiggle = true;
+            setTimeout(() => wiggle = false, 500); // resets animation
+        }, 600); // Long press duration
+    }
+    function handlePointerUp() {
+        clearTimeout(longPressTimer);
+    }
+
+    // Glow around the card when it is favorited
+    $: if (favorite && triggerGlow) {
+        glowClass = "glow";
+        setTimeout(() => glowClass = "", 800); // remove after glow animation
+    }
 
     // Check if already favorited when component loads
     $: favorite = favoriteNames.includes(meal.name);
+
+    // Check if baon has already been seen before by user
+    $: {
+        const seenList = getSeenMEals();
+        hasBeenSeen = seenList.includes(meal.name);
+        if (!hasBeenSeen) {
+            markMealAsSeen(meal.name);
+        }
+    }
     
     // For bounce animation upon every generation
-    export let triggerBounce = false;
-    let bounceClass = "";
     $: if (triggerBounce) {
         bounceClass = "bounce";
         setTimeout(() => bounceClass = "", 400); // reset after animation
     }
 
     // For Heart-Button Toggle Sparkle Animations
-    let sparkles = [];
     function triggerSparkle() {
         const id = crypto.randomUUID?.() || Math.random().toString(36);
         const newSparkle = {
@@ -45,6 +76,12 @@
             saveFavorite(meal);
             showToast("Added to faves!", "faves")
             triggerSparkle();
+
+            // trigger glow anim
+            triggerGlow = false;
+            requestAnimationFrame(() => {
+                triggerGlow = true;
+            })
         }
         dispatch("faveChange")
     }
@@ -69,7 +106,18 @@
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="baon-card {bounceClass}" on:dblclick={toggleFavorite}>
+<div 
+    class="baon-card {bounceClass} {glowClass} {wiggle ? "wiggle" : ""}" 
+    on:dblclick = {toggleFavorite}
+    on:pointerdown = {handlePointerDown}
+    on:pointerup = {handlePointerUp}
+    on:pointercancel = {handlePointerUp}
+    on:touchend = {handlePointerUp}
+>
+    {#if !hasBeenSeen}
+        <div class="seen-indicator" title="New Meal"></div>
+    {/if}
+
     <div class="top-row">
         <span class="emoji">{meal.emoji}</span>
     </div>
@@ -246,6 +294,55 @@
         0% { opacity: 0; transform: scale(0); }
         40% { opacity: 1; transform: scale(1.2); }
         100% { opacity: 0; transform: scale(0.5) translate(-10px); }
+    }
+
+    /*  New Meal Indicator */
+    .seen-indicator {
+        width: 10px;
+        height: 10px;
+        background: radial-gradient(circle at center, rgb(174, 133, 226), #6a0dad);
+        border-radius: 50%;
+        position: absolute;
+        top: 8px;
+        left: 8px;
+        box-shadow: 0 0 6px #b388eb;
+        animation: pulse 1.5s infinite ease-in-out;
+    }
+
+    @keyframes pulse {
+        0%, 100% {
+            transform: scale(1);
+            opacity: 0.8;
+        }
+        50% {
+            transform: scale(1.4);
+            opacity: 1;
+        }
+    }
+
+    /* Glow Animation for Favorited cards */
+    .glow {
+        box-shadow: 0 0 20px 20px rgba(255, 215, 0, 0.4);
+        animation: glowFade 0.8s ease forwards;
+    }
+
+    @keyframes glowFade {
+        0%   { box-shadow: 0 0 0px 0 rgba(255, 215, 0, 0); }
+        30%  { box-shadow: 0 0 12px 6px rgba(255, 215, 0, 0.6); }
+        100% { box-shadow: 0 0 0px 0 rgba(255, 215, 0, 0); }
+    }
+
+    /* Wiggle Animation */
+    .wiggle {
+        animation: wiggleAnim 0.4s ease-in-out;
+    }
+
+    @keyframes wiggleAnim {
+        0% { transform: rotate(0); }
+        25% { transform: rotate(1.5deg); }
+        50% { transform: rotate(-1.5deg); }
+        75% { transform: rotate(1.2deg); }
+        100% { transform: rotate(0); }
     }
 
     @media (max-width: 420px) {

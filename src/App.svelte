@@ -5,21 +5,48 @@
   import Navbar from './components/Navbar.svelte';
   import TalaQuote from './components/TalaQuote.svelte';
   import { meals } from "./lib/meals.js";
-  // @ts-ignore
-  import { getRandomMeals } from "./lib/utils";
-  // @ts-ignore
-  import { saveFavorite, isFavorite, removeFavorite } from './lib/storage';
+  import { incrementCounter } from './lib/storage';
+  import { onMount } from 'svelte';
+
   import FavoritesModal from './components/FavoritesModal.svelte';
   import { getFavorites } from './lib/storage';
   import SettingsModal from './components/SettingsModal.svelte';
   import Toast from './components/Toast.svelte';
 
-  let settingsVisible = false;
   let favoriteNames = getFavorites().map(meal => meal.name);
   let favoritesRef;
   let favoritesVisible = false;
+  let settingsVisible = false;
   let suggestedMeals = [];
   let bounce = false;
+  let audio;
+  let musicEnabled = localStorage.getItem("musicEnabled") !== "false";
+
+  // Increment Counter on every App Launch
+  onMount(() => {
+    audio = new Audio("public/UlilangKaluluwa.wav");
+    audio.loop = true;
+    audio.volume = 1;
+
+    if (musicEnabled) {
+      audio.play().catch(e => console.warn("Autoplay blocked:", e));
+    }
+
+    incrementCounter("baonAppOpens")
+  })
+
+  // Function to toggle
+  // @ts-ignore
+  function toggleMusic() {
+    musicEnabled = !musicEnabled;
+    // @ts-ignore
+    localStorage.setItem("musicEnabled", musicEnabled);
+    if (musicEnabled) {
+      audio.play();
+    } else {
+      audio.pause();
+    }
+  }
 
   // Toggle Favorites for Each Card
   function toggleFavorites() {
@@ -45,6 +72,7 @@
     
     bounce = false; // reset first
     requestAnimationFrame(() => bounce = true); // allow reactive update
+    incrementCounter("baonMealGenerations"); // Increments no. of times meals were generated
   }
 
   // generates meals on first load
@@ -105,6 +133,18 @@
     {/each}
   </div>
 
+  <!-- Dust Particles (Animated) -->
+  <div class="dust-layer">
+    {#each Array(50) as _, i}
+      <div class="dust" style="
+        top: {Math.random() * 100}%;
+        left: {Math.random() * 100}%;
+        animation-delay: {Math.random() * 5}s;
+        animation-duration: {5 + Math.random() * 10}s;
+      "></div>
+    {/each}
+  </div>  
+
   <!-- Simple background flowy lines -->
   <div class="flow-lines-bg">
     <!-- Layer 1 -->
@@ -146,6 +186,7 @@
     favoriteNames = getFavorites().map(meal => meal.name);
     if (favoritesVisible && favoritesRef) favoritesRef.refresh(); // refreshes favorites list if modal is open)
   }}
+  on:toggleMusic = {toggleMusic}
 />
 
 <Toast />
@@ -262,5 +303,30 @@
 
   .flow-fill {
     fill: #231d52a9; /* very subtle white */
+  }
+
+  /* Dust Particles */
+  .dust-layer {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    pointer-events: none;
+    overflow: hidden;
+  }
+
+  .dust {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.08);
+    animation: floatDust linear infinite;
+  }
+
+  @keyframes floatDust {
+    0% { transform: translateX(0) translateY(0); opacity: 0.2; }
+    50% { opacity: 0.6; }
+    100% { transform: translateX(-100vw) translateY(-100vh); opacity: 0; }
   }
 </style>
