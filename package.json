@@ -12,5 +12,11 @@
     "@sveltejs/vite-plugin-svelte": "^5.0.3",
     "svelte": "^5.23.1",
     "vite": "^6.2.2"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.2.0",
+    "@capacitor/cli": "^7.2.0",
+    "@capacitor/core": "^7.2.0",
+    "@capacitor/haptics": "^7.0.1"
   }
 }
