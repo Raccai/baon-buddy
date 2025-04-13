@@ -354,10 +354,11 @@
         100% { transform: rotate(0); }
     }
 
+    /* Standard responsive media queries */
     @media (max-width: 410px) {
         .baon-card {
-            width: 70vw;
-            padding: 1rem;
+            width: 80vw;
+            padding: 1.2rem;
         }
 
         .meal-name {
@@ -371,19 +372,86 @@
         }
 
         .meal-type {
-            font-size: 0.8rem;
+            font-size: 0.85rem;
             padding: 6px 12px;
         }
 
         .meal-image {
-            width: 80px;
-            height: 80px;
-            object-fit: contain;
-            border-radius: 12px;
+            width: 90px;
+            height: 90px;
         }
 
         .emoji {
+            font-size: 2.2rem;
+        }
+    }
+
+    /* For short but wide screens */
+    @media (max-height: 600px) and (min-width: 700px) {
+        .baon-card {
+            width: 360px; /* Slightly larger for wide screens */
+            padding: 1.2rem;
+        }
+        
+        .meal-image {
+            width: 100px;
+            height: 100px;
+        }
+    }
+
+    /* For very short screens */
+    @media (max-height: 500px) {
+        .baon-card {
+            padding: 1rem;
+        }
+        
+        .meal-name {
+            font-size: 1.1rem;
+            margin: 0.3rem 0 0.2rem;
+        }
+        
+        .meal-message {
+            font-size: 0.85rem;
+            margin-top: 0.3rem;
+        }
+        
+        .meal-type {
+            font-size: 0.8rem;
+            padding: 5px 10px;
+        }
+        
+        .meal-image {
+            width: 80px;
+            height: 80px;
+        }
+        
+        .emoji {
             font-size: 2rem;
+        }
+    }
+
+    /* For extremely small screens */
+    @media (max-height: 400px) and (max-width: 320px) {
+        .baon-card {
+            width: 85vw;
+            padding: 0.8rem;
+        }
+        
+        .meal-image {
+            width: 60px;
+            height: 60px;
+        }
+        
+        .meal-name {
+            font-size: 1rem;
+        }
+        
+        .meal-message {
+            font-size: 0.8rem;
+        }
+        
+        .emoji {
+            font-size: 1.8rem;
         }
     }
 </style>

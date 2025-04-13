@@ -1,18 +1,19 @@
 <script>
   import Sparkle from './assets/Sparkle.svelte';
+  import Tala from "/characters/Tala.png";
 
   import BaonCard from './components/BaonCard.svelte';
   import Navbar from './components/Navbar.svelte';
   import TalaQuote from './components/TalaQuote.svelte';
-  import { meals } from "./lib/meals.js";
-  import { incrementCounter } from './lib/storage';
-  import { onMount } from 'svelte';
-  import BaonBuddyTitle from "/titles/BaonBuddyTitle.png";
-
-  import FavoritesModal from './components/FavoritesModal.svelte';
-  import { getFavorites } from './lib/storage';
   import SettingsModal from './components/SettingsModal.svelte';
   import Toast from './components/Toast.svelte';
+  import FavoritesModal from './components/FavoritesModal.svelte';
+  import { incrementCounter } from './lib/storage';
+  import BaonBuddyTitle from "/titles/BaonBuddyTitle.png";
+  import { onMount } from 'svelte';
+  
+  import { meals } from "./lib/meals.js";
+  import { getFavorites } from './lib/storage';
 
   let favoriteNames = getFavorites().map(meal => meal.name);
   let favoritesRef;
@@ -25,7 +26,7 @@
 
   // Increment Counter on every App Launch
   onMount(() => {
-    audio = new Audio("/UlilangKaluluwa.wav");
+    audio = new Audio("/music/UlilangKaluluwa.wav");
     audio.loop = true;
     audio.volume = 1;
 
@@ -85,8 +86,9 @@
     <img src={BaonBuddyTitle} alt="Baon Buddy" class="app-title">
   </header>
 
+  <!-- For characters -->
   <div class="character-space">
-    <!-- where Tala and Hanan will be (and future characters... maybe) -->
+    <img src={Tala} alt="Tala" class="tala-floating">
   </div>
 
   <div class="card-container">
@@ -227,21 +229,6 @@
     display: block;
   }
 
-  .character-space {
-    position: absolute;
-    top: 0;
-    left: 0;
-    height: 100%;
-    width: 100%;
-    background: rgb(148, 52, 52);
-    z-index: 0;
-    display: flex;
-    justify-content: center;
-    align-items: flex-end;
-    pointer-events: none;
-    opacity: 0;
-  }
-
   /* Stars, Twinkling, and Clouds Styling */
   .stars-bg {
     position: absolute;
@@ -349,4 +336,162 @@
     right: 0;
     z-index: 5;
   }
-</style>
+
+  /* Tala character + animation */
+  .character-space {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 100%;
+    z-index: 4;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    pointer-events: none;
+    overflow: hidden;
+  }
+
+  .tala-floating {
+    height: auto;
+    max-height: 58vh; /* Reduced from 62vh */
+    width: auto;
+    max-width: 100%;
+    animation: bob 3s ease-in-out infinite;
+    pointer-events: none;
+    user-select: none;
+    position: absolute;
+    bottom: 280px; /* Adjusted position */
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.15));
+    z-index: 10;
+  }
+
+  @keyframes bob {
+    0%, 100% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-6px);
+    }
+  }
+
+  /* Improved media queries for different device sizes */
+  /* For tall screens (portrait orientation) */
+  @media (min-aspect-ratio: 1/2) and (min-height: 700px) {
+    .tala-floating {
+      max-height: 50vh;
+      bottom: 280px;
+    }
+  }
+
+  /* For standard screens */
+  @media (min-aspect-ratio: 2/3) {
+    .tala-floating {
+      max-height: 50vh;
+      bottom: 250px;
+    }
+  }
+
+  /* For wider screens */
+  @media (min-aspect-ratio: 4/3) {
+    .tala-floating {
+      max-height: 45vh;
+      bottom: 200px;
+    }
+  }
+
+  /* For very wide screens */
+  @media (min-aspect-ratio: 16/9) {
+    .tala-floating {
+      max-height: 30vh;
+      bottom: 150px;
+    }
+  }
+
+  /* Specific media queries for problem devices */
+  /* iPhone SE and similar small devices */
+  @media (max-height: 700px) and (max-width: 375px) {
+    .tala-floating {
+      max-height: 56vh;
+      bottom: 160px;
+    }
+    
+    .card-container {
+      bottom: 120px;
+    }
+  }
+  
+  /* iPhone 12 Pro and similar devices */
+  @media (min-height: 800px) and (max-height: 850px) and (max-width: 400px) {
+    .tala-floating {
+      max-height: 62vh;
+      bottom: 220px;
+    }
+    
+    .card-container {
+      bottom: 130px;
+    }
+  }
+
+  /* Samsung S8+ and similar devices */
+  @media (max-height: 800px) and (max-width: 400px) {
+    .tala-floating {
+      max-height: 52vh;
+      bottom: 220px;
+    }
+    
+    .card-container {
+      bottom: 130px;
+    }
+  }
+
+  /* For short screens, regardless of width */
+  @media (max-height: 600px) {
+    .tala-floating {
+      max-height: 30vh;
+      bottom: 120px;
+    }
+    
+    .card-container {
+      bottom: 80px;
+    }
+  }
+
+  @media (max-height: 500px) {
+    .tala-floating {
+      max-height: 25vh;
+      bottom: 100px;
+    }
+    
+    .card-container {
+      bottom: 70px;
+    }
+  }
+
+  /* For extremely short screens */
+  @media (max-height: 400px) {
+    .tala-floating {
+      max-height: 20vh;
+      bottom: 90px;
+    }
+    
+    .card-container {
+      bottom: 60px;
+    }
+  }
+
+  /* For wide but short screens - addresses the specific issue mentioned */
+  @media (max-height: 800px) and (min-width: 1200px) {
+    .tala-floating {
+      max-height: 56vh;
+      bottom: 240px;
+    }
+  }
+
+  @media (max-height: 600px) and (min-width: 1024px) {
+    .tala-floating {
+      max-height: 56vh;
+      bottom: 160px;
+    }
+  }
+  </style>
