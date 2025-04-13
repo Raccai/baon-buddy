@@ -481,16 +481,34 @@
   }
 
   /* For wide but short screens - addresses the specific issue mentioned */
-  @media (max-height: 800px) and (min-width: 1200px) {
+  @media (max-height: 1400px) and (min-width: 800px) {
     .tala-floating {
-      max-height: 56vh;
+      max-height: 68vh;
       bottom: 240px;
+    }
+
+    .topbar {
+      height: fit-content;
+    }
+
+    .app-title {
+      max-width: 200px;
     }
   }
 
-  @media (max-height: 600px) and (min-width: 1024px) {
+  @media (max-height: 800px) and (min-width: 1280px) {
     .tala-floating {
-      max-height: 56vh;
+      max-height: 54vh;
+      bottom: 220px;
+    }
+
+    main {
+      flex-direction: row;
+    }
+  }
+
+  @media (max-height: 1400px) and (min-width: 900px) {
+    .card-container {
       bottom: 160px;
     }
   }

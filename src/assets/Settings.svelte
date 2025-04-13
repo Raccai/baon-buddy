@@ -1,4 +1,9 @@
-<svg class="navbar-icon" width="60" height="60" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+<script>
+    export let width = 60;
+    export let height = 60;
+</script>
+
+<svg class="navbar-icon" {width} {height} viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
     <rect x="16.7607" y="16.7607" width="26.4782" height="26.4782" fill="#FFF5E1"/>
     <mask id="path-2-outside-1_177_34" maskUnits="userSpaceOnUse" x="3.25" y="2" width="53" height="56" fill="black">
     <rect fill="white" x="3.25" y="2" width="53" height="56"/>

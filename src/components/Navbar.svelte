@@ -76,4 +76,15 @@
         70% { transform: scale(0.9); }
         100% { transform: scale(1); }
     }
+
+    /* For wide but short screens - addresses the specific issue mentioned */
+    @media (max-height: 1400px) and (min-width: 900px) {
+        .navbar {
+            height: 120px
+        }
+
+        .navbar button {
+            transform: scale(1.6);
+        }
+    }
 </style>

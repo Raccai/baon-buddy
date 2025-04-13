@@ -454,4 +454,65 @@
             font-size: 1.8rem;
         }
     }
+
+    /* For wide but short screens - addresses the specific issue mentioned */
+    @media (max-height: 1400px) and (min-width: 800px) {
+        .baon-card {
+            width: 85vw;
+            display: flex;
+            justify-content: center;
+            gap: 1.2rem;
+        }
+
+        .meal-image {
+            width: 160px;
+            height: 160px;
+        }
+        
+        .meal-name {
+            font-size: 3rem;
+        }
+        
+        .meal-message {
+            font-size: 2rem;
+        }
+        
+        .emoji {
+            font-size: 3rem;
+        }
+
+        .meal-type {
+            font-size: 1.4rem;
+        }
+    }
+
+    @media (max-height: 800px) and (min-width: 1280px) {
+        .baon-card {
+            width: 85vw;
+            display: flex;
+            justify-content: center;
+            gap: 1.2rem;
+        }
+
+        .meal-image {
+            width: 160px;
+            height: 160px;
+        }
+        
+        .meal-name {
+            font-size: 1.8rem;
+        }
+        
+        .meal-message {
+            font-size: 1.2rem;
+        }
+        
+        .emoji {
+            font-size: 2rem;
+        }
+
+        .meal-type {
+            font-size: 1rem;
+        }
+    }
 </style>
