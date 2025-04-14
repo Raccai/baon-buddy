@@ -212,23 +212,24 @@
     top: 0;
     left: 0;
     width: 100%;
-    height: 64px;
+    height: 68px; 
     background: #191337;
     color: #fff;
-    padding: 1rem 0;
+    padding: 0; 
     font-weight: bold;
     z-index: 9;
     box-shadow: 0 2px 40px rgba(0, 0, 0, 0.4);
     display: flex;
     justify-content: center;
     align-items: center;
-    line-height: 60px;
   }
 
   .app-title {
     width: 100%;
-    max-width: 140px;
+    max-width: 100px;
     display: block;
+    margin: 0; 
+    margin-top: 4px;
   }
 
   /* Stars, Twinkling, and Clouds Styling */
