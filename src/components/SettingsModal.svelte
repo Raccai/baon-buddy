@@ -68,31 +68,31 @@
             <section class="main-settings">
                 <div class="setting toggle-setting">
                     <label class="toggle">
+                        <span class="toggle-label">{musicEnabled ? 'Music On 🎶' : 'Music Off 🔇'}</span>
                         <input 
                             type="checkbox" 
                             checked={musicEnabled} 
                             on:change={toggleMusicSetting} 
                         />
                         <span class="slider"></span>
-                        <span class="toggle-label">{musicEnabled ? 'Music On 🎶' : 'Music Off 🔇'}</span>
                     </label>
                 </div>
                   
                 <section class="delete-actions">
                     <section class="setting">
-                        <button class="danger" on:click={clearFaves}>🗑️ Clear Favorites</button>
+                        <button class="danger" on:click={clearFaves}>Clear Favorites</button>
                     </section>
         
                     <section class="setting">
-                        <button class="danger" on:click={resetApp}>🔄 Reset App</button>
+                        <button class="danger reset" on:click={resetApp}>Reset App</button>
                     </section>
                 </section>
             </section>
             
             <section class="more-links">
-                <p>
+                <!-- <p>
                     <a href="https://shop.angwikanatin.com/raccaian-portfolio/" target="_blank">🌐 My Portfolio</a><br>
-                </p>
+                </p> -->
                 <span class="fun-stats">
                     <span>App Opened: {timesOpened} Times</span>
                     <span>Meals Generated: {timesGenerated}</span>
@@ -151,6 +151,8 @@
         gap: 0.75rem;
         cursor: pointer;
         position: relative;
+        width: 100%;
+        justify-content: space-between;
     }
 
     .toggle input {
@@ -198,7 +200,7 @@
         display: flex;
         flex-direction: row;
         gap: 16px;
-        justify-content: space-between;
+        justify-content: space-evenly;
         align-items: center;
     }
     .danger {
@@ -210,6 +212,11 @@
         font-weight: bold;
         cursor: pointer;
         font-size: 1rem;
+    }
+    .danger.reset {
+        background: none;
+        border: 2px solid #C40C0C;
+        color: #C40C0C;
     }
 
     .close-btn {
@@ -237,6 +244,9 @@
         flex-direction: column;
         justify-content: center;
         gap: 4px;
+        background-color: #f5e5c6;
+        padding: 1rem 1rem;
+        border-radius: 1rem;
     }
 
     .fun-stats {

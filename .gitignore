@@ -30,3 +30,4 @@ dist-ssr
 /android/local.properties
 /android/app/baonbuddy-key.jks
 /android/keystore.properties
+android/app/src/main/res/mipmap-*/ic_launcher.*
