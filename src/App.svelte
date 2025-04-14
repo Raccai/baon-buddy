@@ -1,25 +1,21 @@
 <script>
-  import Loading from './components/Loading.svelte';
   import Main from './components/Main.svelte';
-  import { fade } from 'svelte/transition';
+  import { onMount } from 'svelte';
 
-  let isLoading = true;
-
-  // Simulate a 2 second load
-  setTimeout(() => {
-    isLoading = false;
-  }, 4000);
+  onMount(() => {
+    const preloader = document.getElementById('preloader');
+    if (preloader) {
+      preloader.style.opacity = '1';
+      setTimeout(() => {
+        preloader.style.transition = 'opacity 0.8s ease';
+        preloader.style.opacity = '0';
+        setTimeout(() => preloader.remove(), 800);
+      }, 2000); // stays on screen for 1.5s before fading
+    }
+  });
 </script>
 
-{#if isLoading}
-  <div transition:fade = {{ duration: 500 }}>
-    <Loading />
-  </div>
-{:else}
-  <div transition:fade = {{ duration: 500 }}>
-    <Main />
-  </div>
-{/if}
+<Main />
 
 <style>
 

@@ -13,6 +13,10 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
 a {
   font-weight: 500;
   color: #646cff;
@@ -60,6 +64,17 @@ h1 {
   text-align: center;
 }
 
+button, 
+button:focus, 
+button:active, 
+button:hover {
+  outline: none;
+  box-shadow: none;
+  background-color: inherit;
+  -webkit-tap-highlight-color: transparent; /* prevents blue flash */
+  appearance: none;
+  border: none;
+}
 button {
   border-radius: 8px;
   border: 1px solid transparent;
@@ -70,13 +85,6 @@ button {
   background-color: #1a1a1a;
   cursor: pointer;
   transition: border-color 0.25s;
-
-  -webkit-tap-highlight-color: transparent; /* Removes the gray/blue overlay on tap */
-  outline: none; /* Removes focus ring */
-  user-select: none; /* Optional: disables text selection */
-  -webkit-user-select: none;
-  -webkit-appearance: none; /* For iOS to remove extra styling */
-  appearance: none;
 }
 button:hover {
   border-color: none;
