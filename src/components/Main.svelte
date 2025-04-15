@@ -28,7 +28,7 @@
 
   // Increment Counter on every App Launch
   onMount(() => {
-    audio = new Audio("/music/InVain.wav");
+    audio = new Audio("/music/InVain.mp3");
     audio.loop = true;
     audio.volume = 1;
 
