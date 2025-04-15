@@ -4,8 +4,8 @@
   import { onMount } from 'svelte';
   import { fade } from 'svelte/transition';
 
-  // let showOnboarding = localStorage.getItem("hasSeenOnboarding") !== "true";
-  let showOnboarding = true;
+  let showOnboarding = localStorage.getItem("hasSeenOnboarding") !== "true";
+  // let showOnboarding = true;
 
   onMount(() => {
     const preloader = document.getElementById('preloader');
