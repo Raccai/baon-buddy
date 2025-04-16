@@ -1,4 +1,4 @@
-![images](https://github.com/Raccai/baon-buddy/blob/main/public/onboarding/Step1NonTitle.png)
+![images](https://github.com/Raccai/baon-buddy/blob/main/public/onboarding/Step1NonTitle.png | width=100)
 
 # 🧃 Baon Buddy
 
