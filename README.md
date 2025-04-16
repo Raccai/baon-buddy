@@ -1,3 +1,5 @@
+![images](https://github.com/Raccai/baon-buddy/blob/main/public/onboarding/Step1NonTitle.png)
+
 # 🧃 Baon Buddy
 
 Your daily lunch companion 🍱  
@@ -30,7 +32,7 @@ If you’re stuck wondering what to eat, Tala’s got your back. Inspired by Duo
 - [SvelteKit](https://kit.svelte.dev/)
 - [Capacitor](https://capacitorjs.com/)
 - [Vite](https://vitejs.dev/)
-- Vanilla CSS (no libraries like Tailwind)
+- Vanilla CSS (no Tailwind... for now)
 - Git for version control
 
 ---
@@ -62,8 +64,7 @@ npx cap open android
 
 This app is a personal & creative project made for fun, learning, and cultural expression.
 
-_**Some visuals, music, or samples may reference Filipino culture or feature stylized content.
-Please ensure you have the rights to any images/audio you publicly release.**_
+_**Some visuals, music, or samples may reference Filipino culture or feature stylized content.**_
 
 ---
 
