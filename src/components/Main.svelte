@@ -15,7 +15,10 @@
   
   import BaonBuddyTitle from "/titles/BaonBuddyTitle.png";
   import { onMount } from 'svelte';
-  
+  import RecipeSheet from './RecipeSheet.svelte';
+
+  let showRecipe = false;
+  let selectedMeal = null;
 
   let favoriteNames = getFavorites().map(meal => meal.name);
   let favoritesRef;
@@ -25,6 +28,15 @@
   let bounce = false;
   let audio;
   let musicEnabled = localStorage.getItem("musicEnabled") !== "false";
+
+  function openRecipe(meal) {
+    selectedMeal = meal;
+    showRecipe = true;
+  }
+  
+  function closeRecipe() {
+    showRecipe = false;
+  }
 
   // Increment Counter on every App Launch
   onMount(() => {
@@ -96,6 +108,7 @@
   <div class="card-container">
     {#each suggestedMeals as meal (meal.name)}
       <BaonCard
+        on:viewRecipe = {(e) => openRecipe(e.detail)}
         {meal} 
         {favoriteNames} 
         triggerBounce = {bounce}
@@ -112,6 +125,11 @@
       favoriteNames = getFavorites().map(meal => meal.name);
     }}
     on:close = {() => favoritesVisible = false} 
+    on:selectMeal={(e) => {
+      selectedMeal = e.detail;
+      favoritesVisible = false;
+      showRecipe = true;
+    }}
   />
 
   <!-- Will see if usable -->
@@ -194,6 +212,12 @@
     if (favoritesVisible && favoritesRef) favoritesRef.refresh(); // refreshes favorites list if modal is open)
   }}
   on:toggleMusic = {toggleMusic}
+/>
+
+<RecipeSheet 
+  visible = {showRecipe} 
+  meal = {selectedMeal} 
+  on:close = {closeRecipe} 
 />
 
 <Toast />
