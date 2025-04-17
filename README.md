@@ -1,47 +1,76 @@
-# Svelte + Vite
+<img src="https://github.com/Raccai/baon-buddy/blob/main/public/onboarding/Step1NonTitle.png" width="600">
 
-This template should help get you started developing with Svelte in Vite.
+# 🧃 Baon Buddy
 
-## Recommended IDE Setup
+Your daily lunch companion 🍱  
+Random baon ideas, lovable design, and the magical help of Tala ✨
 
-[VS Code](https://code.visualstudio.com/) + [Svelte](https://marketplace.visualstudio.com/items?itemName=svelte.svelte-vscode).
+---
 
-## Need an official Svelte framework?
+## 📱 About
 
-Check out [SvelteKit](https://github.com/sveltejs/kit#readme), which is also powered by Vite. Deploy anywhere with its serverless-first approach and adapt to various platforms, with out of the box support for TypeScript, SCSS, and Less, and easily-added support for mdsvex, GraphQL, PostCSS, Tailwind CSS, and more.
+**Baon Buddy** is a cute, mobile-first meal inspiration app built with **SvelteKit** and **Capacitor**.  
+If you’re stuck wondering what to eat, Tala’s got your back. Inspired by Duolingo’s charm, this app keeps things playful while giving useful suggestions.
 
-## Technical considerations
+---
 
-**Why use this over SvelteKit?**
+## 🚀 Features
 
-- It brings its own routing solution which might not be preferable for some users.
-- It is first and foremost a framework that just happens to use Vite under the hood, not a Vite app.
+- 🍙 Random baon (meal) generator
+- ❤️ Save and manage your favorite meals
+- 🎵 Background music toggle (with memory)
+- ✨ Custom animated loading screen
+- 📖 Simple onboarding with Tala guiding you
+- 📦 Built for Android using Capacitor
+- 💾 Offline-first with localStorage
+- 🧽 Clean, responsive UI for phones
 
-This template contains as little as possible to get started with Vite + Svelte, while taking into account the developer experience with regards to HMR and intellisense. It demonstrates capabilities on par with the other `create-vite` templates and is a good starting point for beginners dipping their toes into a Vite + Svelte project.
+---
 
-Should you later need the extended capabilities and extensibility provided by SvelteKit, the template has been structured similarly to SvelteKit so that it is easy to migrate.
+## 🛠 Built With
 
-**Why `global.d.ts` instead of `compilerOptions.types` inside `jsconfig.json` or `tsconfig.json`?**
+- [SvelteKit](https://kit.svelte.dev/)
+- [Capacitor](https://capacitorjs.com/)
+- [Vite](https://vitejs.dev/)
+- Vanilla CSS (no Tailwind... for now)
+- Git for version control
 
-Setting `compilerOptions.types` shuts out all other types not explicitly listed in the configuration. Using triple-slash references keeps the default TypeScript setting of accepting type information from the entire workspace, while also adding `svelte` and `vite/client` type information.
+---
 
-**Why include `.vscode/extensions.json`?**
+## 🧪 Local Setup
 
-Other templates indirectly recommend extensions via the README, but this file allows VS Code to prompt the user to install the recommended extension upon opening the project.
+```bash
+# Clone this repo
+git clone https://github.com/your-username/baon-buddy.git
+cd baon-buddy
 
-**Why enable `checkJs` in the JS template?**
+# Install dependencies
+npm install
 
-It is likely that most cases of changing variable types in runtime are likely to be accidental, rather than deliberate. This provides advanced typechecking out of the box. Should you like to take advantage of the dynamically-typed nature of JavaScript, it is trivial to change the configuration.
-
-**Why is HMR not preserving my local component state?**
-
-HMR state preservation comes with a number of gotchas! It has been disabled by default in both `svelte-hmr` and `@sveltejs/vite-plugin-svelte` due to its often surprising behavior. You can read the details [here](https://github.com/sveltejs/svelte-hmr/tree/master/packages/svelte-hmr#preservation-of-local-state).
-
-If you have state that's important to retain within a component, consider creating an external store which would not be replaced by HMR.
-
-```js
-// store.js
-// An extremely simple external store
-import { writable } from 'svelte/store'
-export default writable(0)
+# Start local dev server
+npm run dev
 ```
+
+To build for mobile:
+```bash
+npm run build
+npx cap sync
+npx cap open android
+```
+
+---
+
+## ⚠️ Legal / License
+
+This app is a personal & creative project made for fun, learning, and cultural expression.
+
+_**Some visuals, music, or samples may reference Filipino culture or feature stylized content.**_
+
+---
+
+## 🙏 Special Thanks
+
+**To Tala** — for reminding us to eat.
+**To Filipino cuisine** — for being diverse and underrated.
+
+---
