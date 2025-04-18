@@ -16,7 +16,7 @@
   import BaonList from './components/screens/BaonList.svelte';
 
   let showOnboarding = localStorage.getItem("hasSeenOnboarding") !== "true";
-  let currentScreen = 'home';
+  let currentScreen = localStorage.getItem("lastScreen") || 'home';
 
   function handleDone() {
     showOnboarding = false;
@@ -24,6 +24,7 @@
 
   function handleNavigate(screen) {
     currentScreen = screen;
+    localStorage.setItem("lastScreen", screen);
   }
 
   let selectedMeal = null;
@@ -32,10 +33,6 @@
   let showRecipe = false;
 
   // Forda Recipes
-  function openRecipe(meal) {
-    selectedMeal = meal;
-    showRecipe = true;
-  }
   function closeRecipe() {
     showRecipe = false;
   }
@@ -58,7 +55,6 @@
     localStorage.setItem("musicEnabled", musicEnabled.toString());
     musicEnabled ? audio.play() : audio.pause();
   }
-
 
   onMount(() => {
     const preloader = document.getElementById('preloader');
@@ -85,7 +81,8 @@
     <Onboarding on:done={handleDone} />
   </div>
 {:else}
-  <div transition:fade={{ duration: 800 }}>
+  <div class="app-container">
+    <!-- Fixed topbar -->
     <div class="topbar-wrapper">
       <Topbar 
         onToggleFavorites={toggleFavorites} 
@@ -93,17 +90,20 @@
       />
     </div>
     
-    <div class="screen-wrapper">
-      {#if currentScreen === 'home'}
-        <Home />
-      {:else if currentScreen === 'calendar'}
-        <Calendar />
-      {:else if currentScreen === 'baonlist'}
-        <BaonList />
-      {/if}
-    </div>    
+    <!-- Forda main screens -->
+     {#key currentScreen}
+      <div class="screen-wrapper" transition:fade={{ duration: 300 }}>
+        {#if currentScreen === 'home'}
+          <Home />
+        {:else if currentScreen === 'calendar'}
+          <Calendar />
+        {:else if currentScreen === 'baonlist'}
+          <BaonList />
+        {/if}
+      </div>    
+    {/key}
 
-    <!-- ⬇️ Navbar stays fixed -->
+    <!-- Fixed navbar -->
     <div class="navbar-wrapper">
       <Navbar onNavigate={handleNavigate} current={currentScreen} />
     </div>
