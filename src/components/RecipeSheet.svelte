@@ -179,7 +179,7 @@
     margin-bottom: 0.5rem;
     font-weight: 700;
     background: linear-gradient(to right, #281e6e, #673397);
-    -webkit-background-clip: text;
+    /* -webkit-background-clip: text; */
     -webkit-text-fill-color: transparent;
   }
 

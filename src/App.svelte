@@ -1,11 +1,64 @@
 <script>
-  import Main from './components/Main.svelte';
-  import Onboarding from './components/Onboarding.svelte';
   import { onMount } from 'svelte';
   import { fade } from 'svelte/transition';
+  import { getFavorites } from './lib/storage';
+
+  import Onboarding from './components/Onboarding.svelte';
+  import Navbar from './components/Navbar.svelte';
+  import Topbar from './components/Topbar.svelte';
+  import FavoritesModal from './components/FavoritesModal.svelte';
+  import SettingsModal from './components/SettingsModal.svelte';
+  import RecipeSheet from './components/RecipeSheet.svelte';
+
+  // Screens
+  import Home from './components/screens/Home.svelte';
+  import Calendar from './components/screens/Calendar.svelte';
+  import BaonList from './components/screens/BaonList.svelte';
 
   let showOnboarding = localStorage.getItem("hasSeenOnboarding") !== "true";
-  // let showOnboarding = true;
+  let currentScreen = 'home';
+
+  function handleDone() {
+    showOnboarding = false;
+  }
+
+  function handleNavigate(screen) {
+    currentScreen = screen;
+  }
+
+  let selectedMeal = null;
+  let favoriteNames = getFavorites().map(meal => meal.name);
+  let suggestedMeals = [];
+  let showRecipe = false;
+
+  // Forda Recipes
+  function openRecipe(meal) {
+    selectedMeal = meal;
+    showRecipe = true;
+  }
+  function closeRecipe() {
+    showRecipe = false;
+  }
+
+  // Favorites and Settings functions
+  let favoritesRef;
+  let favoritesVisible = false;
+  let settingsVisible = false;
+  let audio;
+  let musicEnabled = localStorage.getItem("musicEnabled") !== "false";
+  function toggleFavorites() {
+    favoritesVisible = !favoritesVisible;
+    favoritesVisible ? favoritesRef.open() : favoritesRef.close();
+  }
+  function openSettings() {
+    settingsVisible = true;
+  }
+  function toggleMusic() {
+    musicEnabled = !musicEnabled;
+    localStorage.setItem("musicEnabled", musicEnabled.toString());
+    musicEnabled ? audio.play() : audio.pause();
+  }
+
 
   onMount(() => {
     const preloader = document.getElementById('preloader');
@@ -15,25 +68,92 @@
         preloader.style.transition = 'opacity 0.8s ease';
         preloader.style.opacity = '0';
         setTimeout(() => preloader.remove(), 800);
-      }, 2000); // stays on screen for 1.5s before fading
+      }, 2000);
+    }
+
+    audio = new Audio("/music/InVain.mp3");
+    audio.loop = true;
+    audio.volume = 1;
+    if (musicEnabled) {
+      audio.play().catch(e => console.warn("Autoplay blocked:", e));
     }
   });
-
-  function handleDone() {
-    showOnboarding = false;
-  }
 </script>
 
 {#if showOnboarding}
-  <div transition:fade = {{ duration: 800 }}>
-    <Onboarding on:done = {handleDone} />
+  <div transition:fade={{ duration: 800 }}>
+    <Onboarding on:done={handleDone} />
   </div>
 {:else}
-  <div transition:fade = {{ duration: 800 }}>
-    <Main />
+  <div transition:fade={{ duration: 800 }}>
+    <div class="topbar-wrapper">
+      <Topbar 
+        onToggleFavorites={toggleFavorites} 
+        onOpenSettings={openSettings} 
+      />
+    </div>
+    
+    <div class="screen-wrapper">
+      {#if currentScreen === 'home'}
+        <Home />
+      {:else if currentScreen === 'calendar'}
+        <Calendar />
+      {:else if currentScreen === 'baonlist'}
+        <BaonList />
+      {/if}
+    </div>    
+
+    <!-- ⬇️ Navbar stays fixed -->
+    <div class="navbar-wrapper">
+      <Navbar onNavigate={handleNavigate} current={currentScreen} />
+    </div>
   </div>
 {/if}
 
-<style>
+<FavoritesModal 
+  bind:this={favoritesRef} 
+  on:faveChange={() => {
+    favoriteNames = getFavorites().map(meal => meal.name);
+  }}
+  on:close={() => favoritesVisible = false} 
+  on:selectMeal={(e) => {
+    selectedMeal = e.detail;
+    favoritesVisible = false;
+    showRecipe = true;
+  }}
+/>
 
+<SettingsModal 
+  visible={settingsVisible} 
+  on:close={() => settingsVisible = false} 
+  on:faveChange={() => {
+    favoriteNames = getFavorites().map(meal => meal.name);
+    if (favoritesVisible && favoritesRef) favoritesRef.refresh();
+  }}
+  on:toggleMusic={toggleMusic}
+/>
+
+<RecipeSheet visible={showRecipe} meal={selectedMeal} on:close={closeRecipe} />
+
+<style>
+  .topbar-wrapper {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    z-index: 990;
+  }
+
+  .screen-wrapper {
+    padding-top: 68px; /* or the height of your Topbar */
+    padding-bottom: 70px; /* make room for Navbar */
+  }
+
+  .navbar-wrapper {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100vw;
+    z-index: 999;
+  }
 </style>

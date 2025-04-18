@@ -1,106 +1,41 @@
 <script>
-  import Sparkle from '../assets/Sparkle.svelte';
+  import Topbar from '../Topbar.svelte';
+  import Sparkle from '../../assets/Sparkle.svelte';
   import Tala from "/characters/Tala.png";
-
-  import BaonCard from './BaonCard.svelte';
-  import Navbar from './Navbar.svelte';
-  import TalaQuote from './TalaQuote.svelte';
-  import SettingsModal from './SettingsModal.svelte';
-  import Toast from './Toast.svelte';
-  import FavoritesModal from './FavoritesModal.svelte';
-
-  import { incrementCounter } from '../lib/storage';
-  import { meals } from "../lib/meals.js";
-  import { getFavorites } from '../lib/storage';
-  
-  import BaonBuddyTitle from "/titles/BaonBuddyTitle.png";
-  import { onMount } from 'svelte';
-  import RecipeSheet from './RecipeSheet.svelte';
+  import BaonCard from '../BaonCard.svelte';
+  import TalaQuote from '../TalaQuote.svelte';
+  import Toast from '../Toast.svelte';
+  import { incrementCounter } from '../../lib/storage';
+  import { meals } from "../../lib/meals.js";
+  import { getFavorites } from '../../lib/storage';
+  import RecipeSheet from '../RecipeSheet.svelte';
 
   let showRecipe = false;
   let selectedMeal = null;
-
   let favoriteNames = getFavorites().map(meal => meal.name);
-  let favoritesRef;
-  let favoritesVisible = false;
-  let settingsVisible = false;
   let suggestedMeals = [];
   let bounce = false;
-  let audio;
-  let musicEnabled = localStorage.getItem("musicEnabled") !== "false";
 
   function openRecipe(meal) {
     selectedMeal = meal;
     showRecipe = true;
   }
-  
+
   function closeRecipe() {
     showRecipe = false;
   }
 
-  // Increment Counter on every App Launch
-  onMount(() => {
-    audio = new Audio("/music/InVain.mp3");
-    audio.loop = true;
-    audio.volume = 1;
-
-    if (musicEnabled) {
-      audio.play().catch(e => console.warn("Autoplay blocked:", e));
-    }
-
-    incrementCounter("baonAppOpens")
-  })
-
-  // Function to toggle
-  // @ts-ignore
-  function toggleMusic() {
-    musicEnabled = !musicEnabled;
-    // @ts-ignore
-    localStorage.setItem("musicEnabled", musicEnabled);
-    if (musicEnabled) {
-      audio.play();
-    } else {
-      audio.pause();
-    }
-  }
-
-  // Toggle Favorites for Each Card
-  function toggleFavorites() {
-    if (favoritesVisible) {
-      favoritesRef.close();
-      favoritesVisible = false;
-    } else {
-      favoritesRef.open();
-      favoritesVisible = true;
-    }
-  }
-
-  // Open Settings Modal
-  function openSettings() {
-    settingsVisible = true;
-  }
-
-  // Generate Meal Cards
   function generateMeals() {
-    suggestedMeals = [...meals]
-      .sort(() => 0.5 - Math.random())
-      .slice(0, 1);
-    
-    bounce = false; // reset first
-    requestAnimationFrame(() => bounce = true); // allow reactive update
-    incrementCounter("baonMealGenerations"); // Increments no. of times meals were generated
+    suggestedMeals = [...meals].sort(() => 0.5 - Math.random()).slice(0, 1);
+    bounce = false;
+    requestAnimationFrame(() => bounce = true);
+    incrementCounter("baonMealGenerations");
   }
 
-  // generates meals on first load
   generateMeals();
 </script>
 
 <main>
-  <header class="topbar">
-    <img src={BaonBuddyTitle} alt="Baon Buddy" class="app-title">
-  </header>
-
-  <!-- For characters -->
   <div class="character-space">
     <img src={Tala} alt="Tala" class="tala-floating">
   </div>
@@ -108,119 +43,51 @@
   <div class="card-container">
     {#each suggestedMeals as meal (meal.name)}
       <BaonCard
-        on:viewRecipe = {(e) => openRecipe(e.detail)}
+        on:viewRecipe={(e) => openRecipe(e.detail)}
         {meal} 
         {favoriteNames} 
-        triggerBounce = {bounce}
+        triggerBounce={bounce}
         on:faveChange={() => {
           favoriteNames = getFavorites().map(meal => meal.name);
-        }} 
+        }}
       />
     {/each}
   </div>
 
-  <FavoritesModal 
-    bind:this = {favoritesRef} 
-    on:faveChange = {() => {
-      favoriteNames = getFavorites().map(meal => meal.name);
-    }}
-    on:close = {() => favoritesVisible = false} 
-    on:selectMeal={(e) => {
-      selectedMeal = e.detail;
-      favoritesVisible = false;
-      showRecipe = true;
-    }}
-  />
-
-  <!-- Will see if usable -->
   <TalaQuote />
+  <RecipeSheet visible={showRecipe} meal={selectedMeal} on:close={closeRecipe} />
+  <Toast />
 
-  <!-- Stars (Animated) -->
+  <!-- Background Effects -->
   <div class="stars-bg">
     {#each Array(40) as _, i}
-      <div class="circle-star"
-        style="top: {Math.random() * 100}%; left: {Math.random() * 100}%; animation-delay: {Math.random() * 3}s;"></div>
+      <div class="circle-star" style="top: {Math.random() * 100}%; left: {Math.random() * 100}%; animation-delay: {Math.random() * 3}s;"></div>
     {/each}
-  
-    <!-- SVG Sparkles -->
     {#each Array(20) as _, i}
-    <div
-      class="sparkle-star"
-      style="
-        top: {Math.random() * 100}%;
-        left: {Math.random() * 100}%;
-        width: {14 + Math.random() * 12}px;
-        height: {14 + Math.random() * 12}px;
-        animation-delay: {Math.random() * 3}s;
-      ">
-      <Sparkle />
-    </div>
+      <div class="sparkle-star" style="top: {Math.random() * 100}%; left: {Math.random() * 100}%; width: {14 + Math.random() * 12}px; height: {14 + Math.random() * 12}px; animation-delay: {Math.random() * 3}s;">
+        <Sparkle />
+      </div>
     {/each}
   </div>
 
-  <!-- Dust Particles (Animated) -->
   <div class="dust-layer">
     {#each Array(50) as _, i}
-      <div class="dust" style="
-        top: {Math.random() * 100}%;
-        left: {Math.random() * 100}%;
-        animation-delay: {Math.random() * 5}s;
-        animation-duration: {5 + Math.random() * 10}s;
-      "></div>
+      <div class="dust" style="top: {Math.random() * 100}%; left: {Math.random() * 100}%; animation-delay: {Math.random() * 5}s; animation-duration: {5 + Math.random() * 10}s;"></div>
     {/each}
-  </div>  
+  </div>
 
-  <!-- Simple background flowy lines -->
   <div class="flow-lines-bg">
-    <!-- Layer 1 -->
     <svg viewBox="0 0 100 100" preserveAspectRatio="none" class="flow-svg" style="top: -250px;">
-      <path
-        d="M0,40 C25,20 75,60 100,40 L100,60 C75,80 25,20 0,60 Z"
-        class="flow-fill"
-      />
+      <path d="M0,40 C25,20 75,60 100,40 L100,60 C75,80 25,20 0,60 Z" class="flow-fill" />
     </svg>
-  
-    <!-- Layer 2 -->
     <svg viewBox="0 0 100 100" preserveAspectRatio="none" class="flow-svg" style="top: 20px;">
-      <path
-        d="M0,40 C40,20 70,70 100,40 L100,60 C20,80 70,50 0,60 Z"
-        class="flow-fill"
-      />
+      <path d="M0,40 C40,20 70,70 100,40 L100,60 C20,80 70,50 0,60 Z" class="flow-fill" />
     </svg>
-  
-    <!-- Layer 3 -->
     <svg viewBox="0 0 100 100" preserveAspectRatio="none" class="flow-svg" style="top: 340px;">
-      <path
-        d="M0,40 C20,15 80,65 100,40 L100,60 C70,85 30,15 0,60 Z"
-        class="flow-fill"
-      />
+      <path d="M0,40 C20,15 80,65 100,40 L100,60 C70,85 30,15 0,60 Z" class="flow-fill" />
     </svg>
   </div>
 </main>
-
-<Navbar 
-  onGenerate = {generateMeals}
-  onToggleFavorites = {toggleFavorites}
-  onOpenSettings = {openSettings}
-/>
-
-<SettingsModal 
-  visible = {settingsVisible} 
-  on:close = {() => settingsVisible = false} 
-  on:faveChange = {() => {
-    favoriteNames = getFavorites().map(meal => meal.name);
-    if (favoritesVisible && favoritesRef) favoritesRef.refresh(); // refreshes favorites list if modal is open)
-  }}
-  on:toggleMusic = {toggleMusic}
-/>
-
-<RecipeSheet 
-  visible = {showRecipe} 
-  meal = {selectedMeal} 
-  on:close = {closeRecipe} 
-/>
-
-<Toast />
 
 <style lang="css">
   main {
@@ -229,31 +96,6 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-  }
-
-  .topbar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 68px; 
-    background: #191337;
-    color: #fff;
-    padding: 0; 
-    font-weight: bold;
-    z-index: 9;
-    box-shadow: 0 2px 40px rgba(0, 0, 0, 0.4);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-
-  .app-title {
-    width: 100%;
-    max-width: 100px;
-    display: block;
-    margin: 0; 
-    margin-top: 4px;
   }
 
   /* Stars, Twinkling, and Clouds Styling */
@@ -512,14 +354,6 @@
     .tala-floating {
       max-height: 68vh;
       bottom: 240px;
-    }
-
-    .topbar {
-      height: fit-content;
-    }
-
-    .app-title {
-      max-width: 200px;
     }
   }
 

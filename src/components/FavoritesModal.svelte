@@ -102,7 +102,7 @@
         position: fixed;
         inset: 0;
         background: rgba(0, 0, 0, 0.4);
-        z-index: 10;
+        z-index: 991;
     }
 
     .modal-panel {
@@ -115,7 +115,7 @@
         background: #191337;
         padding: 1.5rem;
         box-shadow: -2px 0 10px rgba(0, 0, 0, 0.2);
-        z-index: 11;
+        z-index: 992;
         overflow-y: auto;
     }
 
