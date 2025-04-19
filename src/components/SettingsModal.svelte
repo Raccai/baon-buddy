@@ -1,269 +1,356 @@
 <script>
     import { createEventDispatcher } from 'svelte';
-    import { clearFavorites, resetStorage } from '../lib/storage.js';
+    import { clearFavorites, resetStorage, getCounter } from '../lib/storage.js';
     import { fade, fly } from 'svelte/transition';
+    import { quintOut } from 'svelte/easing';
     import { showToast } from '../lib/toast.js';
-    import { getCounter } from '../lib/storage.js';
-    import BaonBuddySettings from "/titles/BaonBuddySettings.png"
+    import BaonBuddySettings from "/titles/BaonBuddySettings.png";
 
     const dispatch = createEventDispatcher();
     let timesOpened = 0;
     let timesGenerated = 0;
-    let musicEnabled = localStorage.getItem("musicEnabled") !== "false";
+
+    // Initial read on state of music
+    let musicEnabled = localStorage.getItem("musicEnabled") === "true";
 
     export let visible = false;
 
+    // Let bind:checked handle the state update
     function toggleMusicSetting() {
-        musicEnabled = !musicEnabled;
-        // @ts-ignore
-        localStorage.setItem("musicEnabled", musicEnabled);
-        dispatch("toggleMusic");
+        localStorage.setItem("musicEnabled", musicEnabled.toString()); // Save the new state ("true" or "false")
+        dispatch("toggleMusic"); // Dispatch event (parent will use the new state)
     }
 
     function clearFaves() {
-        clearFavorites();
-        dispatch("faveChange"); // to refresh any UI
-        showToast("Favorites cleared!", "success");
-
-        setTimeout(() => dispatch("close"), 500); // closes settings with delay for smoothness 
+        if (confirm("Are you sure you want to clear all your favorites?")) {
+            clearFavorites();
+            dispatch("faveChange");
+            showToast("Favorites cleared!", "success");
+            setTimeout(closeModal, 300);
+        }
     }
 
     function resetApp() {
-        resetStorage(); // a function you’ll define to wipe all app data
-        dispatch("faveChange");
-        showToast("App reset!", "success");
-
-        setTimeout(() => dispatch("close"), 500); // closes settings with delay for smoothness
+        if (confirm("Are you sure you want to reset the app? All data including favorites and settings will be lost! This cannot be undone.")) {
+            resetStorage();
+            // No need to dispatch faveChange if reloading anyway
+            showToast("App reset! Reloading...", "success");
+            setTimeout(() => window.location.reload(), 1000);
+        }
     }
 
     function closeModal() {
         dispatch('close');
     }
 
-   // @ts-ignore
-     $: if (visible) {
+   // This block updates stats when modal becomes visible.
+   // It also includes a safety check for musicEnabled state,
+   // although the corrected initial read should make this less critical.
+   $: if (visible) {
         timesOpened = getCounter("baonAppOpens");
         timesGenerated = getCounter("baonMealGenerations");
+
+        // Safety sync: Check if component state drifted from storage
+        // while the modal was closed.
+        const storedValue = localStorage.getItem("musicEnabled") === "true";
+        if (musicEnabled !== storedValue) {
+            // console.log("Syncing musicEnabled from storage on open");
+            musicEnabled = storedValue; // Update component state to match storage
+        }
     }
 </script>
-  
-<!-- svelte-ignore a11y_click_events_have_key_events -->
+
+
 {#if visible}
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
     <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div 
-        class="modal-backdrop" 
-        in:fade={{ duration: 200 }} 
-        out:fade={{ duration: 200 }} 
+    <!-- svelte-ignore a11y_interactive_supports_focus -->
+    <div
+        class="modal-backdrop"
+        in:fade={{ duration: 200 }}
+        out:fade={{ duration: 200 }}
         on:click|self={closeModal}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="settings-title"
     >
-        <div 
-        class="modal"
-        in:fly={{ y: 40, duration: 250 }}
-        out:fly={{ y: 40, duration: 250 }}
+        <div
+            class="modal"
+            in:fly={{ y: 50, duration: 300, easing: quintOut }}
+            out:fly={{ y: 50, duration: 250, easing: quintOut }}
         >
             <header class="modal-header">
-                <img src={BaonBuddySettings} alt="Settings" class="settings-title-image">
+                 <!-- Add an explicit close button -->
+                 <button class="header-close-btn" on:click={closeModal} aria-label="Close Settings">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="currentColor" aria-hidden="true">
+                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                    </svg>
+                </button>
+                <img src={BaonBuddySettings} alt="Settings" id="settings-title" class="settings-title-image">
             </header>
 
-            <section class="main-settings">
+            <section class="settings-content">
                 <div class="setting toggle-setting">
                     <label class="toggle">
                         <span class="toggle-label">{musicEnabled ? 'Music On 🎶' : 'Music Off 🔇'}</span>
-                        <input 
-                            type="checkbox" 
-                            checked={musicEnabled} 
+                        <input
+                            type="checkbox"
+                            bind:checked={musicEnabled} 
                             on:change={toggleMusicSetting} 
+                            aria-labelledby="music-label"
                         />
                         <span class="slider"></span>
                     </label>
+                    <span id="music-label" class="visually-hidden">Toggle background music</span>
                 </div>
-                  
-                <section class="delete-actions">
-                    <section class="setting">
-                        <button class="danger" on:click={clearFaves}>Clear Favorites</button>
-                    </section>
-        
-                    <section class="setting">
-                        <button class="danger reset" on:click={resetApp}>Reset App</button>
-                    </section>
-                </section>
-            </section>
-            
-            <section class="more-links">
-                <!-- <p>
-                    <a href="https://shop.angwikanatin.com/raccaian-portfolio/" target="_blank">🌐 My Portfolio</a><br>
-                </p> -->
-                <span class="fun-stats">
-                    <span>App Opened: {timesOpened} Times</span>
-                    <span>Meals Generated: {timesGenerated}</span>
-                </span>
-                <section class="version-info">
-                    <p>📦 Version 1.0.0</p>
-                </section>
-            </section>
-              
 
-            <button class="close-btn" on:click={closeModal}>Close</button>
+                <section class="delete-actions">
+                    <button class="setting-btn danger" on:click={clearFaves}>
+                        <span class="btn-icon">🧹</span> Clear Favorites
+                    </button>
+                    <button class="setting-btn danger reset" on:click={resetApp}>
+                        <span class="btn-icon">♻️</span> Reset App
+                    </button>
+                </section>
+            </section>
+
+            <section class="more-info">
+                <div class="fun-stats">
+                    <span class="stat-item" title="Number of times the app has been opened.">
+                        <span class="stat-icon">🚀</span> {timesOpened} Opens
+                    </span>
+                    <span class="stat-item" title="Number of times meals have been generated.">
+                        <span class="stat-icon">🍲</span> {timesGenerated} Meals
+                    </span>
+                </div>
+                <div class="version-info">
+                    <p>📦 Version 1.0.0</p>
+                </div>
+            </section>
+
+            <!-- Removed separate close button, using header one -->
+            <!-- <button class="close-btn" on:click={closeModal}>Close</button> -->
         </div>
     </div>
 {/if}
 
 <style>
+    .visually-hidden { /* Added for accessibility */
+        position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+        overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+    }
     .modal-backdrop {
         position: fixed;
-        top: 0; 
-        left: 0;
-        width: 100vw; 
-        height: 100vh;
-        background-color: rgba(0, 0, 0, 0.5);
+        inset: 0; /* Replaces top/left/width/height */
+        background: rgba(10, 8, 30, 0.7); /* Themed backdrop */
+        backdrop-filter: blur(4px);
         z-index: 999;
         display: flex;
         justify-content: center;
         align-items: center;
+        padding: 1rem; /* Padding for smaller screens */
     }
 
     .modal {
-        background: #fff5e1;
-        padding: 1rem;
+        background: #231d52; /* Dark theme background */
+        color: #fff5e1; /* Creamy text */
+        padding: 1.5rem; /* Increased padding */
         border-radius: 1rem;
-        width: 90%;
-        max-width: 340px;
-        box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+        width: 100%; /* Use padding on backdrop */
+        max-width: 360px; /* Slightly wider */
+        box-shadow: 0 5px 25px rgba(0,0,0,0.4); /* Themed shadow */
+        border: 1px solid #4a4090; /* Subtle border */
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem; /* Space between sections */
     }
+
+    .modal-header {
+        display: flex;
+        flex-direction: column; /* Stack button and image */
+        align-items: center;
+        position: relative; /* For absolute positioning of close button */
+        margin-bottom: -0.5rem; /* Pull content up slightly */
+    }
+
+    .header-close-btn {
+        position: absolute;
+        top: -8px; /* Adjust position */
+        right: -8px;
+        background: transparent;
+        border: none;
+        color: #fff5e1a8;
+        cursor: pointer;
+        padding: 0.5rem;
+        margin: 0;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: color 0.2s ease, background-color 0.2s ease;
+    }
+    .header-close-btn:hover, .header-close-btn:focus-visible {
+        color: #fff;
+        background-color: #4a409060;
+        outline: none;
+    }
+    .header-close-btn svg { width: 22px; height: 22px; }
 
     .settings-title-image {
         width: 100%;
-        max-width: 220px;
-        margin: 0 auto 1rem;
+        max-width: 200px; /* Adjusted size */
+        margin-top: 0.5rem; /* Space below close button */
         display: block;
     }
 
-    .setting {
-        margin: 1rem 0;
+    .settings-content {
         display: flex;
-        justify-content: center;
+        flex-direction: column;
+        gap: 1.2rem;
     }
 
-    /* Non delete actions */
+    .toggle-setting {
+        background-color: #2c2663; /* Slightly lighter background */
+        padding: 0.8rem 1rem;
+        border-radius: 0.75rem;
+        border: 1px solid #4a4090;
+    }
+
     .toggle {
         display: flex;
         align-items: center;
+        justify-content: space-between;
         gap: 0.75rem;
         cursor: pointer;
-        position: relative;
         width: 100%;
-        justify-content: space-between;
     }
 
-    .toggle input {
-        display: none;
-    }
+    .toggle input { display: none; }
 
     .slider {
-        width: 50px;
-        height: 28px;
-        background-color: #ccc;
+        width: 48px; /* Adjusted size */
+        height: 26px;
+        background-color: #4a4090; /* Off state color */
         border-radius: 999px;
         position: relative;
         transition: background-color 0.3s ease;
         flex-shrink: 0;
+        border: 1px solid #6a5acd; /* Subtle border */
     }
 
     .slider::before {
         content: "";
         position: absolute;
-        height: 20px;
-        width: 20px;
-        background: white;
+        height: 18px;
+        width: 18px;
+        background: #fff5e1; /* Handle color */
+        box-shadow: 0 1px 3px rgba(0,0,0,0.3);
         border-radius: 50%;
-        top: 4px;
-        left: 4px;
-        transition: transform 0.3s cubic-bezier(0.3, 1.6, 0.5, 1), background 0.3s ease;
+        top: 3px;
+        left: 3px;
+        transition: transform 0.3s cubic-bezier(0.3, 1.6, 0.5, 1);
     }
 
     .toggle input:checked + .slider {
-        background-color: #84e1b7;
+        background-color: #b388eb; /* On state color */
+        border-color: #fff5e1;
     }
 
     .toggle input:checked + .slider::before {
-        transform: translateX(22px);
+        transform: translateX(22px); /* Move handle */
     }
 
     .toggle-label {
-        font-weight: bold;
-        color: #231F47;
-        font-size: 0.95rem;
-    }
-
-    /* Delete buttons */
-    .delete-actions {
-        display: flex;
-        flex-direction: row;
-        gap: 16px;
-        justify-content: space-evenly;
-        align-items: center;
-    }
-    .danger {
-        background: #C40C0C;
-        color: white;
-        padding: 0.75rem 1.25rem;
-        border: none;
-        border-radius: 8px;
-        font-weight: bold;
-        cursor: pointer;
+        font-weight: 600; /* Bolder label */
+        color: #fff5e1;
         font-size: 1rem;
     }
-    .danger.reset {
-        background: none;
-        border: 2px solid #C40C0C;
-        color: #C40C0C;
+
+    /* Delete Buttons Section */
+    .delete-actions {
+        display: grid; /* Use grid for equal width */
+        grid-template-columns: 1fr 1fr;
+        gap: 0.8rem;
+        margin-top: 0.5rem; /* Space above delete buttons */
     }
 
-    .close-btn {
-        margin-top: 1.5rem;
-        width: 100%;
-        padding: 0.75rem;
-        background: #231F47;
-        color: white;
+    .setting-btn { /* Common styles for all settings buttons */
+        padding: 0.7rem 1rem;
         border: none;
-        border-radius: 10px;
-        font-weight: bold;
+        border-radius: 0.6rem;
+        font-weight: 600;
         cursor: pointer;
+        font-size: 0.9rem;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.4rem;
     }
-
-    /* Version Info */
-    .version-info {
-        text-align: center;
-        font-size: 0.8rem;
-        color: #6c648b;
+    .setting-btn:hover:not(:disabled) {
+        transform: translateY(-2px);
+        filter: brightness(1.1);
     }
+     .setting-btn:active:not(:disabled) {
+         transform: translateY(0);
+         filter: brightness(0.95);
+     }
 
-    /* Links */
-    .more-links {
+    .danger { /* Specific danger styles */
+        background: #c0392b; /* Adjusted red */
+        color: white;
+        box-shadow: 0 2px 5px rgba(192, 57, 43, 0.3);
+    }
+    .danger.reset {
+        background: transparent;
+        border: 2px solid #c0392b;
+        color: #e74c3c; /* Lighter red text */
+        box-shadow: none;
+    }
+     .danger.reset:hover {
+         background-color: #c0392b20; /* Subtle hover background */
+         color: #c0392b;
+     }
+
+     .btn-icon { font-size: 1.1em; }
+
+
+    /* More Info Section */
+    .more-info {
+        background-color: #1a163f; /* Darker section bg */
+        padding: 0.8rem 1rem;
+        border-radius: 0.75rem;
+        border: 1px dashed #4a4090; /* Dashed border */
         display: flex;
         flex-direction: column;
-        justify-content: center;
-        gap: 4px;
-        background-color: #f5e5c6;
-        padding: 1rem 1rem;
-        border-radius: 1rem;
+        gap: 0.8rem;
+        margin-top: 0.5rem;
     }
 
     .fun-stats {
         display: flex;
-        flex-direction: row;
-        justify-content: space-between;
-        color: #231F47;
-        font-weight: 500;    
-        gap: 16px;
+        justify-content: space-between; /* Space out stats */
+        align-items: center;
+        flex-wrap: wrap; /* Allow wrapping on small screens */
+        gap: 0.5rem;
     }
 
-    .fun-stats span {
-        background-color: none;
-        border: 2px dashed #6c648b;
-        color: #6c648b;
-        padding: 0.2rem 0.8rem;
-        border-radius: 14px;
-        font-size: 0.9rem;
+    .stat-item {
+        color: #fff5e1b3; /* Semi-transparent text */
+        font-weight: 500;
+        font-size: 0.85rem;
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
     }
-</style>  
+     .stat-icon { font-size: 1.1em; }
+
+    .version-info {
+        text-align: center;
+        font-size: 0.8rem;
+        color: #fff5e180; /* Fainter version text */
+        margin-top: 0.2rem;
+    }
+    .version-info p { margin: 0; }
+
+</style>

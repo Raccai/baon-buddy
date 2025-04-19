@@ -40,8 +40,16 @@
     cursor: pointer;
   }
 
-  .active {
-    color: #ffd43b;
-    font-weight: bold;
+  /* Standard responsive media queries */
+  @media (min-width: 700px) and (min-height: 1000px) {
+    button {
+      font-size: 2.2rem;
+    }
+  }
+
+  @media (min-width: 900px) and (min-height: 1300px) {
+    button {
+      font-size: 3rem;
+    }
   }
 </style>

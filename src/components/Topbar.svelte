@@ -96,4 +96,49 @@
     50%  { transform: scale(0.9); }
     100% { transform: scale(0.7); }
   }
+
+  /* Standard responsive media queries */
+  @media (min-width: 700px) and (min-height: 1000px) {
+    .topbar {
+      height: 90px;
+    }
+
+    .app-title {
+      height: auto;
+      width: auto;
+      max-width: 140px;
+      margin: 0;
+    }
+
+    .topbar-buttons {
+      gap: 2rem;
+      margin-right: 2rem;
+    }
+
+    span {
+      transform: scale(1.2);
+    }
+  }
+
+  @media (min-width: 900px) and (min-height: 1300px) {
+    .topbar {
+      height: 140px;
+    }
+
+    .app-title {
+      height: auto;
+      width: auto;
+      max-width: 200px;
+      margin: 0;
+    }
+
+    .topbar-buttons {
+      gap: 4rem;
+      margin-right: 2rem;
+    }
+
+    span {
+      transform: scale(1.6);
+    }
+  }
 </style>

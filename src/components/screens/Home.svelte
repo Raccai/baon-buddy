@@ -1,376 +1,268 @@
 <script>
-  import Topbar from '../Topbar.svelte';
   import Sparkle from '../../assets/Sparkle.svelte';
   import Tala from "/characters/Tala.png";
   import BaonCard from '../BaonCard.svelte';
   import TalaQuote from '../TalaQuote.svelte';
-  import Toast from '../Toast.svelte';
   import { incrementCounter } from '../../lib/storage';
   import { meals } from "../../lib/meals.js";
   import { getFavorites } from '../../lib/storage';
-  import RecipeSheet from '../RecipeSheet.svelte';
+  import { createEventDispatcher } from 'svelte';
 
-  let showRecipe = false;
-  let selectedMeal = null;
+  const dispatch = createEventDispatcher();
+
   let favoriteNames = getFavorites().map(meal => meal.name);
   let suggestedMeals = [];
   let bounce = false;
 
-  function openRecipe(meal) {
-    selectedMeal = meal;
-    showRecipe = true;
-  }
-
-  function closeRecipe() {
-    showRecipe = false;
+  function dispatchViewRecipe(meal) {
+    dispatch('viewRecipe', meal); // Dispatch event up to App.svelte
   }
 
   function generateMeals() {
+    if (!meals || meals.length === 0) {
+        suggestedMeals = [];
+        return;
+    }
     suggestedMeals = [...meals].sort(() => 0.5 - Math.random()).slice(0, 1);
+
     bounce = false;
     requestAnimationFrame(() => bounce = true);
     incrementCounter("baonMealGenerations");
   }
 
-  generateMeals();
+  generateMeals(); // Generate initial meal
 </script>
 
-<main>
-  <div class="character-space">
-    <img src={Tala} alt="Tala" class="tala-floating">
-  </div>
-
-  <div class="card-container">
-    {#each suggestedMeals as meal (meal.name)}
-      <BaonCard
-        on:viewRecipe={(e) => openRecipe(e.detail)}
-        {meal} 
-        {favoriteNames} 
-        triggerBounce={bounce}
-        on:faveChange={() => {
-          favoriteNames = getFavorites().map(meal => meal.name);
-        }}
-      />
-    {/each}
-  </div>
-
-  <TalaQuote />
-  <RecipeSheet visible={showRecipe} meal={selectedMeal} on:close={closeRecipe} />
-  <Toast />
-
+<div class="home-wrapper">
   <!-- Background Effects -->
   <div class="stars-bg">
-    {#each Array(40) as _, i}
-      <div class="circle-star" style="top: {Math.random() * 100}%; left: {Math.random() * 100}%; animation-delay: {Math.random() * 3}s;"></div>
-    {/each}
-    {#each Array(20) as _, i}
-      <div class="sparkle-star" style="top: {Math.random() * 100}%; left: {Math.random() * 100}%; width: {14 + Math.random() * 12}px; height: {14 + Math.random() * 12}px; animation-delay: {Math.random() * 3}s;">
-        <Sparkle />
-      </div>
-    {/each}
+    {#each Array(40) as _, i} <div class="circle-star" style="top: {Math.random() * 100}%; left: {Math.random() * 100}%; animation-delay: {Math.random() * 3}s;"></div> {/each}
+    {#each Array(20) as _, i} <div class="sparkle-star" style="top: {Math.random() * 100}%; left: {Math.random() * 100}%; width: {14 + Math.random() * 12}px; height: {14 + Math.random() * 12}px; animation-delay: {Math.random() * 3}s;"><Sparkle /></div> {/each}
   </div>
-
   <div class="dust-layer">
-    {#each Array(50) as _, i}
-      <div class="dust" style="top: {Math.random() * 100}%; left: {Math.random() * 100}%; animation-delay: {Math.random() * 5}s; animation-duration: {5 + Math.random() * 10}s;"></div>
-    {/each}
+    {#each Array(50) as _, i} <div class="dust" style="top: {Math.random() * 100}%; left: {Math.random() * 100}%; animation-delay: {Math.random() * 5}s; animation-duration: {5 + Math.random() * 10}s;"></div> {/each}
   </div>
-
   <div class="flow-lines-bg">
-    <svg viewBox="0 0 100 100" preserveAspectRatio="none" class="flow-svg" style="top: -250px;">
-      <path d="M0,40 C25,20 75,60 100,40 L100,60 C75,80 25,20 0,60 Z" class="flow-fill" />
-    </svg>
-    <svg viewBox="0 0 100 100" preserveAspectRatio="none" class="flow-svg" style="top: 20px;">
-      <path d="M0,40 C40,20 70,70 100,40 L100,60 C20,80 70,50 0,60 Z" class="flow-fill" />
-    </svg>
-    <svg viewBox="0 0 100 100" preserveAspectRatio="none" class="flow-svg" style="top: 340px;">
-      <path d="M0,40 C20,15 80,65 100,40 L100,60 C70,85 30,15 0,60 Z" class="flow-fill" />
-    </svg>
+    <svg viewBox="0 0 100 100" preserveAspectRatio="none" class="flow-svg" style="top: -250px;"><path d="M0,40 C25,20 75,60 100,40 L100,60 C75,80 25,20 0,60 Z" class="flow-fill" /></svg>
+    <svg viewBox="0 0 100 100" preserveAspectRatio="none" class="flow-svg" style="top: 20px;"><path d="M0,40 C40,20 70,70 100,40 L100,60 C20,80 70,50 0,60 Z" class="flow-fill" /></svg>
+    <svg viewBox="0 0 100 100" preserveAspectRatio="none" class="flow-svg" style="top: 340px;"><path d="M0,40 C20,15 80,65 100,40 L100,60 C70,85 30,15 0,60 Z" class="flow-fill" /></svg>
   </div>
-</main>
+  <!-- End Background Effects -->
+
+  <!-- Content Area -->
+  <div class="home-content">
+      <div class="character-space">
+        <img src={Tala} alt="Tala" class="tala-floating"> <!-- Animation applied here -->
+      </div>
+
+      <div class="card-container">
+        {#if suggestedMeals.length > 0}
+          {#each suggestedMeals as meal (meal.name)}
+            <BaonCard
+              on:viewRecipe={(e) => dispatchViewRecipe(e.detail)}
+              {meal}
+              {favoriteNames}
+              triggerBounce={bounce}
+              on:faveChange={() => {
+                favoriteNames = getFavorites().map(m => m.name);
+              }}
+            />
+          {/each}
+        {:else}
+           <div class="no-meal-placeholder">Loading Baon...</div> <!-- Placeholder -->
+        {/if}
+
+        <button
+          class="randomize-btn"
+          on:click={generateMeals}
+        >
+          Suggest Baon ✨
+        </button>
+      </div>
+
+      <!-- Position TalaQuote relative to other elements -->
+      <TalaQuote />
+  </div>
+</div>
 
 <style lang="css">
-  main {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-  }
-
-  /* Stars, Twinkling, and Clouds Styling */
-  .stars-bg {
-    position: absolute;
-    top: 0;
-    left: 0;
+  .home-wrapper {
     width: 100%;
     height: 100%;
-    pointer-events: none;
+    position: relative;
     overflow: hidden;
+    display: flex;
+    background: linear-gradient(160deg, #2c2663 0%, #4a4090 40%, #b388eb 100%);
   }
 
-  .circle-star {
-    position: absolute;
-    width: 4px;
-    height: 4px;
-    background: white;
-    border-radius: 50%;
-    opacity: 0.6;
-    animation: twinkle 2s infinite ease-in-out;
-    z-index: 3;
+  .home-content {
+      width: 100%;
+      height: 100%;
+      position: relative; /* Crucial for absolute positioning children */
+      z-index: 1;
+       display: flex; /* Use flex mainly for alignment fallback */
+       flex-direction: column;
+       align-items: center;
+       /* We will use absolute positioning primarily */
+       justify-content: flex-end; /* Align items towards bottom initially */
   }
 
-  .sparkle-star {
-    position: absolute;
-    width: 20px;
-    height: 20px;
-    opacity: 0.7;
-    animation: twinkle 3s infinite ease-in-out;
-    z-index: 1;
+  /* Background Effects */
+  .stars-bg, .dust-layer, .flow-lines-bg {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    pointer-events: none; overflow: hidden; z-index: 0;
   }
-
+  .flow-fill { fill: rgba(255, 245, 225, 0.08); } /* Even subtler */
+  .dust { background-color: rgba(255, 245, 225, 0.1); }
+  .circle-star { background: rgba(255, 245, 225, 0.7); }
+  .sparkle-star :global(svg) { fill: rgba(255, 245, 225, 0.8); }
   @keyframes twinkle {
-    0%, 100% {
-      opacity: 0.3;
-      transform: scale(1);
-    }
-    50% {
-      opacity: 1;
-      transform: scale(1.3);
-    }
+    0%, 100% { opacity: 0.3; transform: scale(0.9); }
+    50% { opacity: 1; transform: scale(1.1); }
   }
-
-  /* BG flowy lines */
-  .flow-lines-bg {
-    position: absolute;
-    top: 0;
-    left: 0;
-    display: flex;
-    width: 100%;
-    height: 100%;
-    z-index: 0;
-    pointer-events: none;
-    opacity: 0.32;
-  }
-
-  .flow-lines-bg svg {
-    width: 100%;
-    height: 100%;
-  }
-
-  .flow-svg {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-  }
-
-  .flow-fill {
-    fill: #231d52a9; /* very subtle white */
-  }
-
-  /* Dust Particles */
-  .dust-layer {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    z-index: 0;
-    pointer-events: none;
-    overflow: hidden;
-  }
-
-  .dust {
-    position: absolute;
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background-color: rgba(255, 255, 255, 0.08);
-    animation: floatDust linear infinite;
-  }
-
   @keyframes floatDust {
-    0% { transform: translateX(0) translateY(0); opacity: 0.2; }
-    50% { opacity: 0.6; }
-    100% { transform: translateX(-100vw) translateY(-100vh); opacity: 0; }
+    0% { transform: translate(0, 0); opacity: 0.1; }
+    50% { opacity: 0.4; }
+    100% { transform: translate(-30vw, -60vh) scale(0.5); opacity: 0; }
   }
 
-  /* Baon Card Container */
+
+  /* Content Positioning & Sizing */
+
   .card-container {
+    position: absolute;
+    /* Base bottom position: consider navbar height + safe area + desired gap */
+    /* Let's use rems and safe-area */
+    bottom: calc(env(safe-area-inset-bottom, 0rem) + 5.5rem); /* Approx 70px navbar + 1rem gap */
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    max-width: 380px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    width: 100%;
-    position: absolute;
-    bottom: 140px;
-    left: 0;
-    right: 0;
     z-index: 5;
+    gap: 0.8rem;
   }
 
-  /* Tala character + animation */
+  .no-meal-placeholder { /* Style for when no meal is suggested yet */
+      background-color: rgba(255, 245, 225, 0.8);
+      color: #4a4090;
+      padding: 2rem 1rem;
+      border-radius: 1rem;
+      text-align: center;
+      font-weight: 500;
+      min-height: 150px; /* Give it some size */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+  }
+
   .character-space {
     position: absolute;
-    top: 0;
-    left: 0;
-    height: 100%;
-    width: 100%;
-    z-index: 4;
-    display: flex;
+    /* Position Tala relative to the card container's top */
+    /* This requires knowing card height or estimating, and I'm cooked */
+    /* Alternative: Position relative to bottom, above card container, but will experiment */
+    bottom: calc(env(safe-area-inset-bottom, 0rem) + 18rem); /* Trial and error for now */
+    left: 50%;
+    transform: translateX(-50%);
+    /* Let height be intrinsic, control via image max-height */
+    height: auto;
+    width: 80%; /* Control width */
+    max-width: 300px; /* Max width for Tala */
+    z-index: 4; /* Below card */
+    display: flex; /* Center image inside */
     justify-content: center;
     align-items: flex-end;
     pointer-events: none;
-    overflow: hidden;
   }
 
   .tala-floating {
-    height: auto;
-    max-height: 58vh; /* Reduced from 62vh */
-    width: auto;
-    max-width: 100%;
+    display: block;
+    width: 100%; /* Fill character-space width */
+    max-width: 100%; /* Ensure it doesn't exceed container */
+    height: auto; /* Maintain aspect ratio */
+    max-height: 45vh; /* Limit height based on viewport */
+    object-fit: contain;
+    /* --- Animation is correctly applied here --- */
     animation: bob 3s ease-in-out infinite;
-    pointer-events: none;
-    user-select: none;
-    position: absolute;
-    bottom: 280px; /* Adjusted position */
-    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.15));
-    z-index: 10;
+    filter: drop-shadow(0 5px 10px rgba(0, 0, 0, 0.2));
   }
-
   @keyframes bob {
-    0%, 100% {
-      transform: translateY(0px);
-    }
-    50% {
-      transform: translateY(-6px);
-    }
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-8px); }
   }
 
-  /* Improved media queries for different device sizes */
-  /* For tall screens (portrait orientation) */
-  @media (min-aspect-ratio: 1/2) and (min-height: 700px) {
-    .tala-floating {
-      max-height: 50vh;
-      bottom: 280px;
-    }
+  /* Reverted Button Style */
+  .randomize-btn {
+    padding: 0.8rem 1.5rem;
+    font-size: 1rem;
+    background-color: #231d52; /* Theme primary */
+    color: #fff5e1;
+    border: 1px solid #4a4090; /* Theme border */
+    border-radius: 2rem; /* Pill shape */
+    cursor: pointer;
+    font-weight: 600; /* Bolder */
+    /* Themed shadow + glow */
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2), 0 0 15px rgba(255, 245, 225, 0.15);
+    transition: all 0.2s ease;
+    z-index: 5; /* Ensure button is clickable */
+  }
+  .randomize-btn:hover, .randomize-btn:focus-visible {
+    background: #3a3375; /* Lighter hover */
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), 0 0 20px rgba(255, 245, 225, 0.25);
+    outline: none;
+  }
+  .randomize-btn:active {
+    transform: translateY(0px) scale(0.97); /* Add active scale */
+    background-color: #4f46a8; /* Darker active */
+    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.2), 0 0 10px rgba(255, 245, 225, 0.1);
   }
 
-  /* For standard screens */
-  @media (min-aspect-ratio: 2/3) {
-    .tala-floating {
-      max-height: 50vh;
-      bottom: 250px;
-    }
+  /* Position TalaQuote */
+  :global(.tala-quote-container) {
+      position: absolute;
+      /* Position slightly above character-space */
+      bottom: calc(env(safe-area-inset-bottom, 0rem) + 20rem + 30vh); /* Adjust this complex calc */
+      width: 80%;
+      max-width: 350px; /* Adjust max width */
+      z-index: 6; /* Above character */
+      left: 50%;
+      transform: translateX(-50%);
+      color: #fff;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.4);
+      pointer-events: none; /* Prevent interfering with clicks */
+      text-align: center;
   }
 
-  /* For wider screens */
-  @media (min-aspect-ratio: 4/3) {
-    .tala-floating {
-      max-height: 45vh;
-      bottom: 200px;
-    }
+
+  /* --- Media Queries for Responsive Adjustments --- */
+  /* Focus on adjusting vertical positions and max-heights */
+
+  /* Medium Height Screens */
+  @media (max-height: 800px) {
+    .character-space { bottom: calc(env(safe-area-inset-bottom, 0rem) + 16rem); }
+    .tala-floating { max-height: 40vh; }
+    :global(.tala-quote-container) { bottom: calc(env(safe-area-inset-bottom, 0rem) + 18rem + 25vh); }
   }
 
-  /* For very wide screens */
-  @media (min-aspect-ratio: 16/9) {
-    .tala-floating {
-      max-height: 30vh;
-      bottom: 150px;
-    }
+  /* Shorter Screens */
+  @media (max-height: 700px) {
+    .character-space { bottom: calc(env(safe-area-inset-bottom, 0rem) + 15rem); }
+    .tala-floating { max-height: 35vh; }
+    :global(.tala-quote-container) { bottom: calc(env(safe-area-inset-bottom, 0rem) + 17rem + 20vh); }
+    .card-container { bottom: calc(env(safe-area-inset-bottom, 0rem) + 4.5rem); }
   }
 
-  /* Specific media queries for problem devices */
-  /* iPhone SE and similar small devices */
-  @media (max-height: 700px) and (max-width: 375px) {
-    .tala-floating {
-      max-height: 56vh;
-      bottom: 160px;
-    }
-    
-    .card-container {
-      bottom: 120px;
-    }
-  }
-  
-  /* iPhone 12 Pro and similar devices */
-  @media (min-height: 800px) and (max-height: 850px) and (max-width: 400px) {
-    .tala-floating {
-      max-height: 62vh;
-      bottom: 220px;
-    }
-    
-    .card-container {
-      bottom: 130px;
-    }
-  }
-
-  /* Samsung S8+ and similar devices */
-  @media (max-height: 800px) and (max-width: 400px) {
-    .tala-floating {
-      max-height: 52vh;
-      bottom: 220px;
-    }
-    
-    .card-container {
-      bottom: 130px;
-    }
-  }
-
-  /* For short screens, regardless of width */
+  /* Very Short Screens */
   @media (max-height: 600px) {
-    .tala-floating {
-      max-height: 30vh;
-      bottom: 120px;
-    }
-    
-    .card-container {
-      bottom: 80px;
-    }
+    .character-space { bottom: calc(env(safe-area-inset-bottom, 0rem) + 14rem); }
+    .tala-floating { max-height: 30vh; }
+    :global(.tala-quote-container) { display: none; } /* Hide quote if too cramped */
+    .card-container { bottom: calc(env(safe-area-inset-bottom, 0rem) + 4rem); }
+    .randomize-btn { padding: 0.7rem 1.3rem; font-size: 0.95rem;}
   }
 
-  @media (max-height: 500px) {
-    .tala-floating {
-      max-height: 25vh;
-      bottom: 100px;
-    }
-    
-    .card-container {
-      bottom: 70px;
-    }
-  }
-
-  /* For extremely short screens */
-  @media (max-height: 400px) {
-    .tala-floating {
-      max-height: 20vh;
-      bottom: 90px;
-    }
-    
-    .card-container {
-      bottom: 60px;
-    }
-  }
-
-  /* For wide but short screens - addresses the specific issue mentioned */
-  @media (max-height: 1400px) and (min-width: 800px) {
-    .tala-floating {
-      max-height: 68vh;
-      bottom: 240px;
-    }
-  }
-
-  @media (max-height: 800px) and (min-width: 1280px) {
-    .tala-floating {
-      max-height: 54vh;
-      bottom: 220px;
-    }
-
-    main {
-      flex-direction: row;
-    }
-  }
-
-  @media (max-height: 1400px) and (min-width: 900px) {
-    .card-container {
-      bottom: 160px;
-    }
-  }
 </style>

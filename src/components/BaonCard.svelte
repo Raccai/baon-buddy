@@ -4,10 +4,13 @@
     import { showToast } from "../lib/toast";
     import { markMealAsSeen, getSeenMEals } from "../lib/storage";
     import { createEventDispatcher } from "svelte";
-    import { isFavorite, saveFavorite, removeFavorite } from "../lib/storage";
-    
-    export let triggerBounce = false;
+    import { saveFavorite, removeFavorite } from "../lib/storage";
+    import { tagStyles } from "../lib/tags";
+
     export let meal;
+    $: tagData = meal && meal.type ? tagStyles[meal.type] : null;
+
+    export let triggerBounce = false;
     export let favoriteNames = [];
     
     const dispatch = createEventDispatcher();
@@ -85,24 +88,6 @@
         }
         dispatch("faveChange")
     }
-
-    // Determines badge type/class
-    function getBadgeClass(type) {
-        switch (type.toLowerCase()) {
-            case 'classic':
-                return 'badge-classic';
-            case 'budget':
-                return 'badge-budget';
-            case 'quick':
-                return 'badge-quick';
-            case 'healthy':
-                return 'badge-healthy';
-            case 'instant':
-                return 'badge-instant';
-            default:
-                return 'badge-default';
-        }
-    }
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -128,7 +113,9 @@
 
     <div class="baon-info">
         <h2 class="meal-name">{meal.name}</h2>
-        <span class="meal-type {getBadgeClass(meal.type)}">{meal.type}</span>
+        <span class="meal-type" style="background-color: {tagData?.color}">
+            {tagData?.label || meal.type}
+        </span>
         <p class="meal-message">{meal.message}</p>
         
         <div class="button-container">
@@ -167,74 +154,121 @@
 
 <style>
     .baon-card {
-        display: flex;
-        flex-direction: row;
+        display: flex; /* Use flex row */
+        justify-content: center;
+        align-items: center;
+        gap: 1rem; /* Space between image and info columns */
         background: #fff5e1;
         border-radius: 1rem;
-        padding: 1.5rem;
-        margin: 1rem 0;
-        box-shadow: 0 2px 20px #151032;
+        padding: 1rem; /* Adjusted padding */
+        /* margin: 1rem 0; Removed vertical margin */
+        box-shadow: 0 4px 15px rgba(35, 31, 71, 0.2); /* Softer shadow */
         position: relative;
-        width: 320px;
-        z-index: 5;
+        width: 100%; /* Fill the grid cell width */
+        max-width: 500px; /* Max width controlled by parent grid */
+        box-sizing: border-box; /* Include padding in width */
+        z-index: 1; /* Base z-index */
+        border: 1px solid #eee; /* Subtle border */
     }
 
-    .top-row {
+    .image-column {
         display: flex;
         flex-direction: column;
         justify-content: center;
         align-items: center;
+        flex-shrink: 0; /* Prevent shrinking */
+        width: 90px; /* Fixed width for image column */
     }
 
     .meal-image {
-        width: 120px;
-        height: 120px;
-        object-fit: contain;
-        border-radius: 12px;
+        width: 100%; /* Fill the column width */
+        height: 90px; /* Fixed height */
+        object-fit: contain; /* Show whole image */
+        border-radius: 10px; /* Softer radius */
+    }
+    .emoji {
+        font-size: 3.5rem; /* Larger emoji */
+        line-height: 1;
     }
 
-    /* Button container for side-by-side buttons */
+    .info-column {
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1; /* Take remaining space */
+        justify-content: center; /* Center content vertically */
+        align-items: flex-start; /* Align text left */
+        min-width: 0; /* Prevent overflow */
+        gap: 0.3rem; /* Space between info elements */
+    }
+
+    .meal-name {
+        margin: 0; /* Reset margin */
+        font-size: 1.25rem; /* Good default size */
+        font-weight: 700; /* Bolder */
+        color: #231F47;
+        line-height: 1.3;
+    }
+
+    .meal-type {
+        font-size: 0.8rem;
+        padding: 0.2rem 0.7rem;
+        text-transform: capitalize;
+        border-radius: 1rem; /* Pill shape */
+        font-weight: 500;
+        line-height: 1.2;
+        display: inline-block; /* Respect padding */
+        margin-bottom: 0.2rem; /* Space below tag */
+    }
+
+    .meal-message {
+        font-style: italic;
+        margin: 0.2rem 0 0.5rem 0; /* Adjusted margin */
+        color: #4d467c; /* Slightly lighter message color */
+        font-size: 0.9rem;
+        line-height: 1.4;
+    }
+
     .button-container {
         display: flex;
-        justify-content: center;
-        gap: 16px;
-        margin-top: 8px;
+        justify-content: flex-start; /* Align buttons left */
+        gap: 0.5rem; /* Smaller gap */
+        margin-top: auto; /* Push buttons to bottom if needed */
+        padding-top: 0.3rem; /* Space above buttons */
     }
 
-    /* Heart Button */
-    .heart-btn {
+    /* Heart Button & Recipe Button Base Styles */
+    .heart-btn, .recipe-btn {
         background: none;
         border: none;
         cursor: pointer;
-        padding: 4px;
-        padding-bottom: 1px;
+        padding: 6px; /* Increase touch area */
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: transform 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+        position: relative; /* For sparkle wrapper */
     }
-
-    .heart-btn span {
-        display: inline-block;
-        transition: transform 0.2s ease-in-out;
+    .heart-btn:hover, .recipe-btn:hover {
+        background-color: rgba(35, 31, 71, 0.08); /* Subtle hover */
+        transform: scale(1.1);
     }
-
-    .heart-btn span.active {
-        animation: pop 0.3s ease;
+    
+    /* Heart Button Specifics */
+    .heart-btn span { display: inline-block; transition: transform 0.2s ease-in-out; }
+    .heart-btn span.active { animation: pop 0.3s ease; }
+    .heart-btn :global(svg) { /* Style SVGs inside button */
+        width: 24px;
+        height: 24px;
+        display: block;
     }
 
     /* Recipe Button */
-    .recipe-btn {
-        background: none;
-        border: none;
-        cursor: pointer;
-        padding: 4px;
-        transition: transform 0.2s ease;
-    }
-
-    .recipe-btn:hover {
-        transform: scale(1.1);
-    }
-
-    .recipe-btn svg {
-        width: 24px;
-        height: 24px;
+    .recipe-btn { 
+        color: #231F47; 
+    } 
+    .recipe-btn svg { 
+        width: 22px; height: 22px; display: block; 
     }
 
     @keyframes pop {
@@ -274,37 +308,6 @@
         color: #231F47;
     }
 
-    /* Base styles for each type */
-    .badge-classic {
-        background-color: #231F47;
-        color: white;
-    }
-
-    .badge-budget {
-        background-color: #ff4d4f;
-        color: white;
-    }
-
-    .badge-quick {
-        background-color: #ffafcc;
-        color: #231F47;
-    }
-
-    .badge-healthy {
-        background-color: #ffe066;
-        color: #231F47;
-    }
-
-    .badge-instant {
-        background-color: #845ec2;
-        color: white;
-    }
-
-    .badge-default {
-        background-color: #999;
-        color: white;
-    }
-
     /* Bounce animation */
     .bounce {
         animation: bounceCard 0.4s ease;
@@ -318,13 +321,15 @@
     }
 
     /* Heart Sparkle Animations */
-    .sparkle-wrapper {
+    .sparkle-wrapper { /* Position relative to heart button */
         position: absolute;
-        top: 74%;
-        right: 50%;
-        transform: translate(-50%, -50%);
+        bottom: 80%; /* Position above the button */
+        left: 50%;
+        transform: translateX(-50%);
         pointer-events: none;
         z-index: 10;
+        width: 40px; /* Give wrapper some size */
+        height: 40px;
     }
 
     .sparkle {
@@ -390,174 +395,17 @@
     }
 
     /* Standard responsive media queries */
-    @media (max-width: 410px) {
+    @media (max-width: 360px) { /* Adjust for very small phones */
         .baon-card {
-            width: 80vw;
-            padding: 1.2rem;
-        }
-
-        .meal-name {
-            font-size: 1.2rem;
-            text-align: center;
-        }
-
-        .meal-message {
-            font-size: 0.9rem;
-            text-align: center;
-        }
-
-        .meal-type {
-            font-size: 0.85rem;
-            padding: 6px 12px;
-        }
-
-        .meal-image {
-            width: 90px;
-            height: 90px;
-        }
-
-        .emoji {
-            font-size: 2.2rem;
-        }
-    }
-
-    /* For short but wide screens */
-    @media (max-height: 600px) and (min-width: 700px) {
-        .baon-card {
-            width: 360px; /* Slightly larger for wide screens */
-            padding: 1.2rem;
-        }
-        
-        .meal-image {
-            width: 100px;
-            height: 100px;
-        }
-    }
-
-    /* For very short screens */
-    @media (max-height: 500px) {
-        .baon-card {
-            padding: 1rem;
-        }
-        
-        .meal-name {
-            font-size: 1.1rem;
-            margin: 0.3rem 0 0.2rem;
-        }
-        
-        .meal-message {
-            font-size: 0.85rem;
-            margin-top: 0.3rem;
-        }
-        
-        .meal-type {
-            font-size: 0.8rem;
-            padding: 5px 10px;
-        }
-        
-        .meal-image {
-            width: 80px;
-            height: 80px;
-        }
-        
-        .emoji {
-            font-size: 2rem;
-        }
-    }
-
-    /* For extremely small screens */
-    @media (max-height: 400px) and (max-width: 320px) {
-        .baon-card {
-            width: 85vw;
             padding: 0.8rem;
+            gap: 0.7rem;
         }
-        
-        .meal-image {
-            width: 60px;
-            height: 60px;
-        }
-        
-        .meal-name {
-            font-size: 1rem;
-        }
-        
-        .meal-message {
-            font-size: 0.8rem;
-        }
-        
-        .emoji {
-            font-size: 1.8rem;
-        }
-    }
-
-    /* For wide but short screens - addresses the specific issue mentioned */
-    @media (max-height: 1400px) and (min-width: 800px) {
-        .baon-card {
-            width: 85vw;
-            display: flex;
-            justify-content: center;
-            gap: 1.2rem;
-        }
-
-        .meal-image {
-            width: 160px;
-            height: 160px;
-        }
-        
-        .meal-name {
-            font-size: 3rem;
-        }
-        
-        .meal-message {
-            font-size: 2rem;
-        }
-        
-        .emoji {
-            font-size: 3rem;
-        }
-
-        .meal-type {
-            font-size: 1.4rem;
-        }
-        
-        .button-container {
-            gap: 24px;
-        }
-        
-        .recipe-btn svg,
-        .heart-btn svg {
-            width: 32px;
-            height: 32px;
-        }
-    }
-
-    @media (max-height: 800px) and (min-width: 1280px) {
-        .baon-card {
-            width: 85vw;
-            display: flex;
-            justify-content: center;
-            gap: 1.2rem;
-        }
-
-        .meal-image {
-            width: 160px;
-            height: 160px;
-        }
-        
-        .meal-name {
-            font-size: 1.8rem;
-        }
-        
-        .meal-message {
-            font-size: 1.2rem;
-        }
-        
-        .emoji {
-            font-size: 2rem;
-        }
-
-        .meal-type {
-            font-size: 1rem;
-        }
+        .image-column { width: 75px; }
+        .meal-image { height: 75px; }
+        .emoji { font-size: 3rem; }
+        .meal-name { font-size: 1.1rem; }
+        .meal-message { font-size: 0.85rem; }
+        .button-container { gap: 0.3rem; }
+        .heart-btn :global(svg), .recipe-btn svg { width: 20px; height: 20px; }
     }
 </style>

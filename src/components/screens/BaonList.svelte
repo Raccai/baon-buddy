@@ -3,24 +3,20 @@
   import BaonCard from '../BaonCard.svelte';
   import { getFavorites } from "../../lib/storage";
   import RecipeSheet from "../RecipeSheet.svelte";
-  import { onMount, onDestroy } from 'svelte';
-  import { scale, fade } from "svelte/transition";
+  import { tagStyles } from "../../lib/tags.js";
+  import { fade } from 'svelte/transition';
 
-  let search = '';
   let selectedFilters = [];
-  let filteredMeals = meals;
+  let filteredMeals = meals; // Initial state
   let selectedMeal = null;
   let showRecipe = false;
   let favoriteNames = getFavorites().map(meal => meal.name);
-  let showSearch = false;
 
-  const allTags = ['budget', 'classic', 'quick', 'healthy', 'instant'];
+  const allTags = Object.keys(tagStyles);
 
-  // Update filteredMeals whenever search/filter changes
   $: filteredMeals = meals.filter(meal => {
-    const matchSearch = meal.name.toLowerCase().includes(search.toLowerCase());
     const matchFilter = selectedFilters.length === 0 || selectedFilters.includes(meal.type);
-    return matchSearch && matchFilter;
+    return matchFilter;
   });
 
   function toggleFilter(tag) {
@@ -31,19 +27,6 @@
     }
   }
 
-  function handleWindowClick(e) {
-    const isInsideControls = e.target.closest('.fixed-controls');
-    if (!isInsideControls) showSearch = false;
-  }
-
-  onMount(() => {
-    window.addEventListener('click', handleWindowClick);
-  });
-
-  onDestroy(() => {
-    window.removeEventListener('click', handleWindowClick);
-  });
-
   function openRecipe(meal) {
     selectedMeal = meal;
     showRecipe = true;
@@ -53,128 +36,174 @@
     showRecipe = false;
   }
 
-  const tagLabels = {
-    budget: "Budget",
-    classic: "Classic",
-    quick: "Quick",
-    healthy: "Healthy",
-    instant: "Instant"
-  };
-
-  function getColor(tag) {
-    const map = {
-      budget: "#FFBB33",
-      classic: "#FF6666",
-      quick: "#CC4444",
-      healthy: "#55CC99",
-      instant: "#3399FF"
-    };
-    return map[tag] || "#666";
+  function refreshFavorites() {
+      favoriteNames = getFavorites().map(meal => meal.name);
   }
+
 </script>
 
-<div class="baonlist-wrapper">
-  <!-- Filters -->
+<!-- ADDED baonlist-page wrapper back -->
+<div class="baonlist-page">
+  <!-- Sticky Filter Controls -->
   <div class="fixed-controls">
     <div class="filters-scroll">
       <div class="filters-inner">
+        <button class:selected={selectedFilters.length === 0} class="filter-all-btn" on:click={() => selectedFilters = []}>All</button>
         {#each allTags as tag}
-          <button
-            class:selected={selectedFilters.includes(tag)}
-            on:click={() => toggleFilter(tag)}
-            style="background-color: {getColor(tag)}"
-          >
-            {tagLabels[tag]}
-          </button>
+          {#if tagStyles[tag]}
+            <button
+              class="filter-tag-btn"
+              class:selected={selectedFilters.includes(tag)}
+              on:click={() => toggleFilter(tag)}
+              style="--tag-bg-color: {tagStyles[tag].color}; --tag-text-color: {tagStyles[tag].textColor || '#fff'}"
+            >
+              {tagStyles[tag].label || tag}
+            </button>
+          {/if}
         {/each}
       </div>
     </div>
   </div>
 
+  <!-- Main Content Area - Scrollable -->
   <div class="baonlist-container">
-    <!-- Meal Cards -->
-    <div class="meals-grid">
-      {#each filteredMeals as meal (meal.name)}
-        <BaonCard 
-          {meal} 
-          on:viewRecipe={(e) => openRecipe(e.detail)} 
-          {favoriteNames}
-        />
-      {/each}
-    </div>
+    {#if filteredMeals.length > 0}
+      <div class="meals-grid">
+        {#each filteredMeals as meal (meal.name)}
+          <BaonCard
+            on:viewRecipe={(e) => openRecipe(e.detail)}
+            {meal}
+            {favoriteNames}
+            on:faveChange={refreshFavorites}
+          />
+        {/each}
+      </div>
+    {:else}
+      <div class="no-results" transition:fade>
+          <p>No Baon matches your filters!</p>
+          <span>Try selecting different tags.</span>
+      </div>
+    {/if}
   </div>
-</div>
+</div> <!-- End baonlist-page -->
 
-<RecipeSheet 
-  visible={showRecipe} 
-  meal={selectedMeal} 
+<RecipeSheet
+  visible={showRecipe}
+  meal={selectedMeal}
   on:close={closeRecipe}
 />
 
 <style>
+  /* Style the root wrapper to fill space from App.svelte */
+  .baonlist-page {
+    height: 100%;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* Important: Prevents double scrollbars */
+    background-color: #1a163f; /* Set background here if needed */
+  }
+
   .fixed-controls {
+    /* Position: sticky is now relative to baonlist-page */
     position: sticky;
     top: 0;
-    z-index: 9;
-    background: #191337;
-    padding: 1.25rem 0 0.75rem 0;
-    box-sizing: border-box;
+    z-index: 10;
+    background: linear-gradient(to bottom, #231d52, #231d52f0);
+    padding: 0.75rem 0;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.4);
+    flex-shrink: 0;
   }
 
   .filters-scroll {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
   }
+  .filters-scroll::-webkit-scrollbar { display: none; }
 
   .filters-inner {
     display: flex;
-    gap: 0.5rem;
-    padding: 0 1rem; /* LEFT and RIGHT GAPS */
+    gap: 0.6rem;
+    padding: 0.2rem 1rem;
     width: max-content;
   }
 
-  .filters-scroll::-webkit-scrollbar {
-    display: none;
+  .filters-inner button {
+    padding: 0.5rem 1rem;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    font-weight: 600;
+    white-space: nowrap;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    opacity: 0.8;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
   }
 
-  .filters-inner button {
-    padding: 0.4rem 0.9rem;
-    border-radius: 999px;
-    border: none;
-    font-weight: bold;
-    white-space: nowrap;
-    color: #fff;
-    opacity: 0.9;
-    font-size: 0.85rem;
-    flex-shrink: 0;
+  .filter-tag-btn {
+    background-color: var(--tag-bg-color);
+    color: var(--tag-text-color);
+    border-color: color-mix(in srgb, var(--tag-bg-color) 80%, black);
+  }
+
+  .filter-all-btn {
+       background-color: #4a4090;
+       color: #fff5e1;
+       border-color: #6a5acd;
+   }
+
+  .filters-inner button:hover {
+      opacity: 1;
+      transform: translateY(-1px);
+      filter: brightness(1.1);
   }
 
   .filters-inner button.selected {
-    outline: 2px solid white;
-  }
-
-  .baonlist-wrapper {
-    position: absolute;
-    top: 68px;
-    bottom: 70px;
-    left: 0;
-    right: 0;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
+    opacity: 1;
+    outline: none;
+    border: 2px solid #fff5e1;
+    box-shadow: 0 0 8px rgba(255, 245, 225, 0.3);
+    transform: scale(1.03);
   }
 
   .baonlist-container {
-    padding: 1rem 1.25rem;
-    flex: 1;
-    display: flex;
+    /* This IS the scrollable area now */
+    flex-grow: 1; /* Take remaining space */
+    overflow-y: auto; /* Enable scrolling */
+    padding: 1.5rem 1rem 2rem 1rem; /* Padding around grid */
+    display: flex; /* Use flex to allow margin:auto on no-results */
     flex-direction: column;
-    align-items: center;
+    align-items: center; /* Center grid horizontally */
+    -webkit-overflow-scrolling: touch;
   }
 
   .meals-grid {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    width: 100%;
+    max-width: 500px;
   }
+
+  .no-results {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: #fff5e1a8;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin: auto; /* Vertical centering within flex container */
+  }
+   .no-results p {
+       font-size: 1.2em;
+       font-weight: 600;
+       margin-bottom: 0.5rem;
+   }
+   .no-results span {
+       font-size: 0.9em;
+   }
 </style>
