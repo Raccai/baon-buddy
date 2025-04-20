@@ -81,7 +81,7 @@ export const achievements = [
         check: () => Object.keys(get(calendarData)).length >= 7,
         secret: false,
     },
-    // --- Example Secret Achievement ---
+    // --- One Secret Achievement ---
     {
         id: 'adobo_fave',
         name: "Adobo Aficionado",
@@ -93,7 +93,7 @@ export const achievements = [
         check: (list, val) => list.some(item => item.name.toLowerCase().includes(val.toLowerCase())),
         secret: true, // Hide until unlocked
     },
-    // Add more creative achievements! (e.g., tried all types, used copy/paste, visited all screens)
+    // Add more creative achievements in the future if I can think of any (e.g., tried all types, used copy/paste, visited all screens)
 ];
 
 // Helper function to get definition by ID (optional but useful)

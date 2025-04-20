@@ -131,17 +131,17 @@
     }
 
     /* --- Achievements Specific Styles --- */
-     .achievements-content {
+    .achievements-content {
         flex-grow: 1; /* Allow content to take space */
         overflow-y: auto; /* Enable scrolling ONLY for the list */
         padding-right: 0.5rem; /* Space for scrollbar */
-         margin-right: -0.5rem; /* Offset padding for visual alignment */
-         scrollbar-width: thin;
-         scrollbar-color: #6a5acd #3a3375; /* Themed scrollbar */
-     }
-      .achievements-content::-webkit-scrollbar { width: 6px; }
-      .achievements-content::-webkit-scrollbar-track { background: #3a3375; border-radius: 3px;}
-      .achievements-content::-webkit-scrollbar-thumb { background-color: #6a5acd; border-radius: 3px; }
+            margin-right: -0.5rem; /* Offset padding for visual alignment */
+            scrollbar-width: thin;
+            scrollbar-color: #6a5acd #3a3375; /* Themed scrollbar */
+    }
+    .achievements-content::-webkit-scrollbar { width: 6px; }
+    .achievements-content::-webkit-scrollbar-track { background: #3a3375; border-radius: 3px;}
+    .achievements-content::-webkit-scrollbar-thumb { background-color: #6a5acd; border-radius: 3px; }
 
 
     .achievements-grid {
@@ -192,4 +192,72 @@
     .achievement-card.unlocked .description { color: #fff5e1b3; }
 
     .no-achievements { /* Style remains */ }
+
+    /* Problem Screen 1: Large/Tall Tablets */
+    @media (min-width: 700px) and (min-height: 1000px) {
+        .modal {
+            max-width: none;
+            width: 80vw;
+            padding: 2rem 2rem;
+        }
+
+        .achievement-card {
+            padding: 1rem 4rem;
+        }
+
+        .details {
+            padding: 0 2.4rem;
+        }
+
+        .details .name, 
+        .details .description {
+            font-size: 1.4rem;
+        }
+        
+        .icon-wrapper {
+            transform: scale(1.6);
+        }
+
+        .modal-header {
+            height: 80px;
+        }
+        .title-image, 
+        .header-close-btn {
+            transform:  scale(1.4);
+        }
+    }
+
+    /* Problem Screen 2: Very Large/Tall Tablets */
+    @media (min-width: 900px) and (min-height: 1300px) {
+        .modal {
+            max-width: none;
+            width: 80vw;
+            padding: 2rem 2rem;
+        }
+
+        .achievement-card {
+            padding: 1rem 4rem;
+        }
+
+        .details {
+            padding: 0 2rem;
+        }
+
+        .details .name, 
+        .details .description {
+            font-size: 2rem;
+        }
+        
+        .icon-wrapper {
+            transform: scale(2);
+        }
+
+        .modal-header {
+            height: 100px;
+        }
+        .title-image, 
+        .header-close-btn {
+            transform:  scale(2);
+        }
+    }
 </style>

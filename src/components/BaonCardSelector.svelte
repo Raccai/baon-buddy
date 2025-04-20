@@ -303,4 +303,62 @@
     color: #666;
     font-size: 0.9rem;
   }
+
+  /* --- RESPONSIVE STYLES (Matching DayModal's :global) --- */
+
+  /* Problem Screen 1: Tall Tablets */
+  @media (min-width: 700px) and (min-height: 1000px) {
+    .mini-card {
+      padding: 4.4rem 4rem;
+    }
+
+    .mini-info {
+      gap: 1rem;
+    }
+
+    .mini-name {
+      font-size: 2rem;
+    }
+
+    .mini-type {
+      font-size: 1.6rem;
+      padding: 0.6rem 2rem;
+    }
+
+    .recipe-btn svg {
+      transform: scale(3);
+    }
+
+    .mini-img {
+      transform: scale(2);
+    }
+  }
+
+  /* Problem Screen 2: Very Large/Tall Tablets */
+  @media (min-width: 900px) and (min-height: 1300px) {
+    .mini-card {
+      padding: 4.4rem 4rem;
+    }
+
+    .mini-info {
+      gap: 1rem;
+    }
+
+    .mini-name {
+      font-size: 2rem;
+    }
+
+    .mini-type {
+      font-size: 1.6rem;
+      padding: 0.6rem 2rem;
+    }
+
+    .recipe-btn svg {
+      transform: scale(3);
+    }
+
+    .mini-img {
+      transform: scale(2);
+    }
+  }
 </style>

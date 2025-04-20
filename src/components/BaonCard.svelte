@@ -23,17 +23,6 @@
     let wiggle = false;
     let longPressTimer;
 
-    // Handles user long press
-    function handlePointerDown() {
-        longPressTimer = setTimeout(() => {
-            wiggle = true;
-            setTimeout(() => wiggle = false, 500); // resets animation
-        }, 600); // Long press duration
-    }
-    function handlePointerUp() {
-        clearTimeout(longPressTimer);
-    }
-
     // Glow around the card when it is favorited
     $: if (favorite && triggerGlow) {
         glowClass = "glow";
@@ -90,16 +79,79 @@
         }
         dispatch("faveChange")
     }
+
+    // For double tapping to add to faves/unfave
+    let lastTapUpTime = 0;
+    const doubleTapUpDelay = 300; // ms threshold
+    let tapTimeout = null;       // Timeout to distinguish single vs double tap
+    function handlePointerDown(event) {
+        // Ignore if it's not the primary button (e.g., right-click)
+        if (event.pointerType === 'mouse' && event.button !== 0) return;
+
+        // Clear any pending single tap action
+        clearTimeout(tapTimeout);
+        tapTimeout = null;
+
+        // Start long press timer
+        clearTimeout(longPressTimer); // Clear previous just in case
+        longPressTimer = setTimeout(() => {
+            console.log("Long press triggered");
+            longPressTimer = null; // Mark timer as finished
+            wiggle = true;
+            setTimeout(() => wiggle = false, 500);
+        }, 600);
+    }
+    function handlePointerUp(event) {
+        const now = Date.now();
+        const timeSinceLastTap = now - lastTapUpTime;
+
+        // --- Key Logic ---
+        // 1. If long press timer is still running, clear it (it wasn't a long press)
+        if (longPressTimer) {
+            clearTimeout(longPressTimer);
+            longPressTimer = null;
+
+            // 2. Check if this tap is close enough to the last one
+            if (timeSinceLastTap < doubleTapUpDelay) {
+                // --- DOUBLE TAP DETECTED ---
+                console.log("Manual Double Tap Detected!");
+                lastTapUpTime = 0; // Reset last tap time
+                clearTimeout(tapTimeout); // Clear any pending single tap
+                tapTimeout = null;
+                toggleFavorite(); // Perform double-tap action
+            } else {
+                // --- SINGLE TAP (potentially) ---
+                // Don't perform action immediately. Wait briefly to see if another tap follows.
+                // We already cleared any previous tapTimeout in pointerdown.
+                // If another pointerdown occurs quickly, it will clear this timeout.
+                // If not, this timeout will fire, treating it as a single tap (currently does nothing, but could).
+                tapTimeout = setTimeout(() => {
+                    console.log("Single Tap Action (if any)");
+                    // Add single tap action here if needed, otherwise it does nothing
+                    tapTimeout = null;
+                }, doubleTapUpDelay + 20); // Wait slightly longer than double tap threshold
+            }
+        }
+        // --- End Key Logic ---
+
+        // Only update lastTapUpTime if it wasn't a long press that finished
+        if(!longPressTimer && !wiggle) { // Avoid updating if long press completed
+        lastTapUpTime = now;
+        }
+
+        // Optional: Reset wiggle if pointer comes up early during wiggle animation
+        // if (wiggle) setTimeout(() => wiggle = false, 100);
+    }
+
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div 
     class="baon-card {bounceClass} {glowClass} {wiggle ? "wiggle" : ""}" 
-    on:dblclick = {toggleFavorite}
     on:pointerdown = {handlePointerDown}
     on:pointerup = {handlePointerUp}
+    on:pointerleave={handlePointerUp}
     on:pointercancel = {handlePointerUp}
-    on:touchend = {handlePointerUp}
 >
     {#if !hasBeenSeen}
         <div class="seen-indicator" title="New Meal"></div>
@@ -167,7 +219,6 @@
         box-shadow: 0 4px 15px rgba(35, 31, 71, 0.2); /* Softer shadow */
         position: relative;
         width: 100%; /* Fill the grid cell width */
-        max-width: 500px; /* Max width controlled by parent grid */
         box-sizing: border-box; /* Include padding in width */
         z-index: 1; /* Base z-index */
         border: 1px solid #eee; /* Subtle border */
@@ -409,5 +460,37 @@
         .meal-message { font-size: 0.85rem; }
         .button-container { gap: 0.3rem; }
         .heart-btn :global(svg), .recipe-btn svg { width: 20px; height: 20px; }
+    }
+
+    /* Problem screens, specific styling */
+    @media (min-width: 700px) and (min-height: 1000px) {
+        .baon-card {
+            padding: 0.8rem;
+            gap: 0.7rem;
+        }
+        .image-column { width: 75px; }
+        .meal-image { height: 100px; }
+        .emoji { font-size: 3rem; }
+        .meal-name { font-size: 2rem; }
+        .meal-message { font-size: 1.2rem; }
+        .meal-type { font-size: 1.2rem; }
+        .button-container { gap: 0.3rem; }
+        .heart-btn :global(svg), .recipe-btn svg { width: 40px; height: 40px; }
+    }
+
+    @media (min-width: 900px) and (min-height: 1300px) {
+        .baon-card {
+            width: 80vw;
+            padding: 0.8rem;
+            gap: 0.7rem;
+        }
+        .image-column { width: 75px; }
+        .meal-image { height: 140px; }
+        .emoji { font-size: 3rem; }
+        .meal-name { font-size: 3rem; }
+        .meal-message { font-size: 2rem; }
+        .meal-type { font-size: 2rem; }
+        .button-container { gap: 0.3rem; }
+        .heart-btn :global(svg), .recipe-btn svg { width: 60px; height: 60px; }
     }
 </style>

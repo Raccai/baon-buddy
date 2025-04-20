@@ -362,20 +362,99 @@
   }
 
   .no-recipe {
-      text-align: center;
-      padding: 2rem 1rem;
-      color: #fff5e1b3;
+    text-align: center;
+    padding: 2rem 1rem;
+    color: #fff5e1b3;
   }
   .no-recipe p {
-      margin-bottom: 1rem;
-      font-size: 1.1em;
+    margin-bottom: 1rem;
+    font-size: 1.1em;
   }
   .no-recipe-img {
-      max-width: 150px;
-      height: auto;
-      border-radius: 10px;
-      opacity: 0.8;
-      margin-top: 1rem;
+    max-width: 150px;
+    height: auto;
+    border-radius: 10px;
+    opacity: 0.8;
+    margin-top: 1rem;
   }
 
+  /* Problem Screen 1: Tall Tablets (e.g., iPad Portrait) */
+  @media (min-width: 700px) and (min-height: 1000px) {
+    #sheet-title { 
+      font-size: 2rem; 
+    }
+    
+    h3 {
+      font-size: 1.6rem; 
+    }
+
+    li {
+      font-size: 1.4rem;
+    }
+
+    .ingredient-list li::before {
+        font-size: 1em;
+    } 
+
+    .tip-section h4 {
+      font-size: 1.6rem;
+    }
+    .tip-icon {
+        font-size: 1.4em;
+    }
+    .tip-text {
+      font-size: 1.4rem;
+    }
+
+    .no-recipe p {
+      font-size: 1.6em;
+    }
+    .no-recipe-img {
+      max-width: 300px;
+    }
+
+    .close-sheet-btn {
+      transform: scale(1.4);
+    }
+  }
+
+  /* Problem Screen 2: Very Large/Tall Tablets */
+  @media (min-width: 900px) and (min-height: 1300px) {
+    #sheet-title { 
+      font-size: 3.4rem; 
+    }
+    
+    h3 {
+      font-size: 3rem; 
+    }
+
+    li {
+      font-size: 2rem;
+    }
+
+    .ingredient-list li::before {
+      font-size: 1.2em;
+    } 
+
+    .tip-section h4 {
+      font-size: 2.6rem;
+    }
+    .tip-icon {
+        font-size: 1.4em;
+    }
+    .tip-text {
+      font-size: 2rem;
+    }
+
+    .no-recipe p {
+      font-size: 2em;
+    }
+    .no-recipe-img {
+      max-width: 500px;
+    }
+
+    .close-sheet-btn {
+      transform: scale(2);
+    }
+  }
 </style>

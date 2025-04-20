@@ -293,4 +293,60 @@
   :global(.baon-selector-wrapper .no-meals) {
       color: #fff5e1a8; /* Semi-transparent text */
   }
+
+  /* --- RESPONSIVE STYLES FOR PROBLEM SCREENS --- */
+
+  /* Problem Screen 1: Tall Tablets (e.g., iPad Portrait) */
+  @media (min-width: 700px) and (min-height: 1000px) {
+    .modal {
+        max-width: 680px; /* Wider modal */
+        padding: 2rem;
+        border-radius: 1.25rem; /* Slightly larger radius */
+        max-height: 80vh;
+    }
+    h2#modal-title {
+        font-size: 1.8rem; /* Larger title */
+    }
+    .close-button {
+        font-size: 2.2rem;
+    }
+    .baon-selector-wrapper {
+        min-height: 400px; /* Much more min height */
+        margin-bottom: 2rem;
+    }
+    .actions {
+        gap: 1rem;
+        padding-top: 1.5rem;
+        margin-top: 1.5rem;
+    }
+    .action-btn {
+        padding: 0.9rem 1.6rem; /* Larger buttons */
+        font-size: 1.7rem;
+        border-radius: 0.6rem;
+        gap: 0.6rem;
+    }
+    .action-btn .icon {
+        font-size: 1.3rem;
+    }
+  }
+
+  /* Problem Screen 2: Very Large/Tall Tablets */
+  @media (min-width: 900px) and (min-height: 1300px) {
+    .modal {
+        max-width: 780px; /* Even wider */
+        padding: 2.5rem;
+        border-radius: 1.5rem;
+    }
+    h2#modal-title { font-size: 2.1rem; }
+    .close-button { font-size: 2.5rem; }
+    .baon-selector-wrapper { min-height: 500px; margin-bottom: 2.5rem;}
+    .actions { gap: 1.2rem; padding-top: 1.8rem; margin-top: 1.8rem; }
+    .action-btn {
+        padding: 1.1rem 2rem;
+        font-size: 2rem;
+        border-radius: 0.7rem;
+        gap: 0.7rem;
+    }
+    .action-btn .icon { font-size: 1.5rem; }
+  }
 </style>

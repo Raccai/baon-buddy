@@ -10,7 +10,7 @@
   export let position = 'bottom';
   export let totalHints = 1;
   export let currentHintIndex = 0;
-  export let spotlightPadding = 10; // Keep if needed for radius calc, though unused now
+  export const spotlightPadding = 10; // Keep if needed for radius calc, though unused now
 
   const dispatch = createEventDispatcher();
 
@@ -240,4 +240,34 @@
       font-weight: 500; transition: background-color 0.2s ease; font-size: 0.85rem;
   }
   .buttons button:hover { background-color: #6a5acd; }
+
+   /* --- RESPONSIVE STYLES FOR PROBLEM SCREENS --- */
+   @media (min-width: 700px) and (min-height: 1000px) {
+      .popover {
+          max-width: 380px; /* Wider popover */
+          padding: 1.2rem 1.5rem; /* More padding */
+          font-size: 1.4rem; /* Larger base text */
+          border-radius: 12px;
+      }
+      .buttons button {
+          padding: 0.6rem 1.2rem; /* Larger buttons */
+          font-size: 1.4rem;
+      }
+       .arrow { width: 18px; height: 18px; } /* Larger arrow */
+  }
+
+  @media (min-width: 900px) and (min-height: 1300px) {
+      .popover{
+          max-width: 450px; /* Even wider */
+          padding: 1.5rem 1.8rem;
+          font-size: 2rem; /* Even larger text */
+          border-radius: 14px;
+      }
+      .buttons button {
+          padding: 0.8rem 1.5rem;
+          font-size: 2rem;
+          border-radius: 8px;
+      }
+       .arrow { width: 20px; height: 20px; }
+  }
 </style>

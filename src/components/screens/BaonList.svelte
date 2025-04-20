@@ -45,7 +45,7 @@
   }
 
   // --- Onboarding Logic ---
-  const FORCE_ONBOARDING_TESTING = false; // Set to false for normal behavior
+  const FORCE_ONBOARDING_TESTING = true; // Set to false for normal behavior
   const screenName = 'baonlist';
   let showHints = false;
   let hintIndex = 0;
@@ -249,8 +249,34 @@
    .no-results p { font-size: 1.2em; font-weight: 600; margin-bottom: 0.5rem; }
    .no-results span { font-size: 0.9em; }
 
-  /* Ensure BaonCard wrapper doesn't add unwanted style */
-  #first-baon-card-wrapper {
-      /* No specific styles needed unless for spacing */
+  /* Problem Screen 1: Tall Tablets (e.g., iPad Portrait) */
+  @media (min-width: 700px) and (min-height: 1000px) {
+    .fixed-controls {
+      padding-top: 2rem;
+    }
+
+    .filters-inner button {
+      font-size: 1.2rem;
+    }
+  }
+
+  /* Problem Screen 2: Very Large/Tall Tablets */
+  @media (min-width: 900px) and (min-height: 1300px) {
+    .fixed-controls {
+      padding-top: 5rem;
+    }
+
+    .filters-inner {
+      gap: 1.4rem;
+    }
+
+    .filters-inner button {
+      font-size: 2rem;
+      padding: 0.6rem 2.4rem 0.8rem 2.4rem;
+    }
+
+    .meals-grid {
+      justify-content: center;
+    }
   }
 </style>

@@ -34,7 +34,7 @@
         display: flex;
         flex-direction: column;
         gap: 0.5rem;
-        z-index: 999;
+        z-index: 1005;
         align-items: flex-start;
     }
 
@@ -102,4 +102,18 @@
 		from { transform: scaleX(1); }
 		to { transform: scaleX(0); }
 	}
+
+    /* Problem Screen 1: Large/Tall Tablets */
+    @media (min-width: 700px) and (min-height: 1000px) {
+        .toast {
+            font-size: 1.4rem;
+        }
+    }
+
+    /* Problem Screen 2: Very Large/Tall Tablets */
+    @media (min-width: 900px) and (min-height: 1300px) {
+        .toast {
+            font-size: 2rem;
+        }
+    }
 </style>

@@ -24,9 +24,16 @@
     showOnboarding = false;
   }
 
-  function handleNavigate(screen) {
-    currentScreen = screen;
-    localStorage.setItem("lastScreen", screen);
+  function handleNavigate(event) { // Accept the event object
+    const screenName = event.detail; // Extract screen name from detail
+    console.log(`App received navigate event for: ${screenName}`); // Debug log
+    // Add validation if needed
+    if (screenName && ['home', 'calendar', 'baonlist'].includes(screenName)) {
+        currentScreen = screenName; // Update state with the correct name
+        localStorage.setItem("lastScreen", screenName);
+    } else {
+         console.warn("Invalid screen name received in handleNavigate:", screenName);
+    }
   }
 
   let favoriteNames = getFavorites().map(meal => meal.name);
@@ -153,7 +160,7 @@
   </main>
 
   <div class="navbar-wrapper">
-    <Navbar onNavigate={handleNavigate} current={currentScreen} />
+    <Navbar on:navigate={handleNavigate} current={currentScreen} />
   </div>
 </div>
 

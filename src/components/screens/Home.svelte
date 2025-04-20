@@ -216,7 +216,6 @@
 
 
   /* Content Positioning & Sizing */
-
   .card-container {
     position: absolute;
     /* Base bottom position: consider navbar height + safe area + desired gap */
@@ -353,4 +352,31 @@
     .randomize-btn { padding: 0.7rem 1.3rem; font-size: 0.95rem;}
   }
 
+  /* Problem screens, specific styling */
+  @media (min-width: 700px) and (min-height: 1000px) {
+    .character-space { 
+      bottom: calc(env(safe-area-inset-bottom, 0rem) + 20rem); 
+      width: 100%;
+      max-width: 500px;
+    }
+    .tala-floating { height: 120vh; }
+    .card-container { bottom: calc(env(safe-area-inset-bottom, 0rem) + 6rem); }
+    .randomize-btn { padding: 1rem 3rem; font-size: 1.4rem;}
+    #home-baon-card {
+      width: 90vw;
+      display: flex;
+      justify-content: center;
+    }
+  }
+
+  @media (min-width: 900px) and (min-height: 1300px) {
+    .character-space { 
+      bottom: calc(env(safe-area-inset-bottom, 0rem) + 28rem); 
+      width: 100%;
+      max-width: 500px;
+    }
+    .tala-floating { height: 120vh; }
+    .card-container { gap:2rem; bottom: calc(env(safe-area-inset-bottom, 0rem) + 6rem); }
+    .randomize-btn { padding: 2rem 3rem; font-size: 2rem;}
+  }
 </style>

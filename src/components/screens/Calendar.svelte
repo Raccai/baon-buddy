@@ -225,7 +225,13 @@
 
     <!-- Day Labels -->
     <div class="day-labels">
-      <!-- ... (day labels) ... -->
+      <div>Sun</div>
+      <div>Mon</div>
+      <div>Tue</div>
+      <div>Wed</div>
+      <div>Thurs</div>
+      <div>Fri</div>
+      <div>Sat</div>
     </div>
 
     <!-- Calendar Grid Container -->
@@ -545,7 +551,7 @@
     text-align: center;
     font-weight: 600;
     color: #fff5e1a8; /* Semi-transparent cream */
-    padding: 0 1rem; /* Match container padding */
+    padding: 0; /* Remove padding to align days */
     margin-bottom: 0.5rem;
     width: 100%;
     max-width: 500px;
@@ -691,5 +697,129 @@
     .calendar { gap: 0.2rem; padding: 0.2rem; }
     .day { border-radius: 0.4rem; }
     .day-number { font-size: 0.75rem; }
+  }
+
+  /* Problem screens, specific styling */
+  /* Problem Screen 1: Tall Tablets (e.g., iPad Portrait) */
+  @media (min-width: 700px) and (min-height: 1000px) {
+    .calendar-cont {
+      padding: 2rem; /* More padding around content */
+      margin-top: 1rem; /* Can likely reduce margin-top if using padding */
+    }
+    .calendar-header h2 {
+      font-size: 2.2rem; /* Increased font size */
+    }
+    .month-nav {
+      width: 52px; /* Increased size */
+      height: 52px;
+      border-width: 2px; /* Thicker border */
+    }
+    .arrow {
+      font-size: 1.3rem; /* Larger arrow */
+    }
+    .today-btn {
+      padding: 0.9rem 1.8rem; /* Adjusted padding */
+      font-size: 1.1rem; /* Increased font size */
+      gap: 0.6rem;
+    }
+    .today-btn .icon { /* Target icon specifically */
+        font-size: 1.3rem; /* Larger icon */
+    }
+    .day-labels div {
+      padding: 0.6rem 0; /* More vertical space */
+      font-size: 0.9rem; /* Increased label size */
+    }
+    .calendar-container {
+        min-height: 40rem; /* Ensure enough vertical space */
+        max-width: 650px; /* Increase max width slightly */
+    }
+    .calendar {
+      gap: 0.8rem; /* Increase gap between days */
+      padding: 0.8rem; /* Increase padding around grid */
+    }
+    .day {
+      border-radius: 1rem; /* Larger radius */
+      padding: 0.6rem; /* More padding inside day */
+       border-width: 2px; /* Thicker borders for today */
+    }
+     .day.today {
+         border-width: 2px; /* Ensure today border is visible */
+         box-shadow: inset 0 0 6px rgba(255, 245, 225, 0.15), 0 4px 10px rgba(0,0,0,0.3); /* Enhance shadow */
+     }
+    .day-number {
+      font-size: 1.2rem; /* Larger day number */
+      margin-bottom: 0.4rem;
+    }
+     .meal-indicator {
+        height: 6px; /* Thicker indicators */
+        border-radius: 3px;
+        width: 75%; /* Adjust width */
+     }
+  }
+
+  /* Problem Screen 2: Very Large/Tall Tablets */
+  @media (min-width: 900px) and (min-height: 1300px) {
+    .calendar-cont {
+      padding: 3rem; /* Even more padding */
+      margin-top: 3rem; /* Adjust margin */
+      align-items: center; /* Ensure content centers */
+    }
+     .calendar-header, .calendar-actions, .day-labels, .calendar-container {
+         max-width: 800px; /* Increase overall max-width further */
+     }
+    .calendar-header h2 {
+      font-size: 2rem; /* Larger title */
+    }
+    .month-nav {
+      width: 64px; /* Larger nav buttons */
+      height: 64px;
+       border-width: 2px;
+    }
+    .arrow {
+      font-size: 1.6rem;
+    }
+    .today-btn {
+      padding: 1rem 2.2rem; /* More padding */
+      font-size: 1.4rem; /* Larger text */
+      border-radius: 2.5rem;
+       gap: 0.8rem;
+    }
+    .today-btn .icon {
+        font-size: 1.6rem; /* Larger icon */
+    }
+    .day-labels div {
+      padding: 0.8rem 0; /* More space */
+      font-size: 1.4rem; /* Larger labels */
+    }
+    .calendar-container {
+       min-height: 55rem; /* More height needed for larger days */
+       /* Removed fixed width/overflow adjustments for calendar, let grid handle it */
+    }
+    .calendar {
+      gap: 1rem; /* Larger gap */
+      padding: 1rem; /* More padding */
+       /* Remove fixed width, let container constrain */
+       /* width: 900px; */
+       /* overflow: visible; */
+    }
+    .day {
+      border-radius: 1.2rem; /* Larger radius */
+      padding: 0.8rem; /* More padding */
+      /* Removed fixed width/height, rely on aspect-ratio and grid */
+      /* width: 5rem; height: 5rem; */
+    }
+     .day.today {
+         border-width: 3px; /* Thicker today border */
+         box-shadow: inset 0 0 8px rgba(255, 245, 225, 0.2), 0 5px 15px rgba(0,0,0,0.35);
+     }
+    .day-number {
+      font-size: 1.6rem; /* Larger numbers */
+      margin-bottom: 0.6rem;
+    }
+     .meal-indicator {
+         height: 7px;
+         border-radius: 3.5px;
+         width: 70%;
+     }
   }
 </style>
