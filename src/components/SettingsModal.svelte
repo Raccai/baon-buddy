@@ -9,17 +9,25 @@
     const dispatch = createEventDispatcher();
     let timesOpened = 0;
     let timesGenerated = 0;
-
-    // Initial read on state of music
-    let musicEnabled = localStorage.getItem("musicEnabled") === "true";
+    let musicEnabled = localStorage.getItem("musicEnabled") === "true"; // Correct initial read
 
     export let visible = false;
 
-    // Let bind:checked handle the state update
-    function toggleMusicSetting() {
-        localStorage.setItem("musicEnabled", musicEnabled.toString()); // Save the new state ("true" or "false")
-        dispatch("toggleMusic"); // Dispatch event (parent will use the new state)
+    // --- CORRECTED Interaction Logic ---
+    function handleMusicToggle() {
+        // 1. Calculate the NEW intended state
+        const newState = !musicEnabled;
+
+        // 2. Update the component state IMMEDIATELY
+        //    Svelte will now reliably see this change for UI updates.
+        musicEnabled = newState;
+        console.log("Music toggled via UI, new state:", musicEnabled);
+
+        // 3. Perform side effects (localStorage, dispatch) AFTER updating state
+        localStorage.setItem("musicEnabled", musicEnabled.toString());
+        dispatch("toggleMusic");
     }
+    // --- End Corrected Logic ---
 
     function clearFaves() {
         if (confirm("Are you sure you want to clear all your favorites?")) {
@@ -33,7 +41,6 @@
     function resetApp() {
         if (confirm("Are you sure you want to reset the app? All data including favorites and settings will be lost! This cannot be undone.")) {
             resetStorage();
-            // No need to dispatch faveChange if reloading anyway
             showToast("App reset! Reloading...", "success");
             setTimeout(() => window.location.reload(), 1000);
         }
@@ -43,19 +50,12 @@
         dispatch('close');
     }
 
-   // This block updates stats when modal becomes visible.
-   // It also includes a safety check for musicEnabled state,
-   // although the corrected initial read should make this less critical.
    $: if (visible) {
         timesOpened = getCounter("baonAppOpens");
         timesGenerated = getCounter("baonMealGenerations");
-
-        // Safety sync: Check if component state drifted from storage
-        // while the modal was closed.
         const storedValue = localStorage.getItem("musicEnabled") === "true";
         if (musicEnabled !== storedValue) {
-            // console.log("Syncing musicEnabled from storage on open");
-            musicEnabled = storedValue; // Update component state to match storage
+            musicEnabled = storedValue;
         }
     }
 </script>
@@ -95,8 +95,8 @@
                         <span class="toggle-label">{musicEnabled ? 'Music On 🎶' : 'Music Off 🔇'}</span>
                         <input
                             type="checkbox"
-                            bind:checked={musicEnabled} 
-                            on:change={toggleMusicSetting} 
+                            checked={musicEnabled}  
+                            on:change={handleMusicToggle} 
                             aria-labelledby="music-label"
                         />
                         <span class="slider"></span>

@@ -40,13 +40,28 @@ export function resetStorage() {
     localStorage.clear(); // wipes everything stored in this app
 }
 
-// App Open Counter
+// Function to increment a counter value
 export function incrementCounter(key) {
-    let count = parseInt(localStorage.getItem(key) || "0", 10);
-    localStorage.setItem(key, String(count + 1))
+  try {
+    let currentValue = getCounter(key);
+    currentValue++; // Increment
+    localStorage.setItem(`counter_${key}`, currentValue.toString());
+    console.log(`Counter ${key} incremented to ${currentValue}`); // For debugging
+    return currentValue;
+  } catch (e) {
+    console.error(`Error incrementing counter ${key}:`, e);
+    return getCounter(key); // Return current value on error
+  }
 }
+// Function to get a counter value
 export function getCounter(key) {
-    return parseInt(localStorage.getItem(key) || "0", 10);
+    try {
+        const value = localStorage.getItem(`counter_${key}`);
+        return value ? parseInt(value, 10) : 0;
+    } catch (e) {
+        console.error(`Error getting counter ${key}:`, e);
+        return 0;
+    }
 }
 
 // For Seen Baon Meals

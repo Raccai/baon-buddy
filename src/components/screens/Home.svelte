@@ -6,16 +6,85 @@
   import { incrementCounter } from '../../lib/storage';
   import { meals } from "../../lib/meals.js";
   import { getFavorites } from '../../lib/storage';
-  import { createEventDispatcher } from 'svelte';
+  import { createEventDispatcher, tick, onMount } from 'svelte';
+  import { getOnboardingStatus, markScreenAsDone, isScreenDone, isOverallOnboardingComplete } from '../../lib/onboardingStore';
+  import HintPopover from '../HintPopover.svelte';
+  import { checkAndUnlockAchievements } from '../../lib/achievementStore';
 
   const dispatch = createEventDispatcher();
 
+  let suggestButtonElement;
   let favoriteNames = getFavorites().map(meal => meal.name);
   let suggestedMeals = [];
   let bounce = false;
 
   function dispatchViewRecipe(meal) {
     dispatch('viewRecipe', meal); // Dispatch event up to App.svelte
+  }
+
+  const FORCE_ONBOARDING_TESTING = false; // Keep for testing
+  const screenName = 'home';
+  let showHints = false;
+  let hintIndex = 0;
+  let currentHintData = null;
+  const homeHints = [
+      { targetSelector: '#home-suggest-button', text: 'Tap this button anytime to get a new suggestion.', position: 'top' },
+      { targetSelector: '#home-baon-card', text: "Here's your suggested Baon for the day! Double-tap or click the heart to fave/unfave, or click the flask/potion icon to open a baon recipe!", position: 'top' },
+  ];
+  const totalHomeHints = homeHints.length;
+
+  // Flag to prevent multiple initial checks
+  let onboardingCheckStarted = false; 
+
+  async function startOnboardingHints() {
+    if (onboardingCheckStarted) return; // Only run once
+    onboardingCheckStarted = true;
+
+    console.log(`Checking onboarding status for ${screenName}...`);
+
+    if (!FORCE_ONBOARDING_TESTING) {
+      if (isOverallOnboardingComplete() || isScreenDone(screenName)) {
+        console.log(`Onboarding skipped for ${screenName}.`);
+        return;
+      }
+    }
+
+    // Wait a single tick - crucial for Svelte 5 reactivity changes.
+    // This ensures component state updates are flushed to the DOM.
+    await tick();
+
+    // Now attempt to show hints
+    console.log(`Attempting to show hints for ${screenName}.`);
+    showHints = true;
+    hintIndex = 0; // Reset index
+    currentHintData = homeHints[hintIndex];
+  }
+
+  onMount(() => {
+    // Delay the *entire* onboarding check process slightly
+    // This gives the initial render + generateMeals more time to settle.
+    // Adjust delay if needed (200-500ms is usually safe)
+    setTimeout(startOnboardingHints, 100);
+  });
+
+  function handleNextHint() {
+    hintIndex++; // Move to the next index
+    if (hintIndex < totalHomeHints) {
+        currentHintData = homeHints[hintIndex];
+    }
+    // 'done' event will be handled by handleDoneHint
+  }
+
+  function handleDoneHint() { // Renamed for clarity
+    showHints = false;
+    currentHintData = null;
+    markScreenAsDone(screenName);
+  }
+
+  function handleSkipHint() { // Handle skip explicitly
+    showHints = false;
+    currentHintData = null;
+    markScreenAsDone(screenName); // Mark as done even if skipped
   }
 
   function generateMeals() {
@@ -28,6 +97,7 @@
     bounce = false;
     requestAnimationFrame(() => bounce = true);
     incrementCounter("baonMealGenerations");
+    checkAndUnlockAchievements();
   }
 
   generateMeals(); // Generate initial meal
@@ -57,22 +127,26 @@
 
       <div class="card-container">
         {#if suggestedMeals.length > 0}
-          {#each suggestedMeals as meal (meal.name)}
-            <BaonCard
-              on:viewRecipe={(e) => dispatchViewRecipe(e.detail)}
-              {meal}
-              {favoriteNames}
-              triggerBounce={bounce}
-              on:faveChange={() => {
-                favoriteNames = getFavorites().map(m => m.name);
-              }}
-            />
-          {/each}
+          <div id="home-baon-card">
+            {#each suggestedMeals as meal (meal.name)}
+              <BaonCard
+                on:viewRecipe={(e) => dispatchViewRecipe(e.detail)}
+                {meal}
+                {favoriteNames}
+                triggerBounce={bounce}
+                on:faveChange={() => {
+                  favoriteNames = getFavorites().map(m => m.name);
+                }}
+              />
+            {/each}
+          </div>
         {:else}
            <div class="no-meal-placeholder">Loading Baon...</div> <!-- Placeholder -->
         {/if}
 
         <button
+          bind:this={suggestButtonElement}
+          id="home-suggest-button"
           class="randomize-btn"
           on:click={generateMeals}
         >
@@ -80,10 +154,24 @@
         </button>
       </div>
 
-      <!-- Position TalaQuote relative to other elements -->
+      <!-- Position TalaQuote relative to other elements, thought uncertain if will still use -->
       <TalaQuote />
   </div>
 </div>
+
+<!-- For Onboarding Hints -->
+{#if showHints && currentHintData}
+  <HintPopover
+    targetSelector={currentHintData.targetSelector}
+    text={currentHintData.text}
+    position={currentHintData.position || 'bottom'}
+    totalHints={totalHomeHints}
+    currentHintIndex={hintIndex}
+    on:next={handleNextHint}
+    on:done={handleDoneHint}
+    on:skip={handleSkipHint}
+  />
+{/if}
 
 <style lang="css">
   .home-wrapper {

@@ -6,6 +6,7 @@
     import { createEventDispatcher } from "svelte";
     import { saveFavorite, removeFavorite } from "../lib/storage";
     import { tagStyles } from "../lib/tags";
+  import { checkAndUnlockAchievements } from "../lib/achievementStore";
 
     export let meal;
     $: tagData = meal && meal.type ? tagStyles[meal.type] : null;
@@ -77,6 +78,7 @@
             showToast("Removed from faves!", "info")
         } else {
             saveFavorite(meal);
+            checkAndUnlockAchievements();
             showToast("Added to faves!", "faves")
             triggerSparkle();
 

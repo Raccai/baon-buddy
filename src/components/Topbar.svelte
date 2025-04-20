@@ -2,9 +2,11 @@
   import BaonBuddyTitle from "/titles/BaonBuddyTitle.png";
   import Favorites from "../assets/Favorites.svelte";
   import Settings from "../assets/Settings.svelte";
+  import AchievementsIcon from "../assets/AchievementsIcon.svelte";
 
   export let onToggleFavorites;
   export let onOpenSettings;
+  export let onOpenAchievements = () => {};
 
   let activeButton = null;
 
@@ -20,11 +22,25 @@
     <img src={BaonBuddyTitle} alt="Baon Buddy" class="app-title" />
   </div>
   <div class="topbar-buttons">
+    <!-- Favorites List Button -->
     <button on:click={() => handleClick('favorites', onToggleFavorites)} aria-label="View Favorites">
       <span class:active={activeButton === 'favorites'}>
         <Favorites />
       </span>
     </button>
+
+    <!-- Achievements Button -->
+    <button
+      on:click={() => handleClick('achievements', onOpenAchievements)}
+      class="topbar-btn"
+      aria-label="View Achievements"
+    >
+      <span class:active={activeButton === 'achievements'}>
+        <AchievementsIcon />
+      </span>
+    </button>
+
+    <!-- Settings Button -->
     <button on:click={() => handleClick('settings', onOpenSettings)} aria-label="Open Settings">
       <span class:active={activeButton === 'settings'}>
         <Settings />

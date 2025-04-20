@@ -10,14 +10,88 @@
   import DayModal from '../DayModal.svelte';
   import Sparkle from '../../assets/Sparkle.svelte';
 
+  // --- Onboarding Imports ---
+  import { onMount, tick } from 'svelte';
+  import { getOnboardingStatus, markScreenAsDone, isScreenDone, isOverallOnboardingComplete } from '../../lib/onboardingStore.js';
+  import HintPopover from '../HintPopover.svelte';
+
   // Component state
   let showRecipeSheet = false;
   let selectedRecipeMeal = null;
   let currentMonth = new Date();
   let selectedDate = null;
-  let modalMode = 'view'; // 'view' | 'copySource' | 'copyTarget'
+  let modalMode = 'view';
   let copiedMeals = null;
-  let transitionDirection = 1; // 1 for next month, -1 for previous
+  let transitionDirection = 1;
+
+  // --- Onboarding State ---
+  const FORCE_ONBOARDING_TESTING = false; // Set to false for normal behavior
+  const screenName = 'calendar';
+  let showHints = false;
+  let hintIndex = 0;
+  let currentHintData = null;
+  let onboardingCheckStarted = false;
+
+  // Define hints for Calendar
+  // Note: Targeting the first day requires waiting for the grid to render
+  const calendarHints = [
+    { targetSelector: '#calendar-prev-month-btn', text: 'Use these arrows to navigate between months.', position: 'right' },
+    { targetSelector: '#calendar-today-btn', text: 'Tap here to jump quickly back to the current month.', position: 'bottom' },
+    { targetSelector: '#calendar-first-day-cell', text: 'Tap any day to view or add Baon for that date.', position: 'bottom' },
+  ];
+  const totalCalendarHints = calendarHints.length;
+  // --- Onboarding Functions ---
+  async function startOnboardingHints() {
+    if (onboardingCheckStarted) return;
+    onboardingCheckStarted = true;
+    console.log(`Checking onboarding status for ${screenName}...`);
+
+    if (!FORCE_ONBOARDING_TESTING) {
+      if (isOverallOnboardingComplete() || isScreenDone(screenName)) {
+        console.log(`Onboarding skipped for ${screenName}.`);
+        return;
+      }
+    }
+
+    await tick(); // Wait for initial DOM render
+    await new Promise(res => setTimeout(res, 200)); // Slightly longer delay for calendar grid
+
+      // Check if the first target exists
+      if (!document.querySelector(calendarHints[0].targetSelector)) {
+          console.warn(`Initial target ${calendarHints[0].targetSelector} not found for ${screenName}. Skipping hints.`);
+          if (!FORCE_ONBOARDING_TESTING) markScreenAsDone(screenName); // Mark done if cannot start
+          return;
+      }
+
+    console.log(`Attempting to show hints for ${screenName}.`);
+    showHints = true;
+    hintIndex = 0;
+    currentHintData = calendarHints[hintIndex];
+  }
+
+  function handleNextHint() {
+    hintIndex++;
+    if (hintIndex < totalCalendarHints) {
+      // Important: Add a tick before setting next hint data if target might change/appear
+      tick().then(() => {
+        currentHintData = calendarHints[hintIndex];
+      });
+    } else {
+      finishHintsCommon();
+    }
+  }
+
+ function finishHintsCommon() {
+    showHints = false;
+    currentHintData = null;
+    if (!FORCE_ONBOARDING_TESTING) {
+      markScreenAsDone(screenName);
+    }
+    console.log(`Finished/Skipped hints for ${screenName} (Force: ${FORCE_ONBOARDING_TESTING})`);
+  }
+
+  function handleDoneHint() { finishHintsCommon(); }
+  function handleSkipHint() { finishHintsCommon(); }
 
   // --- Functions ---
   function openModal(day) {
@@ -72,7 +146,13 @@
 
   function closeRecipeSheet(meal) {
     showRecipeSheet = false;
+    selectedRecipeMeal = null; 
   }
+
+  onMount(() => {
+    // Delay the onboarding check
+    setTimeout(startOnboardingHints, 300);
+  });
 
   // --- Reactive Calculations ---
   $: start = startOfMonth(currentMonth);
@@ -118,7 +198,8 @@
   <div class="calendar-cont">
     <!-- Month and Year Header -->
     <div class="calendar-header">
-      <button class="month-nav" on:click={() => changeMonth(-1)} aria-label="Previous Month">
+      <!-- ADD ID -->
+      <button id="calendar-prev-month-btn" class="month-nav" on:click={() => changeMonth(-1)} aria-label="Previous Month">
         <span class="arrow">◀</span>
       </button>
       <div class="current-month-container">
@@ -128,21 +209,23 @@
           </h2>
         {/key}
       </div>
-      <button class="month-nav" on:click={() => changeMonth(1)} aria-label="Next Month">
+       <!-- ADD ID -->
+      <button id="calendar-next-month-btn" class="month-nav" on:click={() => changeMonth(1)} aria-label="Next Month">
         <span class="arrow">▶</span>
       </button>
     </div>
 
     <!-- Action Buttons -->
     <div class="calendar-actions">
-      <button class="today-btn" on:click={goToToday}>
+       <!-- ADD ID -->
+      <button id="calendar-today-btn" class="today-btn" on:click={goToToday}>
         <span class="icon" aria-hidden="true">📅</span> Today
       </button>
     </div>
 
     <!-- Day Labels -->
     <div class="day-labels">
-      <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+      <!-- ... (day labels) ... -->
     </div>
 
     <!-- Calendar Grid Container -->
@@ -153,15 +236,15 @@
           in:fly={{ x: xOffset, duration: 300, delay: 100 }}
           out:fly={{ x: -xOffset, duration: 300 }}
         >
-          <!-- Leading blank cells -->
           {#each leadingBlanks as _}
             <div class="day blank"></div>
           {/each}
 
-          <!-- Day cells -->
-          {#each days as day (format(day, 'yyyy-MM-dd'))}
-            {@const dayKey = format(day, 'yyyy-MM-dd')} <!-- CORRECT PLACEMENT -->
+          {#each days as day, i (format(day, 'yyyy-MM-dd'))}
+            {@const dayKey = format(day, 'yyyy-MM-dd')}
+            <!-- ADD Conditional ID to the first actual day -->
             <div
+              id={i === 0 ? 'calendar-first-day-cell' : null}
               class="day {isToday(day) ? 'today' : ''}"
               on:click={() => openModal(day)}
               role="button"
@@ -170,15 +253,10 @@
               on:keydown={(e) => { if (e.key === 'Enter' || e.key === ' ') openModal(day); }}
             >
               <span class="day-number">{format(day, 'd')}</span>
-              <!-- Meal indicators -->
               {#if $calendarData[dayKey]?.length}
                 <div class="day-content">
                   {#each $calendarData[dayKey] as meal (meal.id || meal.name) }
-                    <div
-                      class="meal-indicator"
-                      style="background-color: {tagStyles[meal.type]?.color || '#ccc'}"
-                      title="{meal.name} ({meal.type})"
-                    ></div>
+                    <div class="meal-indicator" style="background-color: {tagStyles[meal.type]?.color || '#ccc'}" title="{meal.name} ({meal.type})"></div>
                   {/each}
                 </div>
               {/if}
@@ -212,6 +290,20 @@
   meal={selectedRecipeMeal}
   on:close={closeRecipeSheet}
 />
+
+<!-- Onboarding Hint Instance -->
+{#if showHints && currentHintData}
+  <HintPopover
+    targetSelector={currentHintData.targetSelector}
+    text={currentHintData.text}
+    position={currentHintData.position || 'bottom'}
+    totalHints={totalCalendarHints}
+    currentHintIndex={hintIndex}
+    on:next={handleNextHint}
+    on:done={handleDoneHint}
+    on:skip={handleSkipHint}
+  />
+{/if}
 
 <style>
   /* --- Copied Background Styles from Home.svelte --- */
@@ -600,26 +692,4 @@
     .day { border-radius: 0.4rem; }
     .day-number { font-size: 0.75rem; }
   }
-
-  /* Optional: Theming for the DayModal (uncomment and style as needed) */
-  /*
-  :global(.day-modal-backdrop) {
-    background-color: rgba(10, 8, 30, 0.7);
-    backdrop-filter: blur(5px);
-  }
-  :global(.day-modal-content) {
-     background-color: #231d52;
-     color: #fff5e1;
-     border: 1px solid #4a4090;
-     border-radius: 1rem;
-     box-shadow: 0 5px 25px rgba(0,0,0,0.4);
-  }
-  :global(.day-modal-content h3) {
-     color: #fff;
-  }
-  :global(.day-modal-close-btn) {
-      color: #fff5e1;
-  }
-  */
-
 </style>
