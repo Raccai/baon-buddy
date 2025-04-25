@@ -28,9 +28,13 @@
   let showHints = false;
   let hintIndex = 0;
   let currentHintData = null;
+
   const homeHints = [
-      { targetSelector: '#home-suggest-button', text: 'Tap this button anytime to get a new suggestion.', position: 'top' },
-      { targetSelector: '#home-baon-card', text: "Here's your suggested Baon for the day! Double-tap or click the heart to fave/unfave, or click the flask/potion icon to open a baon recipe!", position: 'top' },
+    { targetSelector: '#home-suggest-button', text: 'Tap this button anytime to get a new suggestion.', position: 'top' },
+    { targetSelector: '#home-baon-card', text: "Here's your suggested Baon! Double-tap or use ❤️ to favorite it.", position: 'top' },
+    { targetSelector: '#topbar-manage-baon-btn', text: 'Use these buttons to check your favorites (heart icon)...', position: 'bottom' },
+    { targetSelector: '#topbar-manage-baon-btn', text: 'To add, edit, or delete your own custom Baon recipes (notepad icon)...', position: 'bottom' },
+    { targetSelector: '#topbar-manage-baon-btn', text: 'Or to check the settings (gear icon)!', position: 'bottom' },
   ];
   const totalHomeHints = homeHints.length;
 

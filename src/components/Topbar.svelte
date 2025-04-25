@@ -35,6 +35,7 @@
 
     <!-- Manage Baon Button -->
     <button
+      id="topbar-manage-baon-btn"
       on:click={() => handleClick('manage_baon', onOpenManageBaon)}
       class="topbar-btn"
       class:animating={activeButton === 'manage_baon'}
