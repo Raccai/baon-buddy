@@ -1,167 +1,154 @@
 <script>
-    import AddedFaves from "../assets/AddedFaves.svelte"
-    import NotFaves from "../assets/NotFaves.svelte"
-    import { showToast } from "../lib/toast";
-    import { markMealAsSeen, getSeenMEals } from "../lib/storage";
+    import AddedFaves from "../assets/AddedFaves.svelte";
+    import NotFaves from "../assets/NotFaves.svelte";
+    import { showToast } from "../lib/toast.js";
+    // Corrected import name
+    import { markMealAsSeen, getSeenMeals, saveFavorite, removeFavorite } from "../lib/storage.js"; // Ensure getSeenMeals is correct
     import { createEventDispatcher } from "svelte";
-    import { saveFavorite, removeFavorite } from "../lib/storage";
-    import { tagStyles } from "../lib/tags";
-  import { checkAndUnlockAchievements } from "../lib/achievementStore";
+    import { tagStyles } from "../lib/tags.js";
+    import { checkAndUnlockAchievements } from "../lib/achievementStore.js";
+    // --- Capacitor Imports ---
+    import { Capacitor } from '@capacitor/core';
+    import { getDisplayImageSrc } from "../lib/imageUtils";
 
-    export let meal;
-    $: tagData = meal && meal.type ? tagStyles[meal.type] : null;
+    // --- Props ---
+    export let meal; // The meal object { name, image, type, message, emoji?, recipe?, id?, isUserDefined? }
+    export let triggerBounce = false; // For animation on generation
+    export let favoriteNames = []; // Array of names of favorited meals
 
-    export let triggerBounce = false;
-    export let favoriteNames = [];
-    
+    // --- Internal State ---
     const dispatch = createEventDispatcher();
-    let hasBeenSeen = false;
+    let hasBeenSeen = true; // Default to true to avoid flashing 'new' indicator briefly
     let glowClass = "";
     let triggerGlow = false;
     let bounceClass = "";
     let sparkles = [];
     let wiggle = false;
-    let longPressTimer;
+    let longPressTimer = null;
+    let lastTapUpTime = 0;
+    const doubleTapUpDelay = 300; // ms
+    let tapTimeout = null;
+    let imageSrc = null; // Holds the final displayable image source URL
 
-    // Glow around the card when it is favorited
-    $: if (favorite && triggerGlow) {
-        glowClass = "glow";
-        setTimeout(() => glowClass = "", 800); // remove after glow animation
-    }
+    // --- Reactive Computations ---
 
-    // Check if already favorited when component loads
-    $: favorite = favoriteNames.includes(meal.name);
+    // Get tag data based on meal type
+    $: tagData = meal && meal.type ? tagStyles[meal.type] : null;
 
-    // Check if baon has already been seen before by user
-    $: {
-        const seenList = getSeenMEals();
-        hasBeenSeen = seenList.includes(meal.name);
-        if (!hasBeenSeen) {
-            markMealAsSeen(meal.name);
-        }
-    }
-    
-    // For bounce animation upon every generation
+    // Determine if this card is currently favorited
+    $: favorite = meal?.name ? favoriteNames.includes(meal.name) : false;
+
+    $: imageSrc = getDisplayImageSrc(meal?.image);
+
+    // Trigger bounce animation
     $: if (triggerBounce) {
         bounceClass = "bounce";
-        setTimeout(() => bounceClass = "", 400); // reset after animation
+        setTimeout(() => bounceClass = "", 400);
     }
 
-    // For Heart-Button Toggle Sparkle Animations
+    // Trigger glow animation
+    $: if (favorite && triggerGlow) {
+        glowClass = "glow";
+        setTimeout(() => glowClass = "", 800);
+    }
+
+    // --- Functions ---
+
+    // Sparkle effect for favoriting
     function triggerSparkle() {
         const id = crypto.randomUUID?.() || Math.random().toString(36);
-        const newSparkle = {
-            id,
-            x: Math.random() * 20 -10, // random X offset
-            y: Math.random() * 20 -10 // random Y offset
-        };
+        const newSparkle = { id, x: Math.random() * 20 -10, y: Math.random() * 20 -10 };
         sparkles = [...sparkles, newSparkle];
         setTimeout(() => {
             sparkles = sparkles.filter(s => s.id !== id);
-        }, 600); // removes sparkles after animation
+        }, 600);
     }
 
+    // Toggle favorite status
     function toggleFavorite() {
+        if (!meal || !meal.name) return; // Need a meal to toggle
         if (favorite) {
             removeFavorite(meal.name);
             showToast("Removed from faves!", "info")
         } else {
-            saveFavorite(meal);
+            saveFavorite(meal); // Save the whole meal object (as currently implemented)
             checkAndUnlockAchievements();
             showToast("Added to faves!", "faves")
             triggerSparkle();
-
-            // trigger glow anim
-            triggerGlow = false;
-            requestAnimationFrame(() => {
-                triggerGlow = true;
-            })
+            // Trigger glow animation reactively
+            triggerGlow = false; // Reset flag
+            requestAnimationFrame(() => { triggerGlow = true; }); // Set flag in next frame
         }
-        dispatch("faveChange")
+        // Notify parent that favorites might have changed
+        dispatch("faveChange");
     }
 
-    // For double tapping to add to faves/unfave
-    let lastTapUpTime = 0;
-    const doubleTapUpDelay = 300; // ms threshold
-    let tapTimeout = null;       // Timeout to distinguish single vs double tap
+    // --- Pointer Events for Double Tap & Long Press ---
     function handlePointerDown(event) {
-        // Ignore if it's not the primary button (e.g., right-click)
         if (event.pointerType === 'mouse' && event.button !== 0) return;
-
-        // Clear any pending single tap action
         clearTimeout(tapTimeout);
         tapTimeout = null;
-
-        // Start long press timer
-        clearTimeout(longPressTimer); // Clear previous just in case
+        clearTimeout(longPressTimer);
         longPressTimer = setTimeout(() => {
-            console.log("Long press triggered");
-            longPressTimer = null; // Mark timer as finished
+            longPressTimer = null;
             wiggle = true;
             setTimeout(() => wiggle = false, 500);
         }, 600);
     }
-    function handlePointerUp(event) {
+
+    function handlePointerUp() { // Combined handler for up/leave/cancel
         const now = Date.now();
         const timeSinceLastTap = now - lastTapUpTime;
 
-        // --- Key Logic ---
-        // 1. If long press timer is still running, clear it (it wasn't a long press)
-        if (longPressTimer) {
+        if (longPressTimer) { // Didn't long press long enough
             clearTimeout(longPressTimer);
             longPressTimer = null;
-
-            // 2. Check if this tap is close enough to the last one
-            if (timeSinceLastTap < doubleTapUpDelay) {
-                // --- DOUBLE TAP DETECTED ---
+            if (timeSinceLastTap < doubleTapUpDelay) { // Double tap
                 console.log("Manual Double Tap Detected!");
-                lastTapUpTime = 0; // Reset last tap time
-                clearTimeout(tapTimeout); // Clear any pending single tap
+                lastTapUpTime = 0;
+                clearTimeout(tapTimeout);
                 tapTimeout = null;
-                toggleFavorite(); // Perform double-tap action
-            } else {
-                // --- SINGLE TAP (potentially) ---
-                // Don't perform action immediately. Wait briefly to see if another tap follows.
-                // We already cleared any previous tapTimeout in pointerdown.
-                // If another pointerdown occurs quickly, it will clear this timeout.
-                // If not, this timeout will fire, treating it as a single tap (currently does nothing, but could).
-                tapTimeout = setTimeout(() => {
-                    console.log("Single Tap Action (if any)");
-                    // Add single tap action here if needed, otherwise it does nothing
-                    tapTimeout = null;
-                }, doubleTapUpDelay + 20); // Wait slightly longer than double tap threshold
+                toggleFavorite(); // Perform action
+            } else { // Potential single tap
+                tapTimeout = setTimeout(() => { tapTimeout = null; }, doubleTapUpDelay + 50); // Wait slightly longer
             }
         }
-        // --- End Key Logic ---
-
-        // Only update lastTapUpTime if it wasn't a long press that finished
-        if(!longPressTimer && !wiggle) { // Avoid updating if long press completed
-        lastTapUpTime = now;
+        // Only update lastTapUpTime if it wasn't a long press and not wiggling
+        if(!longPressTimer && !wiggle) {
+             lastTapUpTime = now;
         }
+        // Reset wiggle if pointer comes up early? Usually handled by animation end.
+    }
 
-        // Optional: Reset wiggle if pointer comes up early during wiggle animation
-        // if (wiggle) setTimeout(() => wiggle = false, 100);
+    // Dispatch event to view recipe
+    function dispatchViewRecipe() {
+         if (meal) dispatch("viewRecipe", meal);
     }
 
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<div 
-    class="baon-card {bounceClass} {glowClass} {wiggle ? "wiggle" : ""}" 
-    on:pointerdown = {handlePointerDown}
-    on:pointerup = {handlePointerUp}
+<div
+    class="baon-card {bounceClass} {glowClass} {wiggle ? 'wiggle' : ''}"
+    on:pointerdown={handlePointerDown}
+    on:pointerup={handlePointerUp}
     on:pointerleave={handlePointerUp}
-    on:pointercancel = {handlePointerUp}
+    on:pointercancel={handlePointerUp}
+    on:touchend={handlePointerUp}
+    role="article"
+    aria-labelledby="meal-name-{meal?.id || meal?.name}"
 >
-    {#if !hasBeenSeen}
+    {#if !hasBeenSeen && meal}
         <div class="seen-indicator" title="New Meal"></div>
     {/if}
 
-    <div class="top-row">
-        {#if meal.image}
-            <img src={meal.image} alt={meal.name} class="meal-image" />
+    <div class="image-column">
+        {#if imageSrc}
+            <img src={imageSrc} alt="{meal?.name || 'Baon'}" class="meal-image" loading="lazy"/>
+        {:else if meal?.emoji}
+            <span class="emoji" aria-hidden="true">{meal.emoji}</span>
         {:else}
-            <span class="emoji">{meal.emoji}</span>
+            <span class="emoji" aria-hidden="true">🍽️</span> <!-- Default placeholder -->
         {/if}
     </div>
 
@@ -226,18 +213,19 @@
 
     .image-column {
         display: flex;
-        flex-direction: column;
         justify-content: center;
         align-items: center;
+        overflow: hidden;
         flex-shrink: 0; /* Prevent shrinking */
-        width: 90px; /* Fixed width for image column */
+        width: 100px; /* Fixed width for image column */
+        height: 100px;
     }
-
+    
     .meal-image {
-        width: 100%; /* Fill the column width */
-        height: 90px; /* Fixed height */
-        object-fit: contain; /* Show whole image */
         border-radius: 10px; /* Softer radius */
+        width: 100%; /* Fill the column width */
+        height: 100%; /* Fill the column height */
+        object-fit: cover; /* Show whole image */
     }
     .emoji {
         font-size: 3.5rem; /* Larger emoji */

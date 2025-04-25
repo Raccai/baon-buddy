@@ -1,4 +1,4 @@
-import { getCounter, getFavorites, getSeenMEals } from './storage.js';
+import { getCounter, getFavorites, getSeenMeals } from './storage.js';
 import { calendarData } from './calendar.js'; // Import the store if needed
 import { get } from 'svelte/store';
 

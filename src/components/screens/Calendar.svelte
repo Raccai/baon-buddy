@@ -274,15 +274,14 @@
   </div> <!-- End calendar-cont -->
 </div> <!-- End calendar-main -->
 
-<!-- Day Modal -->
 {#if selectedDate}
   <DayModal
-    date={selectedDate}  
+    date={selectedDate}
     meals={$calendarData[format(selectedDate, 'yyyy-MM-dd')] || []}
-    mode={modalMode} 
-    copiedMeals={copiedMeals} 
+    mode={modalMode}
+    copiedMeals={copiedMeals}
     on:add={(e) => addBaon(format(selectedDate, 'yyyy-MM-dd'), e.detail)}
-    on:remove={(e) => removeBaon(format(selectedDate, 'yyyy-MM-dd'), e.detail)} 
+    on:remove={(e) => removeBaon(format(selectedDate, 'yyyy-MM-dd'), e.detail)}
     on:copy={handleCopy}
     on:paste={handlePaste}
     on:close={closeModal}

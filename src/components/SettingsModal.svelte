@@ -5,6 +5,7 @@
     import { quintOut } from 'svelte/easing';
     import { showToast } from '../lib/toast.js';
     import BaonBuddySettings from "/titles/BaonBuddySettings.png";
+    import AchievementsIcon from "../assets/AchievementsIcon.svelte";
 
     const dispatch = createEventDispatcher();
     let timesOpened = 0;
@@ -90,7 +91,7 @@
             </header>
 
             <section class="settings-content">
-                <div class="setting toggle-setting">
+                <section class="setting toggle-setting">
                     <label class="toggle">
                         <span class="toggle-label">{musicEnabled ? 'Music On 🎶' : 'Music Off 🔇'}</span>
                         <input
@@ -102,7 +103,13 @@
                         <span class="slider"></span>
                     </label>
                     <span id="music-label" class="visually-hidden">Toggle background music</span>
-                </div>
+                </section>
+
+                <section class="setting link-setting">
+                    <button class="setting-btn achievements-link" on:click={() => dispatch('openAchievements')}>
+                       <span class="btn-icon"><AchievementsIcon /></span> View Achievements
+                    </button>
+                </section>
 
                 <section class="delete-actions">
                     <button class="setting-btn danger" on:click={clearFaves}>
@@ -353,4 +360,29 @@
     }
     .version-info p { margin: 0; }
 
+
+    /* --- Link Setting Style (for Achievements Button) --- */
+    .setting-btn.achievements-link {
+         background-color: #2c2663; /* Match toggle background */
+         color: #fff5e1;
+         border: 1px solid #4a4090;
+         width: 100%; /* Make it full width like toggle */
+         justify-content: center; /* Center content */
+         box-shadow: none; /* Remove danger shadow */
+    }
+    .setting-btn.achievements-link:hover {
+         background-color: #3a3375; /* Similar hover to toggle */
+         border-color: #6a5acd;
+         filter: brightness(1.05); /* Slightly brighter instead of 1.1 */
+     }
+    .setting-btn.achievements-link:active {
+         filter: brightness(0.95);
+     }
+    /* Style icon within the achievements button */
+     .setting-btn.achievements-link .btn-icon :global(svg) {
+        width: 20px; /* Adjust icon size */
+        height: 20px;
+        stroke-width: 2; /* Adjust stroke */
+        color: #b388eb; /* Use accent color */
+     }
 </style>

@@ -10,6 +10,7 @@
   import { getOnboardingStatus, markScreenAsDone, isScreenDone, isOverallOnboardingComplete } from '../../lib/onboardingStore';
   import HintPopover from '../HintPopover.svelte';
   import { checkAndUnlockAchievements } from '../../lib/achievementStore';
+  import { allMeals } from '../../lib/mealStore';
 
   const dispatch = createEventDispatcher();
 
@@ -60,39 +61,38 @@
     currentHintData = homeHints[hintIndex];
   }
 
-  onMount(() => {
-    // Delay the *entire* onboarding check process slightly
-    // This gives the initial render + generateMeals more time to settle.
-    // Adjust delay if needed (200-500ms is usually safe)
-    setTimeout(startOnboardingHints, 100);
-  });
-
+  
   function handleNextHint() {
     hintIndex++; // Move to the next index
     if (hintIndex < totalHomeHints) {
-        currentHintData = homeHints[hintIndex];
+      currentHintData = homeHints[hintIndex];
     }
     // 'done' event will be handled by handleDoneHint
   }
-
+  
   function handleDoneHint() { // Renamed for clarity
     showHints = false;
     currentHintData = null;
     markScreenAsDone(screenName);
   }
-
+  
   function handleSkipHint() { // Handle skip explicitly
     showHints = false;
     currentHintData = null;
     markScreenAsDone(screenName); // Mark as done even if skipped
   }
-
+  
   function generateMeals() {
-    if (!meals || meals.length === 0) {
+    const currentMealList = $allMeals || []; // Read reactive store value
+    console.log(`generateMeals called. Meal list length: ${currentMealList.length}`); // Debug log
+
+    if (currentMealList.length === 0) {
+        console.warn("Cannot generate meal, meal list is empty.");
         suggestedMeals = [];
         return;
     }
-    suggestedMeals = [...meals].sort(() => 0.5 - Math.random()).slice(0, 1);
+    suggestedMeals = [...currentMealList].sort(() => 0.5 - Math.random()).slice(0, 1);
+    console.log("Generated meal:", suggestedMeals[0]?.name);
 
     bounce = false;
     requestAnimationFrame(() => bounce = true);
@@ -100,7 +100,36 @@
     checkAndUnlockAchievements();
   }
 
-  generateMeals(); // Generate initial meal
+  onMount(() => {
+    console.log("Home.svelte onMount");
+  
+    // Start onboarding check after delay
+    setTimeout(startOnboardingHints, 300);
+  
+    // Subscribe to the store to generate the *first* meal
+    // Unsubscribe is handled automatically by Svelte for $: blocks
+    // OR use a manual unsubscribe if preferred
+    const unsubscribe = allMeals.subscribe(currentMeals => {
+        console.log("Home received allMeals update, length:", (currentMeals || []).length);
+        // Generate only if meals are loaded AND we haven't suggested one yet
+        if (currentMeals && currentMeals.length > 0 && suggestedMeals.length === 0) {
+             console.log("Store has meals and suggestion is empty. Generating initial meal.");
+             generateMeals();
+             // Optional: unsubscribe after first generation if needed
+             // unsubscribe();
+         } else if (currentMeals && currentMeals.length === 0) {
+             console.log("Store updated, but meal list is empty.");
+             suggestedMeals = []; // Ensure placeholder shows if list becomes empty
+         }
+    });
+  
+    // --- Cleanup (Optional but good practice) ---
+    // return () => {
+    //     console.log("Home unsubscribing from allMeals");
+    //     unsubscribe();
+    // };
+  
+  });
 </script>
 
 <div class="home-wrapper">

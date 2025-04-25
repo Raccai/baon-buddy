@@ -1,112 +1,137 @@
 <script>
-  import { meals } from '../lib/meals.js'; // Adjust path as needed
+  // Import the single source of truth store
+  import { allMeals } from '../lib/mealStore.js'; 
   import { createEventDispatcher } from 'svelte';
-  import { fade } from 'svelte/transition'; // Removed unused slide
+  import { fade } from 'svelte/transition';
   import { flip } from 'svelte/animate';
   import { quintOut } from 'svelte/easing';
-  import { tagStyles } from '../lib/tags.js'; // Adjust path as needed
+  import { tagStyles } from '../lib/tags.js'; // Adjust path if needed
+  import { getDisplayImageSrc } from '../lib/imageUtils.js';
 
   const dispatch = createEventDispatcher();
 
-  export let currentSelection = [];
+  export let currentSelection = []; // Meals currently selected for the specific day
   let selectedMealsInternal = [];
-  let sortedMeals = [];
+  let sortedCombinedMeals = []; // Holds the sorted list from the store
 
+  // Initialize internal state when prop changes
   $: {
     const validSelection = Array.isArray(currentSelection) ? currentSelection : [];
     selectedMealsInternal = [...validSelection];
-    updateSortedMeals();
+    // Trigger sorting whenever selection OR the main store changes
+    sortCombinedList($allMeals, selectedMealsInternal);
   }
 
-  function updateSortedMeals() {
+  // React directly to the allMeals store changing
+  $: if ($allMeals) {
+      sortCombinedList($allMeals, selectedMealsInternal);
+  }
+
+  // Function now takes the combined list as an argument
+  function sortCombinedList(combinedList, currentInternalSelection) {
     const selected = [];
     const unselected = [];
-    const currentMeals = [...meals];
+    const mealsToProcess = combinedList || []; // Use store value or empty array
 
-    currentMeals.forEach(meal => {
-      if (isSelected(meal)) {
+    mealsToProcess.forEach(meal => {
+      if (!meal) return; // Skip invalid entries
+      const keyToCheck = meal.id || meal.name; // Use ID primarily
+      if (isSelected(keyToCheck, currentInternalSelection)) {
         selected.push(meal);
       } else {
         unselected.push(meal);
       }
     });
 
-    sortedMeals = [
+    // Combine and sort
+    sortedCombinedMeals = [
         ...selected.sort((a, b) => a.name.localeCompare(b.name)),
         ...unselected.sort((a, b) => a.name.localeCompare(b.name))
     ];
   }
 
   function toggleMeal(meal) {
-    const index = selectedMealsInternal.findIndex(m => m.name === meal.name);
-    const limit = 3; // Max selection limit
+    if (!meal) return;
+    const keyToCheck = meal.id || meal.name;
+    // Use the current internal state for finding index
+    const index = selectedMealsInternal.findIndex(m => (m.id || m.name) === keyToCheck);
+    const limit = 3;
+
+    let newSelection = [...selectedMealsInternal]; // Work with a copy
 
     if (index !== -1) {
-      selectedMealsInternal.splice(index, 1);
-    } else if (selectedMealsInternal.length < limit) {
-      selectedMealsInternal.push(meal);
+      newSelection.splice(index, 1); // Remove if found
+    } else if (newSelection.length < limit) {
+      newSelection.push(meal); // Add if not found and limit not reached
     } else {
-        // Optionally dispatch an event or show a toast message for limit reached
         console.log(`Maximum selection limit (${limit}) reached.`);
-        dispatch('limitReached', { limit }); // Example: dispatch event
-        return;
+        dispatch('limitReached', { limit });
+        return; // Don't update selection or dispatch
     }
 
-    selectedMealsInternal = [...selectedMealsInternal];
-    dispatch('select', [...selectedMealsInternal]);
-    // Note: updateSortedMeals is called reactively due to selectedMealsInternal change
+    selectedMealsInternal = newSelection; // Update internal state (triggers reactivity)
+    dispatch('select', [...selectedMealsInternal]); // Dispatch a copy of the new selection
   }
 
-  function isSelected(meal) {
-    return selectedMealsInternal.some(m => m.name === meal.name);
+  // isSelected now needs the current internal selection passed to it
+  function isSelected(key, currentInternalSelection) {
+    return currentInternalSelection.some(m => (m.id || m.name) === key);
   }
 
   function viewRecipe(meal, event) {
       event.stopPropagation();
-      dispatch('viewRecipe', meal);
+      if (meal) dispatch('viewRecipe', meal);
   }
 
 </script>
 
 <div class="selector">
-  {#if sortedMeals.length > 0}
-    {#each sortedMeals as meal (meal.name)}
+  {#if sortedCombinedMeals.length > 0}
+    {#each sortedCombinedMeals as meal (meal.id || meal.name)}
       <!-- svelte-ignore a11y_click_events_have_key_events -->
       <!-- svelte-ignore a11y_no_static_element_interactions -->
+      {@const mealKey = meal.id || meal.name}
+      {@const isCurrentlySelected = isSelected(mealKey, selectedMealsInternal)}
+      {@const isDisabled = selectedMealsInternal.length >= 3 && !isCurrentlySelected}
+      {@const displaySrc = getDisplayImageSrc(meal.image)}
+      <!-- svelte-ignore a11y_click_events_have_key_events -->
       <div
-        class="mini-card {isSelected(meal) ? 'selected' : ''} {selectedMealsInternal.length >= 3 && !isSelected(meal) ? 'disabled' : ''}"
+        class="mini-card"
+        class:selected={isCurrentlySelected}
+        class:disabled={isDisabled}
         on:click={() => toggleMeal(meal)}
         animate:flip={{ duration: 350, easing: quintOut }}
         role="button"
         tabindex="0"
-        aria-pressed={isSelected(meal)}
-        aria-disabled={selectedMealsInternal.length >= 3 && !isSelected(meal)}
-        aria-label="{meal.name} - {meal.type || 'No type'}. {isSelected(meal) ? 'Selected.' : 'Click to select.'}"
+        aria-pressed={isCurrentlySelected}
+        aria-disabled={isDisabled}
+        aria-label="{meal.name} - {meal.type || 'No type'}. {isCurrentlySelected ? 'Selected.' : 'Click to select.'}"
       >
         <div class="mini-img">
-          {#if meal.image}
-            <img src={meal.image} alt="" loading="lazy" /> <!-- Decorative alt -->
+          {#if displaySrc}
+            <img src={displaySrc} alt="" loading="lazy" />
           {:else}
             <div class="placeholder-img" aria-hidden="true">{meal.name ? meal.name[0] : '?'}</div>
           {/if}
         </div>
         <div class="mini-info">
           <span class="mini-name">{meal.name}</span>
-          {#if meal.type}
+          {#if meal.type && tagStyles[meal.type]}
+            {@const tagData = tagStyles[meal.type]}
             <span
               class="mini-type"
-              style="background-color: {tagStyles[meal.type]?.color || '#ccc'}"
+              style="background-color: {tagData.color}; color: {tagData.textColor || '#fff'}"
             >
-              {meal.type}
+              {tagData.label || meal.type}
             </span>
           {/if}
         </div>
         <div class="mini-actions">
-          <!-- Use the SVG icon -->
           <button class="recipe-btn" on:click={(e) => viewRecipe(meal, e)} title="View Recipe for {meal.name}">
+             <!-- ... recipe svg ... -->
              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52" aria-hidden="true">
-                    <path d="m31.2 4.24a2.24 2.24 0 1 1 -2.2-2.24 2.24 2.24 0 0 1 2.2 2.24zm-8.2 8.32a3 3 0 1 0 -3-3 3 3 0 0 0 3 3zm19.44 31-10-15.36v-8.2a2.14 2.14 0 0 0 2.4-2.24 2 2 0 0 0 -1.84-2.16h-13.8a2 2 0 0 0 -2 2 2.09 2.09 0 0 0 0 .25 2.16 2.16 0 0 0 2.4 2.24v8.31l-10 15.2a4.26 4.26 0 0 0 -.24 4.24 3.91 3.91 0 0 0 3.52 2.16h26.12a3.9 3.9 0 0 0 3.52-2.16 4 4 0 0 0 -.16-4.24zm-18.8-14v-9.16h4.8v9.28l4.72 7.52h-14.28z" fill="currentColor"/>
-             </svg>
+              <path d="m31.2 4.24a2.24 2.24 0 1 1 -2.2-2.24 2.24 2.24 0 0 1 2.2 2.24zm-8.2 8.32a3 3 0 1 0 -3-3 3 3 0 0 0 3 3zm19.44 31-10-15.36v-8.2a2.14 2.14 0 0 0 2.4-2.24 2 2 0 0 0 -1.84-2.16h-13.8a2 2 0 0 0 -2 2 2.09 2.09 0 0 0 0 .25 2.16 2.16 0 0 0 2.4 2.24v8.31l-10 15.2a4.26 4.26 0 0 0 -.24 4.24 3.91 3.91 0 0 0 3.52 2.16h26.12a3.9 3.9 0 0 0 3.52-2.16 4 4 0 0 0 -.16-4.24zm-18.8-14v-9.16h4.8v9.28l4.72 7.52h-14.28z" fill="currentColor"/>
+            </svg>
              <span class="visually-hidden">View Recipe for {meal.name}</span>
           </button>
         </div>
@@ -114,7 +139,7 @@
     {/each}
   {:else}
     <div class="no-meals" transition:fade>
-      <p>No meals available to select!</p>
+      <p>No Baon available!</p>
     </div>
   {/if}
 </div>

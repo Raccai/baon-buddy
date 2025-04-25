@@ -2,18 +2,22 @@
   import BaonBuddyTitle from "/titles/BaonBuddyTitle.png";
   import Favorites from "../assets/Favorites.svelte";
   import Settings from "../assets/Settings.svelte";
-  import AchievementsIcon from "../assets/AchievementsIcon.svelte";
+  import ManageBaonIcon from "../assets/ManageBaonIcon.svelte";
 
   export let onToggleFavorites;
   export let onOpenSettings;
-  export let onOpenAchievements = () => {};
+  export let onOpenManageBaon = () => {};
 
   let activeButton = null;
 
   function handleClick(name, callback) {
     activeButton = name;
-    setTimeout(() => activeButton = null, 300);
-    callback?.();
+    setTimeout(() => activeButton = null, 250); // Reset slightly faster
+    if (typeof callback === 'function') {
+        callback();
+    } else {
+        console.warn(`Callback for button "${name}" is not defined or not a function.`);
+    }
   }
 </script>
 
@@ -29,14 +33,15 @@
       </span>
     </button>
 
-    <!-- Achievements Button -->
+    <!-- Manage Baon Button -->
     <button
-      on:click={() => handleClick('achievements', onOpenAchievements)}
+      on:click={() => handleClick('manage_baon', onOpenManageBaon)}
       class="topbar-btn"
-      aria-label="View Achievements"
+      class:animating={activeButton === 'manage_baon'}
+      aria-label="Manage My Baon"
     >
-      <span class:active={activeButton === 'achievements'}>
-        <AchievementsIcon />
+      <span class="icon-wrapper">
+        <ManageBaonIcon />
       </span>
     </button>
 

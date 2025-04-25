@@ -4,21 +4,12 @@
     import { fly, fade } from "svelte/transition";
     import { quintOut } from 'svelte/easing'; // Added easing
     import BaonBuddyFavorites from "/titles/BaonBuddyFavorites.png";
+    import { getDisplayImageSrc } from "../lib/imageUtils";
 
     const dispatch = createEventDispatcher();
 
     export let visible = false;
     let favorites = [];
-
-    // Can likely remove selectMeal if clicking opens recipe sheet directly. Will have to test further
-    // function selectMeal(meal) {
-    //     dispatch("selectMeal", meal);
-    //     closeModal(); // Renamed from close
-    // }
-
-    // No need for explicit open/refresh if parent handles visibility/data refresh
-    // export function open() { ... }
-    // export function refresh() { ... }
 
     function closeModal() { // Renamed from close
         visible = false; // Update local state if needed
@@ -84,11 +75,12 @@
         {:else}
             <ul class="favorites-list">
                 {#each favorites as meal (meal.name)}
+                    {@const displaySrc = getDisplayImageSrc(meal.image)}
                     <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
                     <!-- svelte-ignore a11y_click_events_have_key_events -->
                     <li on:click={() => viewRecipe(meal)} title="View recipe for {meal.name}">
                         <div class="meal-info">
-                            <img src={meal.image} alt="" class="meal-image"> <!-- Decorative alt -->
+                            <img src={displaySrc} alt="" class="meal-image"> <!-- Decorative alt -->
                             <span class="meal-name">{meal.name}</span>
                         </div>
                         <button class="remove-fav-btn" on:click={(e) => removeFav(e, meal.name)} aria-label="Remove {meal.name} from Favorites">
@@ -227,8 +219,8 @@
     .meal-image {
         width: 36px; /* Slightly larger image */
         height: 36px;
-        object-fit: cover; /* Use cover */
         border-radius: 6px; /* Rounded image */
+        object-fit: cover;
         flex-shrink: 0;
         background-color: #4a4090; /* Placeholder bg */
     }

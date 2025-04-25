@@ -1,27 +1,37 @@
 <script>
-  import { meals } from "../../lib/meals.js";
+  // Default meal import no longer needed directly here
+  // import { meals } from "../../lib/meals.js";
   import BaonCard from '../BaonCard.svelte';
-  import { getFavorites } from "../../lib/storage";
+  import { getFavorites } from "../../lib/storage"; // Keep for initial favorite check? Or pass down from App?
   import RecipeSheet from "../RecipeSheet.svelte";
   import { tagStyles } from "../../lib/tags.js";
   import { fade } from 'svelte/transition';
+  // --- Use the reactive store ---
+  import { allMeals } from "../../lib/mealStore.js"; 
   // --- Onboarding Imports ---
   import { onMount, tick } from 'svelte';
   import { getOnboardingStatus, markScreenAsDone, isScreenDone, isOverallOnboardingComplete } from '../../lib/onboardingStore.js';
   import HintPopover from '../HintPopover.svelte';
 
   let selectedFilters = [];
-  let filteredMeals = meals;
+  let filteredMeals = []; // Initialize empty, will be populated by reactive block
   let selectedMeal = null;
   let showRecipe = false;
+  // Initialize favoriteNames directly or receive as prop if App manages it centrally
   let favoriteNames = getFavorites().map(meal => meal.name);
 
+  // Assume tagStyles has all valid tags as keys
   const allTags = Object.keys(tagStyles);
 
-  $: filteredMeals = meals.filter(meal => {
+  // --- Reactive block to filter meals ---
+  // Runs whenever $allMeals store changes OR selectedFilters changes
+  $: filteredMeals = ($allMeals || []).filter(meal => { // Use store value, default to empty array
+    // Safety check for meal structure
+    if (!meal || typeof meal !== 'object') return false;
+    // Filter logic
     const matchFilter = selectedFilters.length === 0 || selectedFilters.includes(meal.type);
     return matchFilter;
-  });
+  }).sort((a,b) => a.name.localeCompare(b.name)); // Optional: Keep sorted alphabetically
 
   function toggleFilter(tag) {
     if (selectedFilters.includes(tag)) {
@@ -38,24 +48,25 @@
 
   function closeRecipe() {
     showRecipe = false;
+    selectedMeal = null; // Clear selected meal
   }
 
+  // Refresh local favoriteNames state when a BaonCard event occurs
+  // This is needed if BaonCard directly uses this prop for its heart icon state
   function refreshFavorites() {
+      console.log("BaonList refreshing favorites state");
       favoriteNames = getFavorites().map(meal => meal.name);
   }
 
   // --- Onboarding Logic ---
-  const FORCE_ONBOARDING_TESTING = true; // Set to false for normal behavior
+  const FORCE_ONBOARDING_TESTING = false; // Set to false for normal behavior
   const screenName = 'baonlist';
   let showHints = false;
   let hintIndex = 0;
   let currentHintData = null;
-
-  // Define hints for BaonList
   const baonListHints = [
       { targetSelector: '#baonlist-filters', text: 'Tap these tags to filter the Baon list!', position: 'bottom' },
-      { targetSelector: '#first-baon-card-wrapper', text: 'Here are the Baon ideas! Tap the flast/potion icon to open a baon recipe, or tap the heart to add/remove from favorites.', position: 'bottom' },
-      // Add more hints if needed
+      { targetSelector: '#first-baon-card-wrapper', text: 'Here are the Baon ideas! Tap the icon on the right to see a recipe, or tap the heart to add/remove from favorites.', position: 'bottom' },
   ];
   const totalBaonListHints = baonListHints.length;
   let onboardingCheckStarted = false;
@@ -63,7 +74,6 @@
   async function startOnboardingHints() {
       if (onboardingCheckStarted) return;
       onboardingCheckStarted = true;
-
       console.log(`Checking onboarding status for ${screenName}...`);
 
       if (!FORCE_ONBOARDING_TESTING) {
@@ -73,17 +83,25 @@
         }
       }
 
-      await tick(); // Wait for initial DOM render
-      await new Promise(res => setTimeout(res, 150)); // Extra delay
+      await tick();
+      await new Promise(res => setTimeout(res, 150));
 
-      // Check if the first target exists before showing hints
-      // Especially important for the card which depends on filteredMeals
+      // Check if hints can start
        if (!document.querySelector(baonListHints[0].targetSelector)) {
             console.warn(`Initial target ${baonListHints[0].targetSelector} not found for ${screenName}. Skipping hints.`);
-            // Optionally mark as done if hints can't start?
-            // if (!FORCE_ONBOARDING_TESTING) markScreenAsDone(screenName);
+            if (!FORCE_ONBOARDING_TESTING) markScreenAsDone(screenName);
             return;
        }
+       // Also check if there's at least one card to target for the second hint
+       // We need to wait until filteredMeals is populated
+       if (filteredMeals.length === 0) {
+            console.warn(`No meals available yet for ${screenName} hint 2. Will try again shortly.`);
+             // Optionally retry later if meals might load async, otherwise skip
+             setTimeout(startOnboardingHints, 500); // Retry after 500ms
+             onboardingCheckStarted = false; // Allow retry
+             return;
+       }
+
 
       console.log(`Attempting to show hints for ${screenName}.`);
       showHints = true;
@@ -91,18 +109,22 @@
       currentHintData = baonListHints[hintIndex];
   }
 
-
   onMount(() => {
-      // Delay the onboarding check
-      setTimeout(startOnboardingHints, 300);
+      setTimeout(startOnboardingHints, 300); // Initial delay
   });
 
   function handleNextHint() {
       hintIndex++;
       if (hintIndex < totalBaonListHints) {
-          currentHintData = baonListHints[hintIndex];
+          // Check if the next target exists before showing
+          const nextTargetSelector = baonListHints[hintIndex].targetSelector;
+          if (document.querySelector(nextTargetSelector)) {
+             currentHintData = baonListHints[hintIndex];
+          } else {
+              console.warn(`Target ${nextTargetSelector} not found for next hint. Skipping remaining hints.`);
+              finishHintsCommon(); // Skip rest if target not ready
+          }
       } else {
-          // Should not be reached if last button is "Got it!"
           finishHintsCommon();
       }
   }
@@ -129,7 +151,6 @@
 <div class="baonlist-page">
   <div class="fixed-controls">
     <div class="filters-scroll">
-      <!-- ADD ID HERE -->
       <div class="filters-inner" id="baonlist-filters">
         <button class:selected={selectedFilters.length === 0} class="filter-all-btn" on:click={() => selectedFilters = []}>All</button>
         {#each allTags as tag}
@@ -149,16 +170,17 @@
   </div>
 
   <div class="baonlist-container">
+    <!-- Use reactive filteredMeals -->
     {#if filteredMeals.length > 0}
       <div class="meals-grid">
-        {#each filteredMeals as meal, i (meal.name)}
-          <!-- ADD WRAPPER WITH CONDITIONAL ID -->
+         <!-- Key by unique ID -->
+        {#each filteredMeals as meal, i (meal.id || meal.name)}
           <div id={i === 0 ? 'first-baon-card-wrapper' : null}>
             <BaonCard
               on:viewRecipe={(e) => openRecipe(e.detail)}
               {meal}
               {favoriteNames}
-              on:faveChange={refreshFavorites}
+              on:faveChange={refreshFavorites} 
             />
           </div>
         {/each}
