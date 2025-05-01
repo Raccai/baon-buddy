@@ -182,23 +182,41 @@
 
 <style>
     .manage-baon-page {
-        height: 100%; width: 100%; display: flex; flex-direction: column;
-        overflow: hidden; background-color: #1a163f; color: #fff5e1;
+        height: 100%;
+        width: 100%; 
+        display: flex; 
+        flex-direction: column;
+        overflow: hidden; 
+        background-color: #1a163f; color: #fff5e1;
         box-sizing: border-box;
     }
     .page-header {
-        display: flex; flex-direction: column; align-items: center;
-        position: relative; padding: 1rem;
+        display: flex; 
+        flex-direction: column; 
+        align-items: center;
+        position: relative; 
+        padding: 1rem;
         padding-top: 2.5rem;
-        border-bottom: 1px solid #4a4090; flex-shrink: 0;
+        border-bottom: 1px solid #4a4090; 
+        flex-shrink: 0;
         background-color: #231d52;
     }
     .header-close-btn {
-        position: absolute; top: 10px; right: 10px;
-        background: transparent; border: none; color: #fff5e1a8;
-        cursor: pointer; padding: 0.5rem; margin: 0; border-radius: 50%;
-        display: flex; align-items: center; justify-content: center;
-        transition: color 0.2s ease, background-color 0.2s ease; z-index: 2;
+        position: absolute; 
+        top: 10px; 
+        right: 10px;
+        background: transparent; 
+        border: none; 
+        color: #fff5e1a8;
+        cursor: pointer; 
+        padding: 0.5rem; 
+        margin: 0; 
+        border-radius: 50%;
+        display: flex; 
+        align-items: center; 
+        justify-content: center;
+        transition: color 0.2s ease, background-color 0.2s ease; 
+        z-index: 2;
     }
     .header-close-btn:hover, .header-close-btn:focus-visible { color: #fff; background-color: #4a409060; outline: none; }
     .header-close-btn svg { width: 22px; height: 22px; }
@@ -233,48 +251,68 @@
     .meals-list { display: flex; flex-direction: column; gap: 0.8rem; }
 
     .meal-item {
-        background-color: #2c2663; border: 1px solid #4a4090;
-        border-radius: 8px; padding: 0.8rem 1rem; display: flex;
-        justify-content: space-between; align-items: center; gap: 0.8rem;
+        background-color: #2c2663; 
+        border: 1px solid #4a4090;
+        border-radius: 8px; 
+        padding: 0.8rem 1rem; 
+        display: flex;
+        justify-content: space-between; 
+        align-items: center; 
+        gap: 0.8rem;
         cursor: pointer;
         transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
         outline-offset: 3px;
     }
-     .meal-item.default {
-         /* Optional styling for default items */
-         /* border-left: 3px solid #6a5acd; */
-     }
-     .meal-item:focus-visible { outline: 2px solid #b388eb; border-color: #b388eb; }
-     .meal-item:hover { background-color: #3a3375; border-color: #6a5acd; transform: scale(1.015); }
+    .meal-item:focus-visible { outline: 2px solid #b388eb; border-color: #b388eb; }
+    .meal-item:hover { background-color: #3a3375; border-color: #6a5acd; transform: scale(1.015); }
 
-     .meal-item-visual {
-        width: 45px; height: 45px; flex-shrink: 0;
-        display: flex; align-items: center; justify-content: center;
-        background-color: #3a3375; border-radius: 6px; overflow: hidden;
+    .meal-item-visual {
+        width: 45px; 
+        height: 45px; 
+        flex-shrink: 0;
+        display: flex; 
+        align-items: center; 
+        justify-content: center;
+        background-color: #3a3375; 
+        border-radius: 6px; 
+        overflow: hidden;
     }
     .meal-item-image { display: block; width: 100%; height: 100%; object-fit: contain; }
     .meal-item-emoji { font-size: 1.8rem; line-height: 1; }
 
     .meal-details {
-        flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.1rem;
+        flex-grow: 1; 
+        min-width: 0; 
+        display: flex; 
+        flex-direction: column; 
+        gap: 0.1rem;
         user-select: none;
     }
     .meal-item-name {
-        display: block; font-weight: 600; color: #fff; margin-bottom: 0.1rem;
-        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        display: block; 
+        font-weight: 600; 
+        color: #fff; 
+        margin-bottom: 0.1rem;
+        white-space: nowrap; 
+        overflow: hidden; 
+        text-overflow: ellipsis;
     }
     .meal-item-type { font-size: 0.8rem; color: #fff5e1b3; text-transform: capitalize; }
-    .default-tag {
-         font-size: 0.7rem; background-color: #4a4090; color: #fff5e1b3;
-         padding: 0.1rem 0.4rem; border-radius: 4px; margin-top: 0.2rem;
-         align-self: flex-start; font-weight: 500;
-     }
 
-     .meal-actions { display: flex; gap: 0.5rem; flex-shrink: 0; }
-     .meal-actions button {
-        background: none; border: none; cursor: pointer; font-size: 1.1rem;
-        padding: 0.3rem; border-radius: 50%; line-height: 1;
-        width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;
+    .meal-actions { display: flex; gap: 0.5rem; flex-shrink: 0; }
+    .meal-actions button {
+        background: none; 
+        border: none; 
+        cursor: pointer; 
+        font-size: 1.1rem;
+        padding: 0.3rem; 
+        border-radius: 50%; 
+        line-height: 1;
+        width: 30px; 
+        height: 30px; 
+        display: flex; 
+        align-items: center; 
+        justify-content: center;
         transition: background-color 0.2s ease, transform 0.15s ease;
         color: #fff5e1b3;
     }
@@ -288,26 +326,43 @@
   }
    .no-meals-message p { margin-bottom: 1.5rem; font-size: 1.1em; }
    .add-first-btn { /* Style like add-new-btn */
-       background-color: #b388eb; color: #1a163f;
-       border: none; padding: 0.6rem 1.2rem; border-radius: 2rem;
-       font-weight: 600; cursor: pointer; font-size: 0.95rem;
-       display: inline-flex; align-items: center; gap: 0.4rem;
-       transition: all 0.2s ease; box-shadow: 0 2px 5px rgba(179, 136, 235, 0.3);
+       background-color: #b388eb; 
+       color: #1a163f;
+       border: none; 
+       padding: 0.6rem 1.2rem; 
+       border-radius: 2rem;
+       font-weight: 600; 
+       cursor: pointer; font-size: 0.95rem;
+       display: inline-flex; 
+       align-items: center; gap: 0.4rem;
+       transition: all 0.2s ease; 
+       box-shadow: 0 2px 5px rgba(179, 136, 235, 0.3);
    }
    .add-first-btn:hover {
-       background-color: #c7a4ff; transform: translateY(-1px);
+       background-color: #c7a4ff; 
+       transform: translateY(-1px);
        box-shadow: 0 4px 8px rgba(179, 136, 235, 0.4);
     }
 
     /* Form Modal Styling */
     .form-modal-backdrop {
-        position: fixed; inset: 0; background-color: rgba(10, 8, 30, 0.7);
-        backdrop-filter: blur(4px); z-index: 10010;
-        display: flex; justify-content: center; align-items: center; padding: 1rem;
+        position: fixed; 
+        inset: 0; 
+        background-color: rgba(10, 8, 30, 0.7);
+        backdrop-filter: blur(4px); 
+        z-index: 10010;
+        display: flex; 
+        justify-content: center; 
+        align-items: center; 
+        padding: 1rem;
     }
     .form-wrapper {
-         width: 100%; max-width: 450px; max-height: 90vh;
-         overflow-y: auto; scrollbar-width: thin; scrollbar-color: #6a5acd #3a3375;
+        width: 100%; 
+        max-width: 450px; 
+        max-height: 90vh;
+        overflow-y: auto; 
+        scrollbar-width: thin; 
+        scrollbar-color: #6a5acd #3a3375;
     }
      .form-wrapper::-webkit-scrollbar { width: 8px; }
      .form-wrapper::-webkit-scrollbar-track { background: #3a3375; border-radius: 4px;}
@@ -315,16 +370,16 @@
 
     /* Responsive adjustments */
     @media (min-width: 768px) {
-         .page-header { padding: 1.5rem; padding-top: 3rem;}
-         .add-new-btn { padding: 0.7rem 1.5rem; font-size: 1.05rem;}
-         .content-area { padding: 2rem;}
-         .meal-item { padding: 1rem 1.5rem; border-radius: 10px; gap: 1.2rem;}
-         .meal-item-visual { width: 60px; height: 60px; border-radius: 8px; }
-         .meal-item-emoji { font-size: 2.2rem; }
-         .meal-item-name { font-size: 1.1rem; }
-         .meal-item-type { font-size: 0.9rem; }
-         .meal-actions button { font-size: 1.4rem; width: 38px; height: 38px;}
-         .form-wrapper { max-width: 550px; }
+        .page-header { padding: 1.5rem; padding-top: 3rem;}
+        .add-new-btn { padding: 0.7rem 1.5rem; font-size: 1.05rem;}
+        .content-area { padding: 2rem;}
+        .meal-item { padding: 1rem 1.5rem; border-radius: 10px; gap: 1.2rem;}
+        .meal-item-visual { width: 60px; height: 60px; border-radius: 8px; }
+        .meal-item-emoji { font-size: 2.2rem; }
+        .meal-item-name { font-size: 1.1rem; }
+        .meal-item-type { font-size: 0.9rem; }
+        .meal-actions button { font-size: 1.4rem; width: 38px; height: 38px;}
+        .form-wrapper { max-width: 550px; }
     }
 
     /* Further adjustments for very large screens if desired */

@@ -359,9 +359,6 @@
     box-sizing: border-box;
     overflow: hidden; /* Prevent wrapper scroll */
   }
-  .achievements-close-btn:hover {
-    background: rgba(0, 0, 0, 0.6);
-  }
 
   /* Ensure AchievementsScreen component fills the overlay */
   /* Adjust selector if AchievementsScreen root element is different */

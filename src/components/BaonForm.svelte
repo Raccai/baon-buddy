@@ -419,7 +419,6 @@
         color: #fff5e1b3; /* Dimmer labels */
     }
     input[type="text"],
-    input[type="url"],
     textarea,
     select {
         width: 100%;
