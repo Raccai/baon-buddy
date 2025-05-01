@@ -58,9 +58,9 @@
 
       // Check if the first target exists
       if (!document.querySelector(calendarHints[0].targetSelector)) {
-          console.warn(`Initial target ${calendarHints[0].targetSelector} not found for ${screenName}. Skipping hints.`);
-          if (!FORCE_ONBOARDING_TESTING) markScreenAsDone(screenName); // Mark done if cannot start
-          return;
+        console.warn(`Initial target ${calendarHints[0].targetSelector} not found for ${screenName}. Skipping hints.`);
+        if (!FORCE_ONBOARDING_TESTING) markScreenAsDone(screenName); // Mark done if cannot start
+        return;
       }
 
     console.log(`Attempting to show hints for ${screenName}.`);
@@ -74,7 +74,7 @@
     if (hintIndex < totalCalendarHints) {
       // Important: Add a tick before setting next hint data if target might change/appear
       tick().then(() => {
-        currentHintData = calendarHints[hintIndex];
+      currentHintData = calendarHints[hintIndex];
       });
     } else {
       finishHintsCommon();
@@ -103,9 +103,9 @@
     selectedDate = null;
     // Reset copy mode when modal closes *if* it was in a copy state
     if (modalMode === 'copySource' || modalMode === 'copyTarget') {
-       modalMode = 'view';
-       // Keep copiedMeals to allow pasting later unless explicitly cleared
-       // copiedMeals = null; // Uncomment this line if closing should always clear copied data
+      modalMode = 'view';
+      // Keep copiedMeals to allow pasting later unless explicitly cleared
+      // copiedMeals = null; // Uncomment this line if closing should always clear copied data
     }
   }
 
@@ -344,10 +344,10 @@
   }
 
   .sparkle-star :global(svg) { /* Target SVG inside Sparkle component */
-     width: 100%;
-     height: 100%;
-     fill: #fff5e1; /* Creamy white sparkle color */
-     filter: drop-shadow(0 0 3px #fff5e1); /* Add a glow */
+    width: 100%;
+    height: 100%;
+    fill: #fff5e1; /* Creamy white sparkle color */
+    filter: drop-shadow(0 0 3px #fff5e1); /* Add a glow */
   }
 
 
@@ -401,9 +401,9 @@
   }
 
   @keyframes floatDust {
-     0% { transform: translate(0, 0); opacity: 0; }
-     10%, 90% { opacity: 0.4; } /* Fade in/out */
-     100% { transform: translate(-20vw, -50vh) scale(0.5); opacity: 0; } /* Adjust travel distance/direction */
+    0% { transform: translate(0, 0); opacity: 0; }
+    10%, 90% { opacity: 0.4; } /* Fade in/out */
+    100% { transform: translate(-20vw, -50vh) scale(0.5); opacity: 0; } /* Adjust travel distance/direction */
   }
   /* --- End Copied Background Styles --- */
 
@@ -493,8 +493,8 @@
     outline: none;
   }
   .month-nav:active {
-     transform: scale(0.98);
-     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2), 0 0 6px rgba(255, 245, 225, 0.1);
+    transform: scale(0.98);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2), 0 0 6px rgba(255, 245, 225, 0.1);
   }
 
   .arrow {
@@ -622,9 +622,9 @@
     box-shadow: inset 0 0 5px rgba(255, 245, 225, 0.15), 0 3px 8px rgba(0,0,0,0.3); /* Inner glow + shadow */
   }
   .day.today:hover, .day.today:focus-visible {
-     box-shadow: inset 0 0 8px rgba(255, 245, 225, 0.2), 0 5px 15px rgba(0,0,0,0.35), 0 0 15px #fff5e160; /* Enhanced hover for today */
-     border-color: #fff5e1; /* Stronger border on hover */
-     background: #5a50bfe8;
+    box-shadow: inset 0 0 8px rgba(255, 245, 225, 0.2), 0 5px 15px rgba(0,0,0,0.35), 0 0 15px #fff5e160; /* Enhanced hover for today */
+    border-color: #fff5e1; /* Stronger border on hover */
+    background: #5a50bfe8;
   }
 
   .blank {
@@ -634,11 +634,11 @@
     border-color: transparent;
   }
   .blank:hover, .blank:focus-visible { /* Prevent hover/focus effects on blank days */
-      transform: none;
-      box-shadow: none;
-      background: transparent;
-      border-color: transparent;
-      z-index: auto;
+    transform: none;
+    box-shadow: none;
+    background: transparent;
+    border-color: transparent;
+    z-index: auto;
   }
 
   .day-number {
@@ -741,19 +741,19 @@
       padding: 0.6rem; /* More padding inside day */
        border-width: 2px; /* Thicker borders for today */
     }
-     .day.today {
-         border-width: 2px; /* Ensure today border is visible */
-         box-shadow: inset 0 0 6px rgba(255, 245, 225, 0.15), 0 4px 10px rgba(0,0,0,0.3); /* Enhance shadow */
-     }
+    .day.today {
+      border-width: 2px; /* Ensure today border is visible */
+      box-shadow: inset 0 0 6px rgba(255, 245, 225, 0.15), 0 4px 10px rgba(0,0,0,0.3); /* Enhance shadow */
+    }
     .day-number {
       font-size: 1.2rem; /* Larger day number */
       margin-bottom: 0.4rem;
     }
-     .meal-indicator {
-        height: 6px; /* Thicker indicators */
-        border-radius: 3px;
-        width: 75%; /* Adjust width */
-     }
+    .meal-indicator {
+      height: 6px; /* Thicker indicators */
+      border-radius: 3px;
+      width: 75%; /* Adjust width */
+    }
   }
 
   /* Problem Screen 2: Very Large/Tall Tablets */
@@ -763,16 +763,16 @@
       margin-top: 3rem; /* Adjust margin */
       align-items: center; /* Ensure content centers */
     }
-     .calendar-header, .calendar-actions, .day-labels, .calendar-container {
-         max-width: 800px; /* Increase overall max-width further */
-     }
+    .calendar-header, .calendar-actions, .day-labels, .calendar-container {
+      max-width: 800px; /* Increase overall max-width further */
+    }
     .calendar-header h2 {
       font-size: 2rem; /* Larger title */
     }
     .month-nav {
       width: 64px; /* Larger nav buttons */
       height: 64px;
-       border-width: 2px;
+      border-width: 2px;
     }
     .arrow {
       font-size: 1.6rem;
@@ -781,18 +781,18 @@
       padding: 1rem 2.2rem; /* More padding */
       font-size: 1.4rem; /* Larger text */
       border-radius: 2.5rem;
-       gap: 0.8rem;
+      gap: 0.8rem;
     }
     .today-btn .icon {
-        font-size: 1.6rem; /* Larger icon */
+      font-size: 1.6rem; /* Larger icon */
     }
     .day-labels div {
       padding: 0.8rem 0; /* More space */
       font-size: 1.4rem; /* Larger labels */
     }
     .calendar-container {
-       min-height: 55rem; /* More height needed for larger days */
-       /* Removed fixed width/overflow adjustments for calendar, let grid handle it */
+      min-height: 55rem; /* More height needed for larger days */
+      /* Removed fixed width/overflow adjustments for calendar, let grid handle it */
     }
     .calendar {
       gap: 1rem; /* Larger gap */
@@ -807,18 +807,18 @@
       /* Removed fixed width/height, rely on aspect-ratio and grid */
       /* width: 5rem; height: 5rem; */
     }
-     .day.today {
-         border-width: 3px; /* Thicker today border */
-         box-shadow: inset 0 0 8px rgba(255, 245, 225, 0.2), 0 5px 15px rgba(0,0,0,0.35);
-     }
+    .day.today {
+      border-width: 3px; /* Thicker today border */
+      box-shadow: inset 0 0 8px rgba(255, 245, 225, 0.2), 0 5px 15px rgba(0,0,0,0.35);
+    }
     .day-number {
       font-size: 1.6rem; /* Larger numbers */
       margin-bottom: 0.6rem;
     }
-     .meal-indicator {
-         height: 7px;
-         border-radius: 3.5px;
-         width: 70%;
-     }
+    .meal-indicator {
+      height: 7px;
+      border-radius: 3.5px;
+      width: 70%;
+    }
   }
 </style>

@@ -122,7 +122,7 @@
 
     // Dispatch event to view recipe
     function dispatchViewRecipe() {
-         if (meal) dispatch("viewRecipe", meal);
+        if (meal) dispatch("viewRecipe", meal);
     }
 
 </script>

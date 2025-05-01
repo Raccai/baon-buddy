@@ -14,9 +14,9 @@
     activeButton = name;
     setTimeout(() => activeButton = null, 250); // Reset slightly faster
     if (typeof callback === 'function') {
-        callback();
+      callback();
     } else {
-        console.warn(`Callback for button "${name}" is not defined or not a function.`);
+      console.warn(`Callback for button "${name}" is not defined or not a function.`);
     }
   }
 </script>

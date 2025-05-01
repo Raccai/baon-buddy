@@ -18,24 +18,24 @@
 
   // This function is needed if BaonCardSelector needs to dispatch recipe view
   function handleViewRecipe(event) {
-      dispatch('viewRecipe', event.detail); // Forward the event if needed
+    dispatch('viewRecipe', event.detail); // Forward the event if needed
   }
 
   function handleCopy() {
     if (meals.length > 0) {
-       dispatch('copy', meals);
+      dispatch('copy', meals);
     }
   }
 
   function handlePaste() {
     if (copiedMeals) {
-        dispatch('paste');
+      dispatch('paste');
     }
   }
 
   function handleClearAll() {
     if (meals.length > 0) {
-        dispatch('add', []); // Dispatch 'add' with empty array to clear
+      dispatch('add', []); // Dispatch 'add' with empty array to clear
     }
   }
 
@@ -65,11 +65,11 @@
 
     <!-- Wrapper for BaonCardSelector to apply global styles effectively -->
     <div class="baon-selector-wrapper">
-        <BaonCardSelector
-            currentSelection={meals}
-            on:select={e => handleAdd(e.detail)}
-            on:viewRecipe={handleViewRecipe} 
-        />
+      <BaonCardSelector
+        currentSelection={meals}
+        on:select={e => handleAdd(e.detail)}
+        on:viewRecipe={handleViewRecipe} 
+      />
     </div>
 
 
@@ -151,11 +151,11 @@
   }
 
   .baon-selector-wrapper {
-      flex-grow: 1; /* Allow selector to take available space */
-      overflow: hidden; /* Prevent internal scrollbars from affecting layout */
-      margin-top: 0.5rem;
-      margin-bottom: 1rem; /* Space below selector */
-      position: relative; /* For potential absolute elements inside */
+    flex-grow: 1; /* Allow selector to take available space */
+    overflow: hidden; /* Prevent internal scrollbars from affecting layout */
+    margin-top: 0.5rem;
+    margin-bottom: 1rem; /* Space below selector */
+    position: relative; /* For potential absolute elements inside */
   }
 
   .actions {
@@ -192,8 +192,8 @@
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Adjusted shadow */
   }
   .action-btn:focus:not(:disabled) {
-      outline: 2px solid #7b6fce; /* Focus color */
-      outline-offset: 2px;
+    outline: 2px solid #7b6fce; /* Focus color */
+    outline-offset: 2px;
   }
 
   .action-btn:active:not(:disabled) {
@@ -299,53 +299,60 @@
   /* Problem Screen 1: Tall Tablets (e.g., iPad Portrait) */
   @media (min-width: 700px) and (min-height: 1000px) {
     .modal {
-        max-width: 680px; /* Wider modal */
-        padding: 2rem;
-        border-radius: 1.25rem; /* Slightly larger radius */
-        max-height: 80vh;
+      max-width: 680px; /* Wider modal */
+      padding: 2rem;
+      border-radius: 1.25rem; /* Slightly larger radius */
+      max-height: 80vh;
     }
     h2#modal-title {
-        font-size: 1.8rem; /* Larger title */
+      font-size: 1.8rem; /* Larger title */
     }
     .close-button {
-        font-size: 2.2rem;
+      font-size: 2.2rem;
     }
     .baon-selector-wrapper {
-        min-height: 400px; /* Much more min height */
-        margin-bottom: 2rem;
+      min-height: 400px; /* Much more min height */
+      margin-bottom: 2rem;
     }
     .actions {
-        gap: 1rem;
-        padding-top: 1.5rem;
-        margin-top: 1.5rem;
+      gap: 1rem;
+      padding-top: 1.5rem;
+      margin-top: 1.5rem;
     }
     .action-btn {
-        padding: 0.9rem 1.6rem; /* Larger buttons */
-        font-size: 1.7rem;
-        border-radius: 0.6rem;
-        gap: 0.6rem;
+      padding: 0.9rem 1.6rem; /* Larger buttons */
+      font-size: 1.7rem;
+      border-radius: 0.6rem;
+      gap: 0.6rem;
     }
     .action-btn .icon {
-        font-size: 1.3rem;
+      font-size: 1.3rem;
     }
   }
 
   /* Problem Screen 2: Very Large/Tall Tablets */
   @media (min-width: 900px) and (min-height: 1300px) {
     .modal {
-        max-width: 780px; /* Even wider */
-        padding: 2.5rem;
-        border-radius: 1.5rem;
+      max-width: 780px; /* Even wider */
+      padding: 2.5rem;
+      border-radius: 1.5rem;
     }
     h2#modal-title { font-size: 2.1rem; }
     .close-button { font-size: 2.5rem; }
-    .baon-selector-wrapper { min-height: 500px; margin-bottom: 2.5rem;}
-    .actions { gap: 1.2rem; padding-top: 1.8rem; margin-top: 1.8rem; }
+    .baon-selector-wrapper {
+      min-height: 500px; 
+      margin-bottom: 2.5rem;
+    }
+    .actions { 
+      gap: 1.2rem; 
+      padding-top: 1.8rem; 
+      margin-top: 1.8rem; 
+    }
     .action-btn {
-        padding: 1.1rem 2rem;
-        font-size: 2rem;
-        border-radius: 0.7rem;
-        gap: 0.7rem;
+      padding: 1.1rem 2rem;
+      font-size: 2rem;
+      border-radius: 0.7rem;
+      gap: 0.7rem;
     }
     .action-btn .icon { font-size: 1.5rem; }
   }

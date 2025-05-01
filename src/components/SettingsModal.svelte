@@ -298,10 +298,10 @@
         transform: translateY(-2px);
         filter: brightness(1.1);
     }
-     .setting-btn:active:not(:disabled) {
-         transform: translateY(0);
-         filter: brightness(0.95);
-     }
+    .setting-btn:active:not(:disabled) {
+        transform: translateY(0);
+        filter: brightness(0.95);
+    }
 
     .danger { /* Specific danger styles */
         background: #c0392b; /* Adjusted red */
@@ -314,13 +314,12 @@
         color: #e74c3c; /* Lighter red text */
         box-shadow: none;
     }
-     .danger.reset:hover {
-         background-color: #c0392b20; /* Subtle hover background */
-         color: #c0392b;
-     }
+    .danger.reset:hover {
+        background-color: #c0392b20; /* Subtle hover background */
+        color: #c0392b;
+    }
 
-     .btn-icon { font-size: 1.1em; }
-
+    .btn-icon { font-size: 1.1em; }
 
     /* More Info Section */
     .more-info {
@@ -350,7 +349,7 @@
         align-items: center;
         gap: 0.3rem;
     }
-     .stat-icon { font-size: 1.1em; }
+    .stat-icon { font-size: 1.1em; }
 
     .version-info {
         text-align: center;
@@ -363,26 +362,26 @@
 
     /* --- Link Setting Style (for Achievements Button) --- */
     .setting-btn.achievements-link {
-         background-color: #2c2663; /* Match toggle background */
-         color: #fff5e1;
-         border: 1px solid #4a4090;
-         width: 100%; /* Make it full width like toggle */
-         justify-content: center; /* Center content */
-         box-shadow: none; /* Remove danger shadow */
+        background-color: #2c2663; /* Match toggle background */
+        color: #fff5e1;
+        border: 1px solid #4a4090;
+        width: 100%; /* Make it full width like toggle */
+        justify-content: center; /* Center content */
+        box-shadow: none; /* Remove danger shadow */
     }
     .setting-btn.achievements-link:hover {
-         background-color: #3a3375; /* Similar hover to toggle */
-         border-color: #6a5acd;
-         filter: brightness(1.05); /* Slightly brighter instead of 1.1 */
-     }
+        background-color: #3a3375; /* Similar hover to toggle */
+        border-color: #6a5acd;
+        filter: brightness(1.05); /* Slightly brighter instead of 1.1 */
+    }
     .setting-btn.achievements-link:active {
-         filter: brightness(0.95);
-     }
+        filter: brightness(0.95);
+    }
     /* Style icon within the achievements button */
-     .setting-btn.achievements-link .btn-icon :global(svg) {
+    .setting-btn.achievements-link .btn-icon :global(svg) {
         width: 20px; /* Adjust icon size */
         height: 20px;
         stroke-width: 2; /* Adjust stroke */
         color: #b388eb; /* Use accent color */
-     }
+    }
 </style>

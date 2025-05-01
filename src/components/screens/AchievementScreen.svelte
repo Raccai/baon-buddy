@@ -1,31 +1,30 @@
 <script>
-  import { createEventDispatcher } from 'svelte'; // Import dispatcher for close event
-  import { achievements as achievementDefs } from '../../lib/achievementsData.js';
-  import { unlockedAchievements } from '../../lib/achievementStore.js';
-  import { fade, fly } from 'svelte/transition'; // Import transitions
-  import { quintOut } from 'svelte/easing';    // Import easing
-  import BaonBuddyAchievementsTitle from "/titles/BaonBuddyAchievements.png"; 
+    import { createEventDispatcher } from 'svelte'; // Import dispatcher for close event
+    import { achievements as achievementDefs } from '../../lib/achievementsData.js';
+    import { unlockedAchievements } from '../../lib/achievementStore.js';
+    import { fade, fly } from 'svelte/transition'; // Import transitions
+    import { quintOut } from 'svelte/easing';    // Import easing
+    import BaonBuddyAchievementsTitle from "/titles/BaonBuddyAchievements.png"; 
 
-  const dispatch = createEventDispatcher();
+    const dispatch = createEventDispatcher();
 
-  // No 'visible' prop needed if App.svelte controls rendering with #if
-  // export let visible = false;
+    // No 'visible' prop needed if App.svelte controls rendering with #if
+    // export let visible = false;
 
-  let achievementsWithStatus = [];
-  $: achievementsWithStatus = achievementDefs.map(def => ({
-      ...def,
-      unlocked: $unlockedAchievements.includes(def.id)
-  })).sort((a, b) => {
-      if (a.unlocked !== b.unlocked) return a.unlocked ? -1 : 1;
-      const indexA = achievementDefs.findIndex(d => d.id === a.id);
-      const indexB = achievementDefs.findIndex(d => d.id === b.id);
-      return indexA - indexB;
-  });
+    let achievementsWithStatus = [];
+    $: achievementsWithStatus = achievementDefs.map(def => ({
+        ...def,
+        unlocked: $unlockedAchievements.includes(def.id)
+    })).sort((a, b) => {
+        if (a.unlocked !== b.unlocked) return a.unlocked ? -1 : 1;
+        const indexA = achievementDefs.findIndex(d => d.id === a.id);
+        const indexB = achievementDefs.findIndex(d => d.id === b.id);
+        return indexA - indexB;
+    });
 
-  function closeModal() {
-      dispatch('close'); // Dispatch close event to App.svelte
-  }
-
+    function closeModal() {
+        dispatch('close'); // Dispatch close event to App.svelte
+    }
 </script>
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -87,9 +86,12 @@
     /* --- Base Modal Styles (Copied/Adapted from SettingsModal) --- */
     .modal-backdrop {
         position: fixed; inset: 0;
-        background: rgba(10, 8, 30, 0.7); backdrop-filter: blur(4px);
+        background: rgba(10, 8, 30, 0.7); 
+        backdrop-filter: blur(4px);
         z-index: 1000; /* Ensure it's above main content but potentially below other modals if needed */
-        display: flex; justify-content: center; align-items: center;
+        display: flex; 
+        justify-content: center; 
+        align-items: center;
         padding: 1rem;
     }
 
@@ -106,7 +108,9 @@
     }
 
     .modal-header {
-        display: flex; flex-direction: column; align-items: center;
+        display: flex; 
+        flex-direction: column; 
+        align-items: center;
         position: relative;
         padding-bottom: 0.5rem; /* Space below image */
         border-bottom: 1px solid #4a4090; /* Separator */
@@ -114,20 +118,36 @@
     }
 
     .header-close-btn {
-        position: absolute; top: -5px; right: -5px; /* Adjust position */
-        background: transparent; border: none; color: #fff5e1a8;
-        cursor: pointer; padding: 0.5rem; margin: 0; border-radius: 50%;
-        display: flex; align-items: center; justify-content: center;
+        position: absolute; 
+        top: -5px; 
+        right: -5px; /* Adjust position */
+        background: transparent; 
+        border: none; 
+        color: #fff5e1a8;
+        cursor: pointer; 
+        padding: 0.5rem; 
+        margin: 0; 
+        border-radius: 50%;
+        display: flex; 
+        align-items: center; 
+        justify-content: center;
         transition: color 0.2s ease, background-color 0.2s ease;
     }
     .header-close-btn:hover, .header-close-btn:focus-visible {
-        color: #fff; background-color: #4a409060; outline: none;
+        color: #fff; 
+        background-color: #4a409060; 
+        outline: none;
     }
-    .header-close-btn svg { width: 22px; height: 22px; }
+    .header-close-btn svg { 
+        width: 22px; 
+        height: 22px; 
+    }
 
     .title-image { /* Renamed from settings-title-image */
-        width: 100%; max-width: 220px; /* Adjust as needed */
-        margin-top: 0.5rem; display: block;
+        width: 100%; 
+        max-width: 220px; /* Adjust as needed */
+        margin-top: 0.5rem; 
+        display: block;
     }
 
     /* --- Achievements Specific Styles --- */
@@ -135,9 +155,9 @@
         flex-grow: 1; /* Allow content to take space */
         overflow-y: auto; /* Enable scrolling ONLY for the list */
         padding-right: 0.5rem; /* Space for scrollbar */
-            margin-right: -0.5rem; /* Offset padding for visual alignment */
-            scrollbar-width: thin;
-            scrollbar-color: #6a5acd #3a3375; /* Themed scrollbar */
+        margin-right: -0.5rem; /* Offset padding for visual alignment */
+        scrollbar-width: thin;
+        scrollbar-color: #6a5acd #3a3375; /* Themed scrollbar */
     }
     .achievements-content::-webkit-scrollbar { width: 6px; }
     .achievements-content::-webkit-scrollbar-track { background: #3a3375; border-radius: 3px;}
@@ -145,53 +165,71 @@
 
 
     .achievements-grid {
-        display: grid; grid-template-columns: 1fr; gap: 0.8rem; /* Slightly smaller gap */
+        display: grid; 
+        grid-template-columns: 1fr; 
+        gap: 0.8rem; /* Slightly smaller gap */
         width: 100%;
         /* Max width removed, let modal control it */
     }
 
     .achievement-card {
         background-color: #2c2663; /* Matches settings toggle bg */
-        border: 1px solid #4a4090; border-radius: 10px;
+        border: 1px solid #4a4090; 
+        border-radius: 10px;
         padding: 0.8rem 1rem; /* Slightly less padding */
-        display: flex; align-items: center; gap: 1rem;
-        opacity: 0.65; filter: grayscale(70%);
+        display: flex; 
+        align-items: center; 
+        gap: 1rem;
+        opacity: 0.65; 
+        filter: grayscale(70%);
         transition: all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
         transform: scale(0.98);
         box-shadow: inset 0 1px 2px rgba(0,0,0,0.15);
     }
     .achievement-card.unlocked {
-        opacity: 1; filter: none; transform: scale(1);
-        background-color: #3a3375; border-color: #6a5acd;
+        opacity: 1; 
+        filter: none; 
+        transform: scale(1);
+        background-color: #3a3375; 
+        border-color: #6a5acd;
         box-shadow: 0 3px 8px rgba(0,0,0,0.2), 0 0 6px rgba(179, 136, 235, 0.1); /* subtle glow */
     }
     .icon-wrapper {
         font-size: 2.2rem; /* Slightly smaller icon */
-        flex-shrink: 0; width: 50px; height: 50px; /* Smaller circle */
-        display: flex; align-items: center; justify-content: center;
-        background-color: #1a163f; border-radius: 50%;
-        border: 1px solid #4a4090; filter: inherit;
+        flex-shrink: 0; 
+        width: 50px; 
+        height: 50px; /* Smaller circle */
+        display: flex; 
+        align-items: center; 
+        justify-content: center;
+        background-color: #1a163f; 
+        border-radius: 50%;
+        border: 1px solid #4a4090; 
+        filter: inherit;
         transition: background-color 0.3s ease;
     }
     .achievement-card.unlocked .icon-wrapper {
-        background-color: #4a4090; border-color: #b388eb;
+        background-color: #4a4090; 
+        border-color: #b388eb;
     }
     .icon { line-height: 1; filter: inherit; display: block; }
     .details { flex-grow: 1; min-width: 0; }
     .name {
         font-size: 1.05rem; /* Adjusted size */
-        font-weight: 600; margin: 0 0 0.2rem 0; color: #fff5e1a8;
+        font-weight: 600; 
+        margin: 0 0 0.2rem 0; 
+        color: #fff5e1a8;
         transition: color 0.3s ease;
     }
-     .achievement-card.unlocked .name { color: #fff; }
+    .achievement-card.unlocked .name { color: #fff; }
     .description {
         font-size: 0.85rem; /* Slightly smaller */
-        color: #fff5e170; margin: 0; line-height: 1.4;
-         transition: color 0.3s ease;
+        color: #fff5e170; 
+        margin: 0; 
+        line-height: 1.4;
+        transition: color 0.3s ease;
     }
     .achievement-card.unlocked .description { color: #fff5e1b3; }
-
-    .no-achievements { /* Style remains */ }
 
     /* Problem Screen 1: Large/Tall Tablets */
     @media (min-width: 700px) and (min-height: 1000px) {

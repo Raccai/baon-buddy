@@ -17,7 +17,7 @@
     // @ts-ignore
     // @ts-ignore
     import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
-  import { showToast } from '../lib/toast.js';
+    import { showToast } from '../lib/toast.js';
 
     // Props
     export let initialData = null; // Pass meal object when editing, null when adding
@@ -98,8 +98,8 @@
     function parseList(str, separator = ',') {
         if (!str || typeof str !== 'string') return [];
         return str.split(separator)
-                  .map(item => item.trim())
-                  .filter(item => item.length > 0);
+                .map(item => item.trim())
+                .filter(item => item.length > 0);
     }
 
     // --- File Handling ---
@@ -116,8 +116,8 @@
                 imageAction = 'keep';
                 if (currentImageUrl) {
                     imagePreviewUrl = Capacitor.isNativePlatform() && !currentImageUrl.startsWith('http') && !currentImageUrl.startsWith('data:')
-                                        ? Capacitor.convertFileSrc(currentImageUrl)
-                                        : currentImageUrl;
+                                    ? Capacitor.convertFileSrc(currentImageUrl)
+                                    : currentImageUrl;
                     console.log("Restored existing image preview.");
                 } else {
                     imagePreviewUrl = null; // No existing image to restore
@@ -194,7 +194,6 @@
         // If adding or replacing, it will be set below (or remain null if remove/no file)
 
         console.log(`[BaonForm] Initial imageToSave based on mode/action: ${imageToSave}`);
-
 
         // --- Handle Image Saving/Deleting based on Action ---
         if (imageAction === 'replace' && selectedFile) {
@@ -397,9 +396,9 @@
 
      /* Add specific class to form for potential scroll */
     .baon-form {
-         display: flex;
-         flex-direction: column;
-         gap: 0.8rem; /* Space between groups */
+        display: flex;
+        flex-direction: column;
+        gap: 0.8rem; /* Space between groups */
     }
 
     .form-title {
@@ -452,22 +451,22 @@
         padding-right: 2.5rem;
         cursor: pointer;
     }
-     input::placeholder, textarea::placeholder {
-         color: #fff5e170;
-         opacity: 1;
-     }
+    input::placeholder, textarea::placeholder {
+        color: #fff5e170;
+        opacity: 1;
+    }
 
-     .separator {
-         border: none;
-         border-top: 1px dashed #4a4090;
-         margin: 1.5rem 0;
-     }
-     .recipe-title {
-         font-size: 1.1rem;
-         color: #b388eb;
-         margin-bottom: 1rem;
-         text-align: center;
-     }
+    .separator {
+        border: none;
+        border-top: 1px dashed #4a4090;
+        margin: 1.5rem 0;
+    }
+    .recipe-title {
+        font-size: 1.1rem;
+        color: #b388eb;
+        margin-bottom: 1rem;
+        text-align: center;
+    }
 
     .form-actions {
         margin-top: 1.8rem; /* More space before actions */
@@ -475,6 +474,7 @@
         justify-content: space-between; /* Spread buttons */
         gap: 1rem;
     }
+
     button {
         padding: 0.8rem 1.2rem; /* Slightly larger buttons */
         border: none;
@@ -528,7 +528,7 @@
         transition: background-color 0.2s ease;
     }
     input[type="file"]::file-selector-button:hover {
-         background-color: #6a5acd;
+        background-color: #6a5acd;
     }
 
     .image-preview-container {
@@ -545,28 +545,28 @@
         height: auto;
     }
     .btn-remove-img {
-         position: absolute;
-         top: 4px;
-         right: 4px;
-         background-color: rgba(255, 0, 0, 0.7); /* Red semi-transparent */
-         color: white;
-         border: none;
-         border-radius: 50%;
-         width: 24px;
-         height: 24px;
-         font-size: 1rem;
-         font-weight: bold;
-         line-height: 1;
-         cursor: pointer;
-         display: flex;
-         align-items: center;
-         justify-content: center;
-         padding: 0;
-         box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-         transition: background-color 0.2s ease;
+        position: absolute;
+        top: 4px;
+        right: 4px;
+        background-color: rgba(255, 0, 0, 0.7); /* Red semi-transparent */
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        font-size: 1rem;
+        font-weight: bold;
+        line-height: 1;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        transition: background-color 0.2s ease;
     }
     .btn-remove-img:hover {
-         background-color: rgba(200, 0, 0, 0.9);
+        background-color: rgba(200, 0, 0, 0.9);
     }
 
     .current-image-note {
@@ -578,15 +578,15 @@
 
     /* Responsive adjustments for form on larger screens if needed */
     @media (min-width: 768px) {
-         .baon-form-container {
-              padding: 2rem;
-         }
-         .form-title { font-size: 1.6rem; margin-bottom: 2rem;}
-         label { font-size: 1rem; }
-         input, textarea, select { font-size: 1.1rem; padding: 0.8rem 1rem; }
-         textarea { min-height: 80px; }
-         button { padding: 0.9rem 1.5rem; font-size: 1.05rem; }
-         .recipe-title { font-size: 1.25rem; }
+        .baon-form-container {
+            padding: 2rem;
+        }
+        .form-title { font-size: 1.6rem; margin-bottom: 2rem;}
+        label { font-size: 1rem; }
+        input, textarea, select { font-size: 1.1rem; padding: 0.8rem 1rem; }
+        textarea { min-height: 80px; }
+        button { padding: 0.9rem 1.5rem; font-size: 1.05rem; }
+        .recipe-title { font-size: 1.25rem; }
     }
 
 </style>

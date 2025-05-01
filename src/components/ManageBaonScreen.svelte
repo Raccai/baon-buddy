@@ -10,114 +10,114 @@
     import { getDisplayImageSrc } from '../lib/imageUtils.js';
     import BaonBuddyManageBaon from "/titles/BaonBuddyManageBaon.png";
 
-  const dispatch = createEventDispatcher();
+    const dispatch = createEventDispatcher();
 
-  let userMeals = [];
-  let showForm = false;
-  let editingMeal = null;
-  let formMode = 'add';
+    let userMeals = [];
+    let showForm = false;
+    let editingMeal = null;
+    let formMode = 'add';
 
-  function loadUserMeals() {
-      userMeals = getAllMeals();
-      console.log("Loaded user meals:", userMeals);
-  }
+    function loadUserMeals() {
+        userMeals = getAllMeals();
+        console.log("Loaded user meals:", userMeals);
+    }
 
-  onMount(() => {
-      loadUserMeals();
-  });
+    onMount(() => {
+        loadUserMeals();
+    });
 
-  function openAddForm() {
-      editingMeal = null; // Ensure it's null for add mode
-      formMode = 'add';
-      showForm = true;
-  }
+    function openAddForm() {
+        editingMeal = null; // Ensure it's null for add mode
+        formMode = 'add';
+        showForm = true;
+    }
 
-  function openEditForm(mealToEdit) {
-      // Pass a *structured copy* for editing
-      // Ensure default recipe structure if missing
-      editingMeal = {
-          id: mealToEdit.id,
-          name: mealToEdit.name || '',
-          type: mealToEdit.type || 'custom',
-          message: mealToEdit.message || '',
-          emoji: mealToEdit.emoji || '',
-          image: mealToEdit.image || '',
-          recipe: {
-               ingredients: Array.isArray(mealToEdit.recipe?.ingredients) ? [...mealToEdit.recipe.ingredients] : [],
-               steps: Array.isArray(mealToEdit.recipe?.steps) ? [...mealToEdit.recipe.steps] : [],
-               talaTip: mealToEdit.recipe?.talaTip || ''
-          },
-          isUserDefined: mealToEdit.isUserDefined // Keep the flag
-      };
-      formMode = 'edit';
-      showForm = true;
-  }
+    function openEditForm(mealToEdit) {
+        // Pass a *structured copy* for editing
+        // Ensure default recipe structure if missing
+        editingMeal = {
+            id: mealToEdit.id,
+            name: mealToEdit.name || '',
+            type: mealToEdit.type || 'custom',
+            message: mealToEdit.message || '',
+            emoji: mealToEdit.emoji || '',
+            image: mealToEdit.image || '',
+            recipe: {
+                ingredients: Array.isArray(mealToEdit.recipe?.ingredients) ? [...mealToEdit.recipe.ingredients] : [],
+                steps: Array.isArray(mealToEdit.recipe?.steps) ? [...mealToEdit.recipe.steps] : [],
+                talaTip: mealToEdit.recipe?.talaTip || ''
+            },
+            isUserDefined: mealToEdit.isUserDefined // Keep the flag
+        };
+        formMode = 'edit';
+        showForm = true;
+    }
 
-  function handleDelete(mealId, mealName) {
-      // Add null check for mealId
-      if (!mealId) {
-          console.error("handleDelete called with invalid mealId");
-          return;
-      }
-      if (confirm(`Are you sure you want to delete "${mealName || 'this Baon'}"? This cannot be undone.`)) {
-          const deleted = deleteMeal(mealId);
-          if (deleted) {
-              loadUserMeals();
-              dispatch('userMealsChanged');
-          }
-      }
-  }
+    function handleDelete(mealId, mealName) {
+        // Add null check for mealId
+        if (!mealId) {
+            console.error("handleDelete called with invalid mealId");
+            return;
+        }
+        if (confirm(`Are you sure you want to delete "${mealName || 'this Baon'}"? This cannot be undone.`)) {
+            const deleted = deleteMeal(mealId);
+            if (deleted) {
+                loadUserMeals();
+                dispatch('userMealsChanged');
+            }
+        }
+    }
 
-  function handleSave(event) {
-      const mealData = event.detail;
-      console.log("ManageBaonScreen handleSave received event. Detail:", JSON.stringify(mealData, null, 2));
-      console.log("Current formMode:", formMode);
-      let success = false;
-      if (formMode === 'add') {
-          success = addMeal(mealData);
-      } else if (formMode === 'edit') {
-          // Ensure mealData has the ID needed for update
-          if (!mealData.id) {
-               console.error("Cannot update meal, missing ID in saved data.", mealData);
-               showToast("Error updating Baon: Missing ID.", "error");
-               return; // Exit early
-          }
-          success = updateMeal(mealData);
-      }
+    function handleSave(event) {
+        const mealData = event.detail;
+        console.log("ManageBaonScreen handleSave received event. Detail:", JSON.stringify(mealData, null, 2));
+        console.log("Current formMode:", formMode);
+        let success = false;
+        if (formMode === 'add') {
+            success = addMeal(mealData);
+        } else if (formMode === 'edit') {
+            // Ensure mealData has the ID needed for update
+            if (!mealData.id) {
+                console.error("Cannot update meal, missing ID in saved data.", mealData);
+                showToast("Error updating Baon: Missing ID.", "error");
+                return; // Exit early
+            }
+            success = updateMeal(mealData);
+        }
 
-      if (success) {
-          loadUserMeals();
-          dispatch('userMealsChanged');
-          showForm = false;
-      }
-      // Keep form open on failure
-  }
+        if (success) {
+            loadUserMeals();
+            dispatch('userMealsChanged');
+            showForm = false;
+        }
+        // Keep form open on failure
+    }
 
-  function handleCancel() {
-      showForm = false;
-      editingMeal = null; // Clear editing state
-  }
+    function handleCancel() {
+        showForm = false;
+        editingMeal = null; // Clear editing state
+    }
 
-  function closeScreen() {
-      dispatch('close');
-  }
+    function closeScreen() {
+        dispatch('close');
+    }
 
 </script>
 
 <div class="manage-baon-page">
-   <header class="page-header">
-       <button class="header-close-btn" on:click={closeScreen} aria-label="Close Manage Baon">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="currentColor" aria-hidden="true">
-              <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
-          </svg>
-      </button>
-      <img src={BaonBuddyManageBaon} alt="Manage Baon" id="manage-baon-title" class="title-image">
-      <button class="add-new-btn" on:click={openAddForm}>
-          <span class="plus-icon">+</span> Add New
-      </button>
-  </header>
+    <header class="page-header">
+        <button class="header-close-btn" on:click={closeScreen} aria-label="Close Manage Baon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="currentColor" aria-hidden="true">
+                <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+            </svg>
+        </button>
+        <img src={BaonBuddyManageBaon} alt="Manage Baon" id="manage-baon-title" class="title-image">
+        <button class="add-new-btn" on:click={openAddForm}>
+            <span class="plus-icon">+</span> Add New
+        </button>
+    </header>
 
-  <div class="content-area">
+    <div class="content-area">
     {#if showForm}
         <!-- Form Modal Overlay -->
         <!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -125,12 +125,12 @@
         <div class="form-modal-backdrop" on:click|self={handleCancel} transition:fade={{duration: 200}}>
             <!-- Form Wrapper -->
             <div class="form-wrapper" transition:fly={{y: 30, duration: 250, easing: quintOut }}>
-                    <BaonForm
-                        formMode={formMode}
-                        initialData={editingMeal}
-                        on:save={handleSave}
-                        on:cancel={handleCancel}
-                    />
+                <BaonForm
+                    formMode={formMode}
+                    initialData={editingMeal}
+                    on:save={handleSave}
+                    on:cancel={handleCancel}
+                />
             </div>
         </div>
     {/if}
@@ -172,12 +172,12 @@
             {/each}
         </div>
     {:else if !showForm}
-          <div class="no-meals-message" transition:fade>
-              <p>You haven't created any custom Baon yet!</p>
-              <button class="add-first-btn" on:click={openAddForm}>+ Add your first Baon</button>
-          </div>
-      {/if}
-  </div>
+            <div class="no-meals-message" transition:fade>
+                <p>You haven't created any custom Baon yet!</p>
+                <button class="add-first-btn" on:click={openAddForm}>+ Add your first Baon</button>
+            </div>
+        {/if}
+    </div>
 </div>
 
 <style>

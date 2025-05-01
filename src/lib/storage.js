@@ -69,15 +69,15 @@ const saveAllMeals = (mealsArray) => {
 export const addMeal = (newMealData) => {
     console.log("storage.js addMeal received:", JSON.stringify(newMealData, null, 2));
      if (!newMealData || !newMealData.name || !newMealData.name.trim()) {
-          showToast("Baon name cannot be empty!", "error");
-          return false;
+        showToast("Baon name cannot be empty!", "error");
+        return false;
      }
     const currentMeals = getAllMeals();
     const nameExists = currentMeals.some(m => m.name.trim().toLowerCase() === newMealData.name.trim().toLowerCase());
 
     if (nameExists) {
-         showToast("A Baon with this name already exists!", "error");
-         return false;
+        showToast("A Baon with this name already exists!", "error");
+        return false;
     }
     const newMealWithId = {
         name: newMealData.name.trim(),
@@ -97,13 +97,13 @@ export const addMeal = (newMealData) => {
 export const updateMeal = (updatedMeal) => {
     console.log("storage.js updateMeal received:", JSON.stringify(updatedMeal, null, 2));
      if (!updatedMeal || !updatedMeal.id) {
-         showToast("Error updating Baon: Invalid data provided.", "error");
-         console.error("updateMeal called with invalid data:", updatedMeal);
-         return false;
+        showToast("Error updating Baon: Invalid data provided.", "error");
+        console.error("updateMeal called with invalid data:", updatedMeal);
+        return false;
      }
      if (!updatedMeal.name || !updatedMeal.name.trim()) {
-          showToast("Baon name cannot be empty!", "error");
-          return false;
+        showToast("Baon name cannot be empty!", "error");
+        return false;
      }
 
     const currentMeals = getAllMeals();
@@ -124,13 +124,13 @@ export const updateMeal = (updatedMeal) => {
             ...updatedMeal,
             name: updatedMeal.name.trim(),
             recipe: updatedMeal.recipe && typeof updatedMeal.recipe === 'object'
-                    ? {
-                        ingredients: Array.isArray(updatedMeal.recipe.ingredients) ? updatedMeal.recipe.ingredients : [],
-                        steps: Array.isArray(updatedMeal.recipe.steps) ? updatedMeal.recipe.steps : [],
-                        talaTip: updatedMeal.recipe.talaTip || null
-                      }
-                    : { ingredients: [], steps: [], talaTip: null },
-             isUserDefined: currentMeals[index].isUserDefined
+                ? {
+                    ingredients: Array.isArray(updatedMeal.recipe.ingredients) ? updatedMeal.recipe.ingredients : [],
+                    steps: Array.isArray(updatedMeal.recipe.steps) ? updatedMeal.recipe.steps : [],
+                    talaTip: updatedMeal.recipe.talaTip || null
+                    }
+                : { ingredients: [], steps: [], talaTip: null },
+            isUserDefined: currentMeals[index].isUserDefined
         };
 
         currentMeals[index] = mealToUpdate;
@@ -160,20 +160,20 @@ export const deleteMeal = async (mealId) => {
     if (updatedMeals.length < currentMeals.length) {
         // Try deleting image file BEFORE updating localStorage list
         if (mealToDelete.image && mealToDelete.image.startsWith('capacitor://')) { // Check if it's a capacitor file URI
-             try {
-                  const filename = mealToDelete.image.substring(mealToDelete.image.lastIndexOf('/') + 1);
-                  if (filename) {
-                       console.log(`Attempting to delete image file: ${filename}`);
-                       await Filesystem.deleteFile({
-                           path: filename,
-                           directory: Directory.Data
-                       });
-                       console.log(`Deleted image file ${filename}`);
-                  }
-             } catch (deleteError) {
-                  console.warn(`Could not delete image file ${mealToDelete.image}:`, deleteError);
-                  // Don't block meal deletion if image deletion fails
-             }
+            try {
+                const filename = mealToDelete.image.substring(mealToDelete.image.lastIndexOf('/') + 1);
+                if (filename) {
+                    console.log(`Attempting to delete image file: ${filename}`);
+                    await Filesystem.deleteFile({
+                        path: filename,
+                        directory: Directory.Data
+                    });
+                    console.log(`Deleted image file ${filename}`);
+                }
+            } catch (deleteError) {
+                console.warn(`Could not delete image file ${mealToDelete.image}:`, deleteError);
+                // Don't block meal deletion if image deletion fails
+            }
         }
 
         // Save the updated meal list
@@ -211,7 +211,6 @@ export const deleteMeal = async (mealId) => {
             console.error("Error removing deleted meal from calendar data:", e);
             // Proceed with deletion from main list anyway
         }
-
 
         // Remove from favorites
         removeFavorite(mealToDelete.name); // Assuming name is still the key here
@@ -267,7 +266,7 @@ export function getSeenMeals() { // Corrected spelling
 }
 
 export function markMealAsSeen(mealName) {
-     if (!mealName) return;
+    if (!mealName) return;
     const current = getSeenMeals(); // Use corrected function name
     if (!current.includes(mealName)) {
         const updated = [...current, mealName];

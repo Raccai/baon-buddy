@@ -54,8 +54,8 @@
   // Refresh local favoriteNames state when a BaonCard event occurs
   // This is needed if BaonCard directly uses this prop for its heart icon state
   function refreshFavorites() {
-      console.log("BaonList refreshing favorites state");
-      favoriteNames = getFavorites().map(meal => meal.name);
+    console.log("BaonList refreshing favorites state");
+    favoriteNames = getFavorites().map(meal => meal.name);
   }
 
   // --- Onboarding Logic ---
@@ -65,85 +65,85 @@
   let hintIndex = 0;
   let currentHintData = null;
   const baonListHints = [
-      { targetSelector: '#baonlist-filters', text: 'Tap these tags to filter the Baon list!', position: 'bottom' },
-      { targetSelector: '#first-baon-card-wrapper', text: 'Here are the Baon ideas! Tap the icon on the right to see a recipe, or tap the heart to add/remove from favorites.', position: 'bottom' },
+    { targetSelector: '#baonlist-filters', text: 'Tap these tags to filter the Baon list!', position: 'bottom' },
+    { targetSelector: '#first-baon-card-wrapper', text: 'Here are the Baon ideas! Tap the icon on the right to see a recipe, or tap the heart to add/remove from favorites.', position: 'bottom' },
   ];
   const totalBaonListHints = baonListHints.length;
   let onboardingCheckStarted = false;
 
   async function startOnboardingHints() {
-      if (onboardingCheckStarted) return;
-      onboardingCheckStarted = true;
-      console.log(`Checking onboarding status for ${screenName}...`);
+    if (onboardingCheckStarted) return;
+    onboardingCheckStarted = true;
+    console.log(`Checking onboarding status for ${screenName}...`);
 
-      if (!FORCE_ONBOARDING_TESTING) {
-        if (isOverallOnboardingComplete() || isScreenDone(screenName)) {
-          console.log(`Onboarding skipped for ${screenName}.`);
-          return;
-        }
+    if (!FORCE_ONBOARDING_TESTING) {
+      if (isOverallOnboardingComplete() || isScreenDone(screenName)) {
+        console.log(`Onboarding skipped for ${screenName}.`);
+        return;
+      }
+    }
+
+    await tick();
+    await new Promise(res => setTimeout(res, 150));
+
+    // Check if hints can start
+      if (!document.querySelector(baonListHints[0].targetSelector)) {
+        console.warn(`Initial target ${baonListHints[0].targetSelector} not found for ${screenName}. Skipping hints.`);
+        if (!FORCE_ONBOARDING_TESTING) markScreenAsDone(screenName);
+        return;
+      }
+      // Also check if there's at least one card to target for the second hint
+      // We need to wait until filteredMeals is populated
+      if (filteredMeals.length === 0) {
+        console.warn(`No meals available yet for ${screenName} hint 2. Will try again shortly.`);
+        // Optionally retry later if meals might load async, otherwise skip
+        setTimeout(startOnboardingHints, 500); // Retry after 500ms
+        onboardingCheckStarted = false; // Allow retry
+        return;
       }
 
-      await tick();
-      await new Promise(res => setTimeout(res, 150));
 
-      // Check if hints can start
-       if (!document.querySelector(baonListHints[0].targetSelector)) {
-            console.warn(`Initial target ${baonListHints[0].targetSelector} not found for ${screenName}. Skipping hints.`);
-            if (!FORCE_ONBOARDING_TESTING) markScreenAsDone(screenName);
-            return;
-       }
-       // Also check if there's at least one card to target for the second hint
-       // We need to wait until filteredMeals is populated
-       if (filteredMeals.length === 0) {
-            console.warn(`No meals available yet for ${screenName} hint 2. Will try again shortly.`);
-             // Optionally retry later if meals might load async, otherwise skip
-             setTimeout(startOnboardingHints, 500); // Retry after 500ms
-             onboardingCheckStarted = false; // Allow retry
-             return;
-       }
-
-
-      console.log(`Attempting to show hints for ${screenName}.`);
-      showHints = true;
-      hintIndex = 0;
-      currentHintData = baonListHints[hintIndex];
+    console.log(`Attempting to show hints for ${screenName}.`);
+    showHints = true;
+    hintIndex = 0;
+    currentHintData = baonListHints[hintIndex];
   }
 
   onMount(() => {
-      setTimeout(startOnboardingHints, 300); // Initial delay
+    setTimeout(startOnboardingHints, 300); // Initial delay
   });
 
   function handleNextHint() {
-      hintIndex++;
-      if (hintIndex < totalBaonListHints) {
-          // Check if the next target exists before showing
-          const nextTargetSelector = baonListHints[hintIndex].targetSelector;
-          if (document.querySelector(nextTargetSelector)) {
-             currentHintData = baonListHints[hintIndex];
-          } else {
-              console.warn(`Target ${nextTargetSelector} not found for next hint. Skipping remaining hints.`);
-              finishHintsCommon(); // Skip rest if target not ready
-          }
+    hintIndex++;
+    if (hintIndex < totalBaonListHints) {
+      // Check if the next target exists before showing
+      const nextTargetSelector = baonListHints[hintIndex].targetSelector;
+      if (document.querySelector(nextTargetSelector)) {
+        currentHintData = baonListHints[hintIndex];
       } else {
-          finishHintsCommon();
+        console.warn(`Target ${nextTargetSelector} not found for next hint. Skipping remaining hints.`);
+        finishHintsCommon(); // Skip rest if target not ready
       }
+    } else {
+      finishHintsCommon();
+    }
   }
 
  function finishHintsCommon() {
-      showHints = false;
-      currentHintData = null;
-      if (!FORCE_ONBOARDING_TESTING) {
-           markScreenAsDone(screenName);
-      }
-       console.log(`Finished/Skipped hints for ${screenName} (Force: ${FORCE_ONBOARDING_TESTING})`);
+    showHints = false;
+    currentHintData = null;
+    if (!FORCE_ONBOARDING_TESTING) {
+      markScreenAsDone(screenName);
+    }
+    console.log(`Finished/Skipped hints for ${screenName} (Force: ${FORCE_ONBOARDING_TESTING})`);
   }
 
   function handleDoneHint() {
-     finishHintsCommon();
+    finishHintsCommon();
   }
 
   function handleSkipHint() {
-     finishHintsCommon();
+    finishHintsCommon();
   }
 
 </script>
@@ -187,8 +187,8 @@
       </div>
     {:else}
       <div class="no-results" transition:fade>
-          <p>No Baon matches your filters!</p>
-          <span>Try selecting different tags.</span>
+        <p>No Baon matches your filters!</p>
+        <span>Try selecting different tags.</span>
       </div>
     {/if}
   </div>
@@ -218,58 +218,99 @@
 <style>
   /* Styles remain the same as previous BaonList version */
   .baonlist-page {
-    height: 100%; width: 100%; display: flex; flex-direction: column;
-    overflow: hidden; background-color: #1a163f;
+    height: 100%; 
+    width: 100%; 
+    display: flex; 
+    flex-direction: column;
+    overflow: hidden; 
+    background-color: #1a163f;
   }
   .fixed-controls {
-    position: sticky; top: 0; z-index: 10;
+    position: sticky; 
+    top: 0; 
+    z-index: 10;
     background: linear-gradient(to bottom, #231d52, #231d52f0);
-    padding: 0.75rem 0; box-shadow: 0 2px 10px rgba(0,0,0,0.4);
+    padding: 0.75rem 0; 
+    box-shadow: 0 2px 10px rgba(0,0,0,0.4);
     flex-shrink: 0;
   }
   .filters-scroll {
-    overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none;
+    overflow-x: auto; 
+    -webkit-overflow-scrolling: touch; 
+    scrollbar-width: none;
   }
-  .filters-scroll::-webkit-scrollbar { display: none; }
+  .filters-scroll::-webkit-scrollbar { 
+    display: none; 
+  }
   .filters-inner {
-    display: flex; gap: 0.6rem; padding: 0.2rem 1rem; width: max-content;
+    display: flex; 
+    gap: 0.6rem; 
+    padding: 0.2rem 1rem; 
+    width: max-content;
   }
   .filters-inner button {
-    padding: 0.5rem 1rem; border-radius: 999px; border: 1px solid transparent;
-    font-weight: 600; white-space: nowrap; font-size: 0.9rem; flex-shrink: 0;
-    cursor: pointer; transition: all 0.2s ease; opacity: 0.8;
+    padding: 0.5rem 1rem; 
+    border-radius: 999px; 
+    border: 1px solid transparent;
+    font-weight: 600; 
+    white-space: nowrap; 
+    font-size: 0.9rem; 
+    flex-shrink: 0;
+    cursor: pointer; 
+    transition: all 0.2s ease; 
+    opacity: 0.8;
     box-shadow: 0 1px 3px rgba(0,0,0,0.2);
   }
   .filter-tag-btn {
-    background-color: var(--tag-bg-color); color: var(--tag-text-color);
+    background-color: var(--tag-bg-color); 
+    color: var(--tag-text-color);
     border-color: color-mix(in srgb, var(--tag-bg-color) 80%, black);
   }
   .filter-all-btn {
-       background-color: #4a4090; color: #fff5e1; border-color: #6a5acd;
-   }
+    background-color: #4a4090; 
+    color: #fff5e1; 
+    border-color: #6a5acd;
+  }
   .filters-inner button:hover {
-      opacity: 1; transform: translateY(-1px); filter: brightness(1.1);
+    opacity: 1; 
+    transform: translateY(-1px); 
+    filter: brightness(1.1);
   }
   .filters-inner button.selected {
-    opacity: 1; outline: none; border: 2px solid #fff5e1;
-    box-shadow: 0 0 8px rgba(255, 245, 225, 0.3); transform: scale(1.03);
+    opacity: 1; 
+    outline: none; 
+    border: 2px solid #fff5e1;
+    box-shadow: 0 0 8px rgba(255, 245, 225, 0.3); 
+    transform: scale(1.03);
   }
   .baonlist-container {
-    flex-grow: 1; overflow-y: auto; padding: 1.5rem 1rem 6rem 1rem; /* Added more bottom padding */
-    display: flex; flex-direction: column; align-items: center;
+    flex-grow: 1; 
+    overflow-y: auto; 
+    padding: 1.5rem 1rem 6rem 1rem; /* Added more bottom padding */
+    display: flex; 
+    flex-direction: column; 
+    align-items: center;
     -webkit-overflow-scrolling: touch;
   }
   .meals-grid {
-    display: grid; grid-template-columns: 1fr; gap: 1rem;
-    width: 100%; max-width: 500px;
+    display: grid; 
+    grid-template-columns: 1fr; 
+    gap: 1rem;
+    width: 100%; 
+    max-width: 500px;
   }
   .no-results {
-      text-align: center; padding: 3rem 1rem; color: #fff5e1a8;
-      display: flex; flex-direction: column; align-items: center;
-      justify-content: center; margin: auto;
+    text-align: center; 
+    padding: 3rem 1rem; 
+    color: #fff5e1a8;
+    display: flex; 
+    flex-direction: column; 
+    align-items: center;
+    justify-content: center; 
+    margin: auto;
   }
-   .no-results p { font-size: 1.2em; font-weight: 600; margin-bottom: 0.5rem; }
-   .no-results span { font-size: 0.9em; }
+  .no-results p { font-size: 1.2em; font-weight: 600; margin-bottom: 0.5rem; }
+  .no-results span { font-size: 0.9em; }
 
   /* Problem Screen 1: Tall Tablets (e.g., iPad Portrait) */
   @media (min-width: 700px) and (min-height: 1000px) {

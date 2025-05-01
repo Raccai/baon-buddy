@@ -24,7 +24,7 @@ export function getDisplayImageSrc(imageUrl) {
     // These should work on both web and native (Capacitor serves / paths)
     if (imageUrl.startsWith('http:') || imageUrl.startsWith('https:') || imageUrl.startsWith('data:') || imageUrl.startsWith('/')) {
         // console.log(`[getDisplayImageSrc] Using standard web/relative/data URL: ${imageUrl}`);
-        return imageUrl;
+        return imageUrl;    
     }
 
     // 2. Native File URIs - Needs conversion ONLY on native
@@ -36,8 +36,8 @@ export function getDisplayImageSrc(imageUrl) {
         try {
             const convertedSrc = Capacitor.convertFileSrc(imageUrl);
             if (!convertedSrc) {
-                 console.warn(`[getDisplayImageSrc] convertFileSrc returned empty/null for: ${imageUrl}`);
-                 return null; // Conversion failed or returned nothing usable
+                console.warn(`[getDisplayImageSrc] convertFileSrc returned empty/null for: ${imageUrl}`);
+                return null; // Conversion failed or returned nothing usable
             }
             console.log(`[getDisplayImageSrc] Using CONVERTED src: ${convertedSrc}`);
             return convertedSrc;

@@ -90,34 +90,42 @@
     line-height: 0;
     /* Style the SVG inside */
     & :global(svg) {
-         display: block;
-         width: 30px; /* << INCREASED BASE ICON SIZE */
-         height: 30px;
-         fill: currentColor; stroke: none;
-         transition: transform 0.2s ease;
+      display: block;
+      width: 30px; /* << INCREASED BASE ICON SIZE */
+      height: 30px;
+      fill: currentColor; stroke: none;
+      transition: transform 0.2s ease;
      }
   }
 
   .label {
-     white-space: nowrap;
-     margin-top: 0.1rem; /* Adjust label spacing */
+    white-space: nowrap;
+    margin-top: 0.1rem; /* Adjust label spacing */
   }
 
   /* Hover/Active States */
   .nav-btn:hover:not(.active) {
-      color: #fff5e1; background-color: rgba(255, 245, 225, 0.05);
+    color: #fff5e1; 
+    background-color: rgba(255, 245, 225, 0.05);
   }
   .nav-btn:active { transform: scale(0.96); }
 
   /* Active State */
-  .nav-btn.active { color: #fff; font-weight: 600; background-color: #b388eb29;}
+  .nav-btn.active { 
+    color: #fff; 
+    font-weight: 600; 
+    background-color: #b388eb29;
+  }
   .nav-btn.active .icon-wrapper :global(svg) { transform: scale(1.1); }
 
   /* --- RESPONSIVE --- */
 
   /* Tablets and potentially larger phones in landscape */
   @media (min-width: 600px) {
-    .navbar { height: 85px; padding: 0.8rem 0; padding-bottom: calc(0.8rem + env(safe-area-inset-bottom, 0rem)); }
+    .navbar { height: 85px; 
+      padding: 0.8rem 0; 
+      padding-bottom: calc(0.8rem + env(safe-area-inset-bottom, 0rem)); 
+    }
     .nav-btn { font-size: 0.85rem; gap: 0.3rem; }
     .icon-wrapper :global(svg) { width: 34px; height: 34px; }
     .label { margin-top: 0.2rem; }
@@ -133,14 +141,23 @@
 
   /* Problem screens, specific styling */
   @media (min-width: 700px) and (min-height: 1000px) {
-    .navbar { height: 120px; padding: 0.8rem 0.8rem; gap: 2rem; padding-bottom: calc(0.8rem + env(safe-area-inset-bottom, 0rem)); }
+    .navbar { 
+      height: 120px; 
+      padding: 0.8rem 0.8rem; 
+      gap: 2rem; 
+      padding-bottom: calc(0.8rem + env(safe-area-inset-bottom, 0rem)); 
+    }
     .icon-wrapper :global(svg) { width: 50px; height: 50px; }
     .label { margin-top: 0.2rem; font-size: 1rem; }
     .nav-btn.active::before { height: 4px; left: 25%; right: 25%; }
   }
 
   @media (min-width: 900px) and (min-height: 1300px) {
-    .navbar { height: 150px; padding: 0.8rem 0.8rem; gap: 2rem; padding-bottom: calc(0.8rem + env(safe-area-inset-bottom, 0rem)); }
+    .navbar { height: 150px; 
+      padding: 0.8rem 0.8rem; 
+      gap: 2rem; 
+      padding-bottom: calc(0.8rem + env(safe-area-inset-bottom, 0rem)); 
+    }
     .icon-wrapper :global(svg) { width: 70px; height: 70px; }
     .label { margin-top: 0.2rem; font-size: 1.4rem; }
     .nav-btn.active::before { height: 4px; left: 25%; right: 25%; }

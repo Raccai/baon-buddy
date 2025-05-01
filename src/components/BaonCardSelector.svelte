@@ -24,7 +24,7 @@
 
   // React directly to the allMeals store changing
   $: if ($allMeals) {
-      sortCombinedList($allMeals, selectedMealsInternal);
+    sortCombinedList($allMeals, selectedMealsInternal);
   }
 
   // Function now takes the combined list as an argument
@@ -45,8 +45,8 @@
 
     // Combine and sort
     sortedCombinedMeals = [
-        ...selected.sort((a, b) => a.name.localeCompare(b.name)),
-        ...unselected.sort((a, b) => a.name.localeCompare(b.name))
+      ...selected.sort((a, b) => a.name.localeCompare(b.name)),
+      ...unselected.sort((a, b) => a.name.localeCompare(b.name))
     ];
   }
 
@@ -64,9 +64,9 @@
     } else if (newSelection.length < limit) {
       newSelection.push(meal); // Add if not found and limit not reached
     } else {
-        console.log(`Maximum selection limit (${limit}) reached.`);
-        dispatch('limitReached', { limit });
-        return; // Don't update selection or dispatch
+      console.log(`Maximum selection limit (${limit}) reached.`);
+      dispatch('limitReached', { limit });
+      return; // Don't update selection or dispatch
     }
 
     selectedMealsInternal = newSelection; // Update internal state (triggers reactivity)
@@ -80,7 +80,7 @@
 
   function viewRecipe(meal, event) {
       event.stopPropagation();
-      if (meal) dispatch('viewRecipe', meal);
+    if (meal) dispatch('viewRecipe', meal);
   }
 
 </script>
@@ -88,8 +88,6 @@
 <div class="selector">
   {#if sortedCombinedMeals.length > 0}
     {#each sortedCombinedMeals as meal (meal.id || meal.name)}
-      <!-- svelte-ignore a11y_click_events_have_key_events -->
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
       {@const mealKey = meal.id || meal.name}
       {@const isCurrentlySelected = isSelected(mealKey, selectedMealsInternal)}
       {@const isDisabled = selectedMealsInternal.length >= 3 && !isCurrentlySelected}
@@ -128,11 +126,11 @@
         </div>
         <div class="mini-actions">
           <button class="recipe-btn" on:click={(e) => viewRecipe(meal, e)} title="View Recipe for {meal.name}">
-             <!-- ... recipe svg ... -->
-             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52" aria-hidden="true">
+            <!-- ... recipe svg ... -->
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52" aria-hidden="true">
               <path d="m31.2 4.24a2.24 2.24 0 1 1 -2.2-2.24 2.24 2.24 0 0 1 2.2 2.24zm-8.2 8.32a3 3 0 1 0 -3-3 3 3 0 0 0 3 3zm19.44 31-10-15.36v-8.2a2.14 2.14 0 0 0 2.4-2.24 2 2 0 0 0 -1.84-2.16h-13.8a2 2 0 0 0 -2 2 2.09 2.09 0 0 0 0 .25 2.16 2.16 0 0 0 2.4 2.24v8.31l-10 15.2a4.26 4.26 0 0 0 -.24 4.24 3.91 3.91 0 0 0 3.52 2.16h26.12a3.9 3.9 0 0 0 3.52-2.16 4 4 0 0 0 -.16-4.24zm-18.8-14v-9.16h4.8v9.28l4.72 7.52h-14.28z" fill="currentColor"/>
             </svg>
-             <span class="visually-hidden">View Recipe for {meal.name}</span>
+            <span class="visually-hidden">View Recipe for {meal.name}</span>
           </button>
         </div>
       </div>
@@ -195,8 +193,8 @@
   }
 
   .mini-card:focus-visible:not(.disabled) {
-      outline: 2px solid blue; /* Base focus */
-      outline-offset: 2px;
+    outline: 2px solid blue; /* Base focus */
+    outline-offset: 2px;
   }
 
   .mini-card.disabled {
@@ -237,7 +235,7 @@
     height: 100%;
     object-fit: contain; /* Use cover for better fit, but current images look better with contain */
     display: block;
-     border-radius: inherit; /* Inherit radius from parent */
+    border-radius: inherit; /* Inherit radius from parent */
   }
 
   .placeholder-img {

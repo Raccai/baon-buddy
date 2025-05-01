@@ -27,13 +27,13 @@
 
     // Allow dragging only if touching handle/header OR if content is scrolled to top
     if (touchY <= headerArea || sheetContent.scrollTop === 0) {
-        isDragging = true;
-        startY = touchY;
-        currentY = touchY;
-        sheetElement.style.transition = 'none'; // Remove transition during drag
-        startScrollTop = sheetContent.scrollTop; // Store initial scroll position
+      isDragging = true;
+      startY = touchY;
+      currentY = touchY;
+      sheetElement.style.transition = 'none'; // Remove transition during drag
+      startScrollTop = sheetContent.scrollTop; // Store initial scroll position
     } else {
-        isDragging = false; // Don't drag if touch starts mid-content and content is scrollable
+      isDragging = false; // Don't drag if touch starts mid-content and content is scrollable
     }
   }
 
@@ -44,17 +44,17 @@
 
     // Only transform downwards OR if pulling down from the top
     if (deltaY > 0 || sheetContent.scrollTop === 0) {
-        // Prevent default scroll behavior ONLY when dragging the sheet down
-        if (deltaY > 0 && sheetContent.scrollTop <= startScrollTop) {
-            event.preventDefault();
-        }
-        // Apply downward transform, but don't let it go upwards past 0
-        sheetElement.style.transform = `translateY(${Math.max(0, deltaY)}px)`;
+      // Prevent default scroll behavior ONLY when dragging the sheet down
+      if (deltaY > 0 && sheetContent.scrollTop <= startScrollTop) {
+        event.preventDefault();
+      }
+      // Apply downward transform, but don't let it go upwards past 0
+      sheetElement.style.transform = `translateY(${Math.max(0, deltaY)}px)`;
     } else {
-        // If pulling upwards when not at the top, let the native scroll handle it
-        // Reset dragging state if user starts scrolling content upwards
-        isDragging = false;
-        sheetElement.style.transform = 'translateY(0)';
+      // If pulling upwards when not at the top, let the native scroll handle it
+      // Reset dragging state if user starts scrolling content upwards
+      isDragging = false;
+      sheetElement.style.transform = 'translateY(0)';
     }
   }
 
@@ -82,29 +82,29 @@
   function closeSheet() {
     // Reset transform before dispatching close
     if (sheetElement) {
-        sheetElement.style.transform = ''; // Or specific transform for exit animation
+      sheetElement.style.transform = ''; // Or specific transform for exit animation
     }
     dispatch('close');
   }
 
   // Prevent body scroll when sheet is open
   onMount(() => {
-      if (visible) document.body.style.overflow = 'hidden';
+    if (visible) document.body.style.overflow = 'hidden';
   });
 
   onDestroy(() => {
-      document.body.style.overflow = ''; // Restore body scroll on destroy
+    document.body.style.overflow = ''; // Restore body scroll on destroy
   });
 
   // Watch visibility prop to toggle body scroll
   $: if (typeof document !== 'undefined') {
-      document.body.style.overflow = visible ? 'hidden' : '';
+    document.body.style.overflow = visible ? 'hidden' : '';
   }
 
    // Reset transform when visibility changes externally
   $: if (sheetElement && !visible) {
-     sheetElement.style.transform = '';
-     sheetElement.style.transition = ''; // Ensure transition is removed if closed abruptly
+    sheetElement.style.transform = '';
+    sheetElement.style.transition = ''; // Ensure transition is removed if closed abruptly
   }
 
 </script>
@@ -128,7 +128,7 @@
   >
     <!-- Handle Bar -->
     <div class="handle-bar-container" aria-hidden="true">
-        <div class="handle-bar"></div>
+      <div class="handle-bar"></div>
     </div>
 
     <!-- Scrollable Content -->
@@ -137,9 +137,9 @@
         <h2 id="sheet-title">{meal?.name || 'Recipe'}</h2>
         <!-- Themed Close Button -->
         <button class="close-sheet-btn" on:click={closeSheet} aria-label="Close Recipe Sheet">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="currentColor" aria-hidden="true">
-                <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
-            </svg>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="currentColor" aria-hidden="true">
+            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+          </svg>
         </button>
       </div>
 
@@ -158,8 +158,8 @@
             <ol class="step-list">
               {#each meal.recipe.steps as step, i}
                 <li>
-                    <span class="step-number">{i + 1}.</span>
-                    <span class="step-text">{step}</span>
+                  <span class="step-number">{i + 1}.</span>
+                  <span class="step-text">{step}</span>
                 </li>
               {/each}
             </ol>
@@ -167,18 +167,18 @@
 
         {#if meal.recipe.talaTip}
           <div class="tip-section">
-              <h4><span class="tip-icon">✨</span> Tala's Tip</h4>
-              <p class="tip-text">{meal.recipe.talaTip}</p>
+            <h4><span class="tip-icon">✨</span> Tala's Tip</h4>
+            <p class="tip-text">{meal.recipe.talaTip}</p>
           </div>
         {/if}
 
       {:else if meal}
          <div class="no-recipe">
-             <p>Looks like Tala hasn't shared the recipe for {meal.name} yet!</p>
-             <!-- Optional: Add meal image here -->
-             {#if meal.image}
-                <img src={meal.image} alt="" class="no-recipe-img"/>
-             {/if}
+            <p>Looks like Tala hasn't shared the recipe for {meal.name} yet!</p>
+            <!-- Optional: Add meal image here -->
+            {#if meal.image}
+              <img src={meal.image} alt="" class="no-recipe-img"/>
+            {/if}
          </div>
       {:else}
         <div class="no-recipe"><p>No meal selected.</p></div>
@@ -231,7 +231,7 @@
     margin: 0 auto;
   }
   .handle-bar-container:active {
-      cursor: grabbing;
+    cursor: grabbing;
   }
 
   .sheet-content {
@@ -283,8 +283,8 @@
   }
 
   .recipe-section, .tip-section, .no-recipe {
-     margin-bottom: 2rem; /* Space between sections */
-     text-align: left; /* Ensure left alignment */
+    margin-bottom: 2rem; /* Space between sections */
+    text-align: left; /* Ensure left alignment */
   }
 
   h3 {
@@ -310,36 +310,36 @@
   }
 
   .ingredient-list li::before {
-      content: '✧'; /* Sparkle bullet */
-      color: #b388eb; /* Accent color */
-      margin-right: 0.7rem;
-      font-size: 0.9em;
-      display: inline-block;
+    content: '✧'; /* Sparkle bullet */
+    color: #b388eb; /* Accent color */
+    margin-right: 0.7rem;
+    font-size: 0.9em;
+    display: inline-block;
   }
 
   .step-list li {
-      display: flex;
-      align-items: flex-start; /* Align number and text nicely */
-      gap: 0.6rem;
+    display: flex;
+    align-items: flex-start; /* Align number and text nicely */
+    gap: 0.6rem;
   }
   .step-number {
-      color: #b388eb;
-      font-weight: 600;
-      flex-shrink: 0;
-      min-width: 1.5em; /* Ensure space for numbers */
-      text-align: right;
+    color: #b388eb;
+    font-weight: 600;
+    flex-shrink: 0;
+    min-width: 1.5em; /* Ensure space for numbers */
+    text-align: right;
   }
   .step-text {
-      flex-grow: 1;
+    flex-grow: 1;
   }
 
   .tip-section {
-     background-color: #2c2663; /* Slightly different background */
-     border: 1px solid #4a4090;
-     padding: 1.2rem;
-     border-radius: 12px;
-     margin-top: 1.5rem;
-     box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
+    background-color: #2c2663; /* Slightly different background */
+    border: 1px solid #4a4090;
+    padding: 1.2rem;
+    border-radius: 12px;
+    margin-top: 1.5rem;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
   }
   .tip-section h4 {
     font-size: 1.1rem;
@@ -350,10 +350,10 @@
     align-items: center;
     gap: 0.5rem;
   }
-   .tip-icon {
-       font-size: 1.2em;
-       line-height: 1;
-   }
+  .tip-icon {
+    font-size: 1.2em;
+    line-height: 1;
+  }
   .tip-text {
     font-size: 0.95rem;
     line-height: 1.6;
@@ -393,14 +393,14 @@
     }
 
     .ingredient-list li::before {
-        font-size: 1em;
+      font-size: 1em;
     } 
 
     .tip-section h4 {
       font-size: 1.6rem;
     }
     .tip-icon {
-        font-size: 1.4em;
+      font-size: 1.4em;
     }
     .tip-text {
       font-size: 1.4rem;

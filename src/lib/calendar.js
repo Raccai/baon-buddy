@@ -93,10 +93,10 @@ export function copyBaon(dateKey) {
 }
 
 export function pasteBaon(dateKey, mealsToPaste) {
-     if (!dateKey || !Array.isArray(mealsToPaste)) return;
-     const currentData = get(calendarData);
-     // Overwrite or merge? Current DayModal logic implies overwrite via 'add' event.
-     // Let's stick to overwrite for simplicity, matching addBaon.
-     currentData[dateKey] = [...mealsToPaste]; // Paste a copy
-     saveCalendarData(currentData);
+    if (!dateKey || !Array.isArray(mealsToPaste)) return;
+    const currentData = get(calendarData);
+    // Overwrite or merge? Current DayModal logic implies overwrite via 'add' event.
+    // Let's stick to overwrite for simplicity, matching addBaon.
+    currentData[dateKey] = [...mealsToPaste]; // Paste a copy
+    saveCalendarData(currentData);
 }

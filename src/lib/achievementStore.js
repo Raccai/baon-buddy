@@ -72,7 +72,7 @@ export function checkAndUnlockAchievements() {
                 // Add more cases for other achievement types
             }
         } catch (e) {
-             console.error(`Error checking achievement "${achievement.id}":`, e);
+            console.error(`Error checking achievement "${achievement.id}":`, e);
         }
 
 
@@ -92,6 +92,6 @@ export function checkAndUnlockAchievements() {
 
 // Optional: Reset function for testing
 export function resetAchievements() {
-     saveUnlockedAchievements([]);
-     console.log("Unlocked achievements reset.");
+    saveUnlockedAchievements([]);
+    console.log("Unlocked achievements reset.");
 }

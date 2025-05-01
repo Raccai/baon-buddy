@@ -32,10 +32,10 @@
     console.log(`App received navigate event for: ${screenName}`); // Debug log
     // Add validation if needed
     if (screenName && ['home', 'calendar', 'baonlist'].includes(screenName)) {
-        currentScreen = screenName; // Update state with the correct name
-        localStorage.setItem("lastScreen", screenName);
+      currentScreen = screenName; // Update state with the correct name
+      localStorage.setItem("lastScreen", screenName);
     } else {
-         console.warn("Invalid screen name received in handleNavigate:", screenName);
+      console.warn("Invalid screen name received in handleNavigate:", screenName);
     }
   }
 
@@ -71,59 +71,59 @@
 
   // Helper to close all overlays (except optionally the one being opened)
   function closeAllModals(keepAchievements = false, keepManageBaon = false) {
-      favoritesVisible = false;
-      settingsVisible = false;
-      showRecipeSheet = false; // Also close recipe sheet
-      if (!keepAchievements) achievementsVisible = false;
-      if (!keepManageBaon) manageBaonVisible = false;
+    favoritesVisible = false;
+    settingsVisible = false;
+    showRecipeSheet = false; // Also close recipe sheet
+    if (!keepAchievements) achievementsVisible = false;
+    if (!keepManageBaon) manageBaonVisible = false;
   }
 
   // --- Functions for Achievements ---
   function openAchievements() {
-      console.log("Opening Achievements"); // Debug log
-      closeAllModals(true); // Close others before opening
-      achievementsVisible = true;
+    console.log("Opening Achievements"); // Debug log
+    closeAllModals(true); // Close others before opening
+    achievementsVisible = true;
   }
   function closeAchievements() { achievementsVisible = false; }
 
   // --- Functions for Manage Baon ---
   function openManageBaon() { // <<< ADD Function to open
-      console.log("Opening Manage Baon"); // Debug log
-      closeAllModals(true); // Close others before opening
-      manageBaonVisible = true;
+    console.log("Opening Manage Baon"); // Debug log
+    closeAllModals(true); // Close others before opening
+    manageBaonVisible = true;
   }
   function closeManageBaon() { // <<< ADD Function to close
-      manageBaonVisible = false;
+    manageBaonVisible = false;
   }
 
   function refreshAppFavorites() {
-      console.log("Refreshing app favorites list...");
-      favoriteNames = getFavorites().map(meal => meal.name);
-      // If the FavoritesModal is currently open AND has an exported refresh method, call it.
-      if (favoritesVisible && favoritesRef?.refresh) {
-           console.log("Refreshing FavoritesModal instance.");
-           favoritesRef.refresh();
-      }
-      // Achievement checks might depend on favorite counts, so check again
-      checkAndUnlockAchievements();
+    console.log("Refreshing app favorites list...");
+    favoriteNames = getFavorites().map(meal => meal.name);
+    // If the FavoritesModal is currently open AND has an exported refresh method, call it.
+    if (favoritesVisible && favoritesRef?.refresh) {
+      console.log("Refreshing FavoritesModal instance.");
+      favoritesRef.refresh();
+    }
+    // Achievement checks might depend on favorite counts, so check again
+    checkAndUnlockAchievements();
   }
 
   // --- Music Control ---
   function playMusic() {
-      if (audio && !audio.paused) return; // Already playing
-      if (audio && musicEnabled && appIsActive) { // Only play if enabled AND app is active
-          console.log("Attempting to play music...");
-          audio.play().catch(e => console.warn("Music play failed (likely needs interaction or already playing):", e));
-      } else {
-          console.log("Music not playing (disabled or app inactive).");
-      }
+    if (audio && !audio.paused) return; // Already playing
+    if (audio && musicEnabled && appIsActive) { // Only play if enabled AND app is active
+      console.log("Attempting to play music...");
+      audio.play().catch(e => console.warn("Music play failed (likely needs interaction or already playing):", e));
+    } else {
+      console.log("Music not playing (disabled or app inactive).");
+    }
   }
 
   function pauseMusic() {
-      if (audio && !audio.paused) { // Only pause if playing
-          console.log("Pausing music...");
-          audio.pause();
-      }
+    if (audio && !audio.paused) { // Only pause if playing
+      console.log("Pausing music...");
+      audio.pause();
+    }
   }
 
   function toggleMusic() {
@@ -134,9 +134,9 @@
 
     console.log("App received toggleMusic event. New state:", musicEnabled);
     if (musicEnabled) {
-        playMusic(); // Attempt to play if now enabled (respects appIsActive flag)
+      playMusic(); // Attempt to play if now enabled (respects appIsActive flag)
     } else {
-        pauseMusic(); // Pause if now disabled
+      pauseMusic(); // Pause if now disabled
     }
   }
 
@@ -198,7 +198,7 @@
       if (isActive) {
         // App came to foreground
         if (musicShouldPlay) { // Check if music SHOULD be playing based on settings
-            playMusic();
+          playMusic();
         }
       } else {
         // App went to background
@@ -269,22 +269,22 @@
 
 <!-- Pass correct state to RecipeSheet -->
 <RecipeSheet
-    visible={showRecipeSheet}
-    meal={selectedRecipeMeal}
-    on:close={closeRecipeSheet}
+  visible={showRecipeSheet}
+  meal={selectedRecipeMeal}
+  on:close={closeRecipeSheet}
 />
 
 {#if achievementsVisible}
-<div class="achievements-overlay" transition:fade={{ duration: 250 }}>
+  <div class="achievements-overlay" transition:fade={{ duration: 250 }}>
     <!-- Add a close button wrapper if needed -->
     <AchievementScreen on:close={closeAchievements} />
-</div>
+  </div>
 {/if}
 
 {#if manageBaonVisible}
-    <div class="manage-baon-overlay" transition:fade={{duration: 250}}>
-        <ManageBaonScreen on:close={closeManageBaon} on:userMealsChanged={refreshAppFavorites} />
-    </div>
+  <div class="manage-baon-overlay" transition:fade={{duration: 250}}>
+    <ManageBaonScreen on:close={closeManageBaon} on:userMealsChanged={refreshAppFavorites} />
+  </div>
 {/if}
 
 <style>
@@ -319,19 +319,19 @@
   }
 
   .screen-transition-wrapper {
-     position: absolute;
-     inset: 0; /* Fill the main-content-area (between margins) */
-     overflow: hidden; /* Clip content during transition */
-     display: flex; /* Make child fill space */
+    position: absolute;
+    inset: 0; /* Fill the main-content-area (between margins) */
+    overflow: hidden; /* Clip content during transition */
+    display: flex; /* Make child fill space */
   }
 
-   /* Make screen component fill the transition wrapper */
-   /* Ensure the screen component itself has height: 100% */
-   .screen-transition-wrapper > :global(*) {
-       flex-grow: 1; /* Should fill the flex container */
-       width: 100%;
-       /* height: 100%; // Usually handled by flex-grow */
-   }
+  /* Make screen component fill the transition wrapper */
+  /* Ensure the screen component itself has height: 100% */
+  .screen-transition-wrapper > :global(*) {
+    flex-grow: 1; /* Should fill the flex container */
+    width: 100%;
+    /* height: 100%; // Usually handled by flex-grow */
+  }
 
   .navbar-wrapper {
     position: fixed;
@@ -347,41 +347,41 @@
 
   /* Styling for the Achievements Overlay */
   .achievements-overlay {
-      position: fixed;
-      inset: 0; /* Cover the whole screen */
-      z-index: 1000; /* High z-index */
-      background-color: rgba(10, 8, 30, 0.5); /* Optional backdrop */
-      backdrop-filter: blur(3px); /* Optional blur */
-      display: flex; /* Allow centering or positioning */
-      /* You might want padding or specific alignment here */
-       padding-top: 68px; /* Example: Space for topbar */
-       padding-bottom: 70px; /* Example: Space for navbar */
-       box-sizing: border-box;
-       overflow: hidden; /* Prevent wrapper scroll */
+    position: fixed;
+    inset: 0; /* Cover the whole screen */
+    z-index: 1000; /* High z-index */
+    background-color: rgba(10, 8, 30, 0.5); /* Optional backdrop */
+    backdrop-filter: blur(3px); /* Optional blur */
+    display: flex; /* Allow centering or positioning */
+    /* You might want padding or specific alignment here */
+    padding-top: 68px; /* Example: Space for topbar */
+    padding-bottom: 70px; /* Example: Space for navbar */
+    box-sizing: border-box;
+    overflow: hidden; /* Prevent wrapper scroll */
   }
-   .achievements-close-btn:hover {
-       background: rgba(0, 0, 0, 0.6);
-   }
+  .achievements-close-btn:hover {
+    background: rgba(0, 0, 0, 0.6);
+  }
 
   /* Ensure AchievementsScreen component fills the overlay */
   /* Adjust selector if AchievementsScreen root element is different */
   .achievements-overlay > :global(.achievements-page) {
-      width: 100%;
-      height: 100%; /* Fill the overlay */
-      /* Override background if needed, or let it be transparent */
-       background-color: #1a163f; /* Or make it slightly transparent */
-       border-radius: 0; /* Remove radius if it had one */
-       padding: 1.5rem 1rem 1rem 1rem; /* Adjust padding if needed */
+    width: 100%;
+    height: 100%; /* Fill the overlay */
+    /* Override background if needed, or let it be transparent */
+    background-color: #1a163f; /* Or make it slightly transparent */
+    border-radius: 0; /* Remove radius if it had one */
+    padding: 1.5rem 1rem 1rem 1rem; /* Adjust padding if needed */
   }
 
   /* For ManageBaon */
   .manage-baon-overlay {
-      position: fixed; inset: 0; z-index: 1000;
-      background-color: rgba(10, 8, 30, 0.5); backdrop-filter: blur(3px);
-      display: flex; padding-top: 0; padding-bottom: 0;
-      box-sizing: border-box; overflow: hidden;
+    position: fixed; inset: 0; z-index: 1000;
+    background-color: rgba(10, 8, 30, 0.5); backdrop-filter: blur(3px);
+    display: flex; padding-top: 0; padding-bottom: 0;
+    box-sizing: border-box; overflow: hidden;
   }
   .manage-baon-overlay > :global(*) { /* Target ManageBaonScreen root */
-       width: 100%; height: 100%;
-   }
+    width: 100%; height: 100%;
+  }
 </style>

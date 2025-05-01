@@ -76,7 +76,7 @@ export const achievements = [
         id: 'calendar_week',
         name: "Week Sorted",
         description: "Planned Baon for 7 different days.",
-         icon: "🗓️",
+        icon: "🗓️",
         type: 'calendar_check',
         check: () => Object.keys(get(calendarData)).length >= 7,
         secret: false,

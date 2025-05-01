@@ -91,9 +91,9 @@
     console.log(`generateMeals called. Meal list length: ${currentMealList.length}`); // Debug log
 
     if (currentMealList.length === 0) {
-        console.warn("Cannot generate meal, meal list is empty.");
-        suggestedMeals = [];
-        return;
+      console.warn("Cannot generate meal, meal list is empty.");
+      suggestedMeals = [];
+      return;
     }
     suggestedMeals = [...currentMealList].sort(() => 0.5 - Math.random()).slice(0, 1);
     console.log("Generated meal:", suggestedMeals[0]?.name);
@@ -114,20 +114,20 @@
     // Unsubscribe is handled automatically by Svelte for $: blocks
     // OR use a manual unsubscribe if preferred
     const unsubscribe = allMeals.subscribe(currentMeals => {
-        console.log("Home received allMeals update, length:", (currentMeals || []).length);
-        // Generate only if meals are loaded AND we haven't suggested one yet
-        if (currentMeals && currentMeals.length > 0 && suggestedMeals.length === 0) {
-             console.log("Store has meals and suggestion is empty. Generating initial meal.");
-             generateMeals();
-             // Optional: unsubscribe after first generation if needed
-             // unsubscribe();
-         } else if (currentMeals && currentMeals.length === 0) {
-             console.log("Store updated, but meal list is empty.");
-             suggestedMeals = []; // Ensure placeholder shows if list becomes empty
-         }
+      console.log("Home received allMeals update, length:", (currentMeals || []).length);
+      // Generate only if meals are loaded AND we haven't suggested one yet
+      if (currentMeals && currentMeals.length > 0 && suggestedMeals.length === 0) {
+        console.log("Store has meals and suggestion is empty. Generating initial meal.");
+        generateMeals();
+        // Optional: unsubscribe after first generation if needed
+        // unsubscribe();
+      } else if (currentMeals && currentMeals.length === 0) {
+        console.log("Store updated, but meal list is empty.");
+        suggestedMeals = []; // Ensure placeholder shows if list becomes empty
+      }
     });
   
-    // --- Cleanup (Optional but good practice) ---
+    // --- Cleanup ---
     // return () => {
     //     console.log("Home unsubscribing from allMeals");
     //     unsubscribe();
@@ -174,7 +174,7 @@
             {/each}
           </div>
         {:else}
-           <div class="no-meal-placeholder">Loading Baon...</div> <!-- Placeholder -->
+          <div class="no-meal-placeholder">Loading Baon...</div> <!-- Placeholder -->
         {/if}
 
         <button
@@ -217,21 +217,25 @@
   }
 
   .home-content {
-      width: 100%;
-      height: 100%;
-      position: relative; /* Crucial for absolute positioning children */
-      z-index: 1;
-       display: flex; /* Use flex mainly for alignment fallback */
-       flex-direction: column;
-       align-items: center;
-       /* We will use absolute positioning primarily */
-       justify-content: flex-end; /* Align items towards bottom initially */
+    width: 100%;
+    height: 100%;
+    position: relative; /* Crucial for absolute positioning children */
+    z-index: 1;
+    display: flex; /* Use flex mainly for alignment fallback */
+    flex-direction: column;
+    align-items: center;
+    /* We will use absolute positioning primarily */
+    justify-content: flex-end; /* Align items towards bottom initially */
   }
 
   /* Background Effects */
   .stars-bg, .dust-layer, .flow-lines-bg {
-    position: absolute; inset: 0; width: 100%; height: 100%;
-    pointer-events: none; overflow: hidden; z-index: 0;
+    position: absolute; 
+    inset: 0; width: 100%; 
+    height: 100%;
+    pointer-events: none; 
+    overflow: hidden; 
+    z-index: 0;
   }
   .flow-fill { fill: rgba(255, 245, 225, 0.08); } /* Even subtler */
   .dust { background-color: rgba(255, 245, 225, 0.1); }
@@ -266,17 +270,17 @@
   }
 
   .no-meal-placeholder { /* Style for when no meal is suggested yet */
-      background-color: rgba(255, 245, 225, 0.8);
-      color: #4a4090;
-      padding: 2rem 1rem;
-      border-radius: 1rem;
-      text-align: center;
-      font-weight: 500;
-      min-height: 150px; /* Give it some size */
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 100%;
+    background-color: rgba(255, 245, 225, 0.8);
+    color: #4a4090;
+    padding: 2rem 1rem;
+    border-radius: 1rem;
+    text-align: center;
+    font-weight: 500;
+    min-height: 150px; /* Give it some size */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
   }
 
   .character-space {
@@ -343,18 +347,18 @@
 
   /* Position TalaQuote */
   :global(.tala-quote-container) {
-      position: absolute;
-      /* Position slightly above character-space */
-      bottom: calc(env(safe-area-inset-bottom, 0rem) + 20rem + 30vh); /* Adjust this complex calc */
-      width: 80%;
-      max-width: 350px; /* Adjust max width */
-      z-index: 6; /* Above character */
-      left: 50%;
-      transform: translateX(-50%);
-      color: #fff;
-      text-shadow: 0 1px 3px rgba(0,0,0,0.4);
-      pointer-events: none; /* Prevent interfering with clicks */
-      text-align: center;
+    position: absolute;
+    /* Position slightly above character-space */
+    bottom: calc(env(safe-area-inset-bottom, 0rem) + 20rem + 30vh); /* Adjust this complex calc */
+    width: 80%;
+    max-width: 350px; /* Adjust max width */
+    z-index: 6; /* Above character */
+    left: 50%;
+    transform: translateX(-50%);
+    color: #fff;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.4);
+    pointer-events: none; /* Prevent interfering with clicks */
+    text-align: center;
   }
 
 
