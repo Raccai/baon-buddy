@@ -30,11 +30,12 @@
   let currentHintData = null;
 
   const homeHints = [
-    { targetSelector: '#home-suggest-button', text: 'Tap this button anytime to get a new suggestion.', position: 'top' },
-    { targetSelector: '#home-baon-card', text: "Here's your suggested Baon! Double-tap or use ❤️ to favorite it.", position: 'top' },
-    { targetSelector: '#topbar-manage-baon-btn', text: 'Use these buttons to check your favorites (heart icon)...', position: 'bottom' },
-    { targetSelector: '#topbar-manage-baon-btn', text: 'To add, edit, or delete your own custom Baon recipes (notepad icon)...', position: 'bottom' },
-    { targetSelector: '#topbar-manage-baon-btn', text: 'Or to check the settings (gear icon)!', position: 'bottom' },
+    { targetSelector: '#home-suggest-button', text: "1. Need Baon ideas? Tap here for a random suggestion!", position: 'top' },
+    { targetSelector: '#home-baon-card', text: "2. Here's your Baon! Double-tap or use ❤️ to favorite it, click the flask 🧪 for the recipe.", position: 'top' },
+    // Navbar Hints
+    { targetSelector: '#navbar-home-btn', text: "3. Use the bottom bar to navigate! This is the Home screen.", position: 'top' },
+    { targetSelector: '#navbar-calendar-btn', text: "4. Plan your Baon ahead using the Calendar.", position: 'top' },
+    { targetSelector: '#navbar-menu-btn', text: "5. Open the Menu to see the full Baon List, manage meals, check achievements, and more!", position: 'top' },
   ];
   const totalHomeHints = homeHints.length;
 

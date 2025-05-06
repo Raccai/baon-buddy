@@ -2,11 +2,12 @@
   import { onMount, onDestroy } from 'svelte';
   import { App as CapacitorApp } from '@capacitor/app';
   import { fade } from 'svelte/transition';
-  import { getFavorites, incrementCounter, initializeDefaultMealsIfEmpty } from './lib/storage';
+  import { forceUpdateDefaultMeals, getFavorites, incrementCounter, initializeDefaultMealsIfEmpty } from './lib/storage';
   import { checkAndUnlockAchievements } from './lib/achievementStore';
 
   import Navbar from './components/Navbar.svelte';
   import Topbar from './components/Topbar.svelte';
+  import SideMenu from './components/SideMenu.svelte';
   import FavoritesModal from './components/FavoritesModal.svelte';
   import SettingsModal from './components/SettingsModal.svelte';
   import RecipeSheet from './components/RecipeSheet.svelte';
@@ -34,9 +35,31 @@
     if (screenName && ['home', 'calendar', 'baonlist'].includes(screenName)) {
       currentScreen = screenName; // Update state with the correct name
       localStorage.setItem("lastScreen", screenName);
+      closeAllModals(); // Close overlays
+      closeSideMenu();
     } else {
       console.warn("Invalid screen name received in handleNavigate:", screenName);
     }
+  }
+
+  function toggleSideMenu() { // <<< ADD function to toggle menu
+    const newState = !sideMenuVisible;
+    console.log(`Toggling side menu from ${sideMenuVisible} to ${newState}`);
+    sideMenuVisible = newState;
+  }
+  function closeSideMenu() { // <<< ADD function to close menu
+    console.log(`Closing side menu (current: ${sideMenuVisible})`);
+    sideMenuVisible = false;
+  }
+
+  // Helper to close all overlays (except optionally the one being opened)
+  function closeAllModals() { // Updated to include side menu
+    favoritesVisible = false;
+    settingsVisible = false;
+    showRecipeSheet = false;
+    achievementsVisible = false;
+    manageBaonVisible = false;
+    // Does not close side menu here, specific actions handle it
   }
 
   let favoriteNames = getFavorites().map(meal => meal.name);
@@ -57,6 +80,7 @@
   let settingsVisible = false;
   let achievementsVisible = false;
   let manageBaonVisible = false;
+  let sideMenuVisible = false; // <<< ADD state for side menu
   let audio;
   let musicEnabled = localStorage.getItem("musicEnabled") === "true"; // Default to true if not "false"
   let appIsActive = true;
@@ -69,19 +93,10 @@
     settingsVisible = true;
   }
 
-  // Helper to close all overlays (except optionally the one being opened)
-  function closeAllModals(keepAchievements = false, keepManageBaon = false) {
-    favoritesVisible = false;
-    settingsVisible = false;
-    showRecipeSheet = false; // Also close recipe sheet
-    if (!keepAchievements) achievementsVisible = false;
-    if (!keepManageBaon) manageBaonVisible = false;
-  }
-
   // --- Functions for Achievements ---
   function openAchievements() {
     console.log("Opening Achievements"); // Debug log
-    closeAllModals(true); // Close others before opening
+    closeAllModals(); // Close others before opening
     achievementsVisible = true;
   }
   function closeAchievements() { achievementsVisible = false; }
@@ -89,7 +104,7 @@
   // --- Functions for Manage Baon ---
   function openManageBaon() { // <<< ADD Function to open
     console.log("Opening Manage Baon"); // Debug log
-    closeAllModals(true); // Close others before opening
+    closeAllModals(); // Close others before opening
     manageBaonVisible = true;
   }
   function closeManageBaon() { // <<< ADD Function to close
@@ -141,7 +156,21 @@
   }
 
   let appStateListener = null;
+  const APP_VERSION_KEY = 'baonAppVersion';
+  const CURRENT_APP_VERSION = '1.4';
   onMount(() => {
+    // Check if we need to update default meals
+    const storedVersion = localStorage.getItem(APP_VERSION_KEY);
+    if (storedVersion !== CURRENT_APP_VERSION) {
+      console.log(`App version changed from ${storedVersion || 'none'} to ${CURRENT_APP_VERSION}, updating default meals...`);
+      
+      // Update the default meals
+      forceUpdateDefaultMeals();
+      
+      // Store the new version
+      localStorage.setItem(APP_VERSION_KEY, CURRENT_APP_VERSION);
+    }
+    
     // Increment count when app opens
     incrementCounter("baonAppOpens");
 
@@ -216,11 +245,7 @@
 
 <div class="app-container">
   <div class="topbar-wrapper">
-    <Topbar 
-      onToggleFavorites={toggleFavorites} 
-      onOpenSettings={openSettings} 
-      onOpenManageBaon={openManageBaon}
-    />
+    <Topbar />
   </div>
 
   <main class="main-content-area"> {#key currentScreen}
@@ -238,13 +263,27 @@
   </main>
 
   <div class="navbar-wrapper">
-    <Navbar on:navigate={handleNavigate} current={currentScreen} />
+    <Navbar 
+      on:navigate={handleNavigate} 
+      on:toggleMenu={toggleSideMenu}
+      current={currentScreen} 
+    />
   </div>
 </div>
 
 <Toast />
 
 <!-- Modals and Sheets -->
+<SideMenu
+  visible={sideMenuVisible}
+  on:close={() => sideMenuVisible = false}
+  on:navigate={handleNavigate} 
+  on:toggleFavorites={toggleFavorites}
+  on:openSettings={openSettings}
+  on:openManageBaon={openManageBaon}
+  on:openAchievements={openAchievements} 
+/>
+
 <FavoritesModal
   bind:this={favoritesRef}
   visible={favoritesVisible}
@@ -253,7 +292,6 @@
   }}
   on:close={() => favoritesVisible = false}
   on:viewRecipe={(e) => openRecipeSheet(e.detail)} 
-  on:selectMeal={(e) => {/* Removed - using viewRecipe now */}}
 />
 
 <SettingsModal

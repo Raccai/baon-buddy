@@ -35,9 +35,9 @@
   // Define hints for Calendar
   // Note: Targeting the first day requires waiting for the grid to render
   const calendarHints = [
-    { targetSelector: '#calendar-prev-month-btn', text: 'Use these arrows to navigate between months.', position: 'right' },
-    { targetSelector: '#calendar-today-btn', text: 'Tap here to jump quickly back to the current month.', position: 'bottom' },
-    { targetSelector: '#calendar-first-day-cell', text: 'Tap any day to view or add Baon for that date.', position: 'bottom' },
+    { targetSelector: '#calendar-prev-month-btn', text: '1. Use these arrows to navigate between months.', position: 'right' },
+    { targetSelector: '#calendar-today-btn', text: '2. Tap here to jump quickly back to the current month.', position: 'bottom' },
+    { targetSelector: '#calendar-first-day-cell', text: '3. Tap any day to view or add Baon for that date.', position: 'bottom' },
   ];
   const totalCalendarHints = calendarHints.length;
   // --- Onboarding Functions ---

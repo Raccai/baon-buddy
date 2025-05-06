@@ -140,5 +140,210 @@ export const meals = [
       ],
       talaTip: "Try it with sunny-side-up egg and suka for that carinderia-style combo!"
     }
+  },
+
+  // ---------------- New Meals ----------------
+
+  {
+    name: "Tocilog",
+    emoji: "🍳",
+    type: "silog",
+    message: "Tocino + sinangag + itlog = love!",
+    image: "/baon/Tocilog.png",
+    recipe: {
+      ingredients: [
+        "tocino slices",
+        "garlic rice",
+        "fried egg"
+      ],
+      steps: [
+        "Fry tocino until caramelized.",
+        "Serve with garlic rice and sunny-side-up egg."
+      ],
+      talaTip: "Add achara on the side for a tangy balance!"
+    }
+  },
+  {
+    name: "Longsilog",
+    emoji: "🌭",
+    type: "silog",
+    message: "Sweet or garlicky? Your choice.",
+    image: "/baon/Longsilog.jpg",
+    recipe: {
+      ingredients: [
+        "longganisa",
+        "garlic rice",
+        "fried egg"
+      ],
+      steps: [
+        "Cook longganisa until browned.",
+        "Plate with garlic rice and egg."
+      ],
+      talaTip: "Use vinegar dip with chopped garlic for contrast!"
+    }
+  },
+  {
+    name: "Bangsilog",
+    emoji: "🐟",
+    type: "silog",
+    message: "Crunchy outside, soft inside.",
+    image: "/baon/Bangsilog.jpg",
+    recipe: {
+      ingredients: [
+        "daing na bangus",
+        "garlic rice",
+        "fried egg"
+      ],
+      steps: [
+        "Fry bangus until crispy.",
+        "Serve with sinangag and egg."
+      ],
+      talaTip: "Pair with kamatis + suka dip for the win!"
+    }
+  },
+  {
+    name: "Spam Sandwich",
+    emoji: "🥓",
+    type: "quick",
+    message: "Mabilisang baon, laging masarap.",
+    image: "/baon/SpamSandwich.jpg",
+    recipe: {
+      ingredients: [
+        "Spam slices",
+        "bread",
+        "mayonnaise",
+        "lettuce or cheese (optional)"
+      ],
+      steps: [
+        "Pan-fry Spam slices.",
+        "Spread mayo on bread and layer Spam.",
+        "Add lettuce or cheese if desired."
+      ],
+      talaTip: "Toast the bread for extra texture!"
+    }
+  },
+  {
+    name: "Egg Salad Sandwich",
+    emoji: "🥚",
+    type: "quick",
+    message: "Creamy, classic, and easy.",
+    image: "/baon/EggSaladSandwich.jpeg",
+    recipe: {
+      ingredients: [
+        "2 hard-boiled eggs",
+        "2 tbsp mayonnaise",
+        "salt & pepper",
+        "bread"
+      ],
+      steps: [
+        "Mash eggs and mix with mayo, salt, and pepper.",
+        "Spread on bread and enjoy."
+      ],
+      talaTip: "Add chopped pickles or relish for extra zing!"
+    }
+  },
+  {
+    name: "Bistek Tagalog",
+    emoji: "🥩",
+    type: "classic",
+    message: "Sosy pero simple lutuin.",
+    image: "/baon/BistekTagalog.png",
+    recipe: {
+      ingredients: [
+        "beef sirloin slices",
+        "soy sauce",
+        "calamansi juice",
+        "onions",
+        "garlic"
+      ],
+      steps: [
+        "Marinate beef in soy sauce + calamansi.",
+        "Sauté onions then beef until tender.",
+        "Serve with rice and onion rings on top."
+      ],
+      talaTip: "Use red onions for a sweeter bite!"
+    }
+  },
+  {
+    name: "Giniling Guisado",
+    emoji: "🥘",
+    type: "budget",
+    message: "Staple na ulam sa kahit anong bahay.",
+    image: "/baon/Giniling.jpg",
+    recipe: {
+      ingredients: [
+        "ground pork or beef",
+        "potatoes",
+        "carrots",
+        "raisins",
+        "soy sauce"
+      ],
+      steps: [
+        "Sauté garlic and onion, then meat.",
+        "Add veggies and cook until soft.",
+        "Season and serve with rice."
+      ],
+      talaTip: "Add hotdog slices for that fiesta-style feel!"
+    }
+  },
+  {
+    name: "Tortang Talong",
+    emoji: "🍆",
+    type: "healthy",
+    message: "Paborito ni nanay!",
+    image: "/baon/TortangTalong.png",
+    recipe: {
+      ingredients: [
+        "1 eggplant, grilled and peeled",
+        "1 egg",
+        "salt & pepper",
+        "cooking oil"
+      ],
+      steps: [
+        "Flatten grilled talong.",
+        "Dip in beaten egg and fry.",
+        "Serve with rice and ketchup or suka."
+      ],
+      talaTip: "Add ground meat or cheese for a hearty version!"
+    }
+  },
+  {
+    name: "Hotdog + Rice",
+    emoji: "🌭",
+    type: "instant",
+    message: "Bata man o matanda, panalo.",
+    image: "/baon/HotdogRice.jpg",
+    recipe: {
+      ingredients: [
+        "hotdogs",
+        "rice",
+        "ketchup"
+      ],
+      steps: [
+        "Fry hotdogs until browned.",
+        "Serve with rice and ketchup."
+      ],
+      talaTip: "Cut hotdogs into octopus shapes for kids!"
+    }
+  },
+  {
+    name: "Fried Tilapia",
+    emoji: "🐟",
+    type: "classic",
+    message: "Lutong bahay feels.",
+    image: "/baon/Tilapia.jpg",
+    recipe: {
+      ingredients: [
+        "1 tilapia, cleaned",
+        "salt",
+        "cooking oil"
+      ],
+      steps: [
+        "Season fish with salt.",
+        "Fry until golden and crispy.",
+        "Serve with rice and suka dip."
+      ],
+      talaTip: "Score the fish for crispier skin!"
+    }
   }
 ];

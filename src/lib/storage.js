@@ -29,27 +29,28 @@ export function initializeDefaultMealsIfEmpty() {
                 id: `default_${meal.name.toLowerCase().replace(/[^a-z0-9]+/g, '_')}_${index}`,
                 isUserDefined: false
             }));
-            localStorage.setItem(ALL_BAON_KEY, JSON.stringify(initialMeals));
-            allMealsCache = initialMeals;
+            saveAllMeals(initialMeals);
             refreshMealsStore(); // Trigger store refresh after initialization
         }
     } catch (e) {
-        console.error("Error initializing default meals:", e);
+        if (allMealsCache === null) {
+            getAllMeals(); // This will read from localStorage and populate cache
+        }    
     }
 }
 
 // --- Meal CRUD Operations ---
 export const getAllMeals = () => {
      if (allMealsCache !== null) {
-        return allMealsCache;
+        return [...allMealsCache];
      }
     try {
         const stored = localStorage.getItem(ALL_BAON_KEY);
         const meals = stored ? JSON.parse(stored) : [];
         allMealsCache = meals;
-        return meals;
+        return [...allMealsCache];
     } catch (e) {
-        console.error("Error reading all meals:", e);
+        console.error("[storage] Error reading all meals:", e);
         allMealsCache = [];
         return [];
     }
@@ -59,10 +60,11 @@ const saveAllMeals = (mealsArray) => {
     try {
         const mealsToSave = mealsArray || [];
         localStorage.setItem(ALL_BAON_KEY, JSON.stringify(mealsToSave));
-        allMealsCache = mealsToSave;
+        allMealsCache = [...mealsToSave]; // Update cache with a copy
+        console.log(`[storage] Saved ${mealsToSave.length} meals. Triggering store refresh.`);
         refreshMealsStore(); // Notify the reactive store
     } catch (e) {
-        console.error("Error saving all meals:", e);
+        console.error("[storage] Error saving all meals:", e);
     }
 };
 
@@ -96,15 +98,15 @@ export const addMeal = (newMealData) => {
 
 export const updateMeal = (updatedMeal) => {
     console.log("storage.js updateMeal received:", JSON.stringify(updatedMeal, null, 2));
-     if (!updatedMeal || !updatedMeal.id) {
+    if (!updatedMeal || !updatedMeal.id) {
         showToast("Error updating Baon: Invalid data provided.", "error");
         console.error("updateMeal called with invalid data:", updatedMeal);
         return false;
-     }
-     if (!updatedMeal.name || !updatedMeal.name.trim()) {
+    }
+    if (!updatedMeal.name || !updatedMeal.name.trim()) {
         showToast("Baon name cannot be empty!", "error");
         return false;
-     }
+    }
 
     const currentMeals = getAllMeals();
     const index = currentMeals.findIndex(m => m.id === updatedMeal.id);
@@ -303,6 +305,28 @@ export function incrementCounter(key) {
         console.error(`Error incrementing counter ${key}:`, e);
         return getCounter(key);
     }
+}
+
+// --- Force Update Default Meals ---
+export function forceUpdateDefaultMeals() {
+    console.log("Forcing update of default meals...");
+    
+    // Get all user-defined meals
+    const allMeals = getAllMeals();
+    const userMeals = allMeals.filter(meal => meal.isUserDefined === true);
+    
+    // Process default meals with IDs
+    const defaultMealsWithIds = defaultMeals.map((meal, index) => ({
+        ...meal,
+        id: `default_${meal.name.toLowerCase().replace(/[^a-z0-9]+/g, '_')}_${index}`,
+        isUserDefined: false
+    }));
+    
+    // Combine user meals with updated defaults
+    saveAllMeals([...userMeals, ...defaultMealsWithIds]);
+    
+    showToast("Default meals have been updated!", "success");
+    return true;
 }
 
 // --- General Reset ---

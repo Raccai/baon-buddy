@@ -65,8 +65,8 @@
   let hintIndex = 0;
   let currentHintData = null;
   const baonListHints = [
-    { targetSelector: '#baonlist-filters', text: 'Tap these tags to filter the Baon list!', position: 'bottom' },
-    { targetSelector: '#first-baon-card-wrapper', text: 'Here are the Baon ideas! Tap the icon on the right to see a recipe, or tap the heart to add/remove from favorites.', position: 'bottom' },
+    { targetSelector: '#baonlist-filters', text: '1. Tap these tags to filter the Baon list!', position: 'bottom' },
+    { targetSelector: '#first-baon-card-wrapper', text: '2. Here are the Baon ideas! Tap the icon on the right to see a recipe, or tap the heart to add/remove from favorites.', position: 'bottom' },
   ];
   const totalBaonListHints = baonListHints.length;
   let onboardingCheckStarted = false;
@@ -110,6 +110,7 @@
   }
 
   onMount(() => {
+    
     setTimeout(startOnboardingHints, 300); // Initial delay
   });
 

@@ -1,80 +1,43 @@
 <script>
   import BaonBuddyTitle from "/titles/BaonBuddyTitle.png";
-  import Favorites from "../assets/Favorites.svelte";
-  import Settings from "../assets/Settings.svelte";
-  import ManageBaonIcon from "../assets/ManageBaonIcon.svelte";
-
-  export let onToggleFavorites;
-  export let onOpenSettings;
-  export let onOpenManageBaon = () => {};
-
-  let activeButton = null;
-
-  function handleClick(name, callback) {
-    activeButton = name;
-    setTimeout(() => activeButton = null, 250); // Reset slightly faster
-    if (typeof callback === 'function') {
-      callback();
-    } else {
-      console.warn(`Callback for button "${name}" is not defined or not a function.`);
-    }
-  }
 </script>
 
 <header class="topbar">
   <div class="image">
     <img src={BaonBuddyTitle} alt="Baon Buddy" class="app-title" />
-  </div>
-  <div class="topbar-buttons">
-    <!-- Favorites List Button -->
-    <button on:click={() => handleClick('favorites', onToggleFavorites)} aria-label="View Favorites">
-      <span class:active={activeButton === 'favorites'}>
-        <Favorites />
-      </span>
-    </button>
-
-    <!-- Manage Baon Button -->
-    <button
-      id="topbar-manage-baon-btn"
-      on:click={() => handleClick('manage_baon', onOpenManageBaon)}
-      class="topbar-btn"
-      class:animating={activeButton === 'manage_baon'}
-      aria-label="Manage My Baon"
-    >
-      <span class="icon-wrapper">
-        <ManageBaonIcon />
-      </span>
-    </button>
-
-    <!-- Settings Button -->
-    <button on:click={() => handleClick('settings', onOpenSettings)} aria-label="Open Settings">
-      <span class:active={activeButton === 'settings'}>
-        <Settings />
-      </span>
-    </button>
-  </div>
+  </div> 
 </header>
 
 <style>
   .topbar {
     position: fixed;
-    top: 0;
-    width: 100%;
+    top: 0; 
+    left: 0; 
+    right: 0;
+    /* Base height for the content area */
     height: 68px;
     background: #191337;
-    color: #fff;
-    padding: 0.2rem;
+    color: #fff5e1; /* Changed default color */
+    /* --- ADD Safe Area Padding --- */
+    padding: 0 0.4rem; /* Keep horizontal */
+    padding-top: calc(env(safe-area-inset-top, 0px) + 0.2rem); /* Add safe area to your existing top padding */
+    /* --- Adjust height if background should fill safe area --- */
+    /* height: calc(68px + env(safe-area-inset-top, 0px)); */
+    /* If using calc for height, internal elements might need relative positioning */
+
     font-weight: bold;
-    z-index: 9;
-    box-shadow: 0 2px 40px rgba(0, 0, 0, 0.4);
+    z-index: 990; /* Adjusted z-index */
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3); /* Adjusted shadow */
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    justify-content: center;
+    align-items: center; /* Vertically center content within the height */
+    border-bottom: 1px solid #3a3375;
+    box-sizing: border-box;
   }
 
   .image {
-    padding-left: 0.6rem;
-    padding-top: 0.2rem;
+    display: flex;
+    align-items: center;
   }
 
   .app-title {
@@ -82,35 +45,7 @@
     width: auto;
     max-width: 90px;
     margin: 0;
-  }
-
-  .topbar-buttons {
-    display: flex;
-    align-items: center;
-    gap: 0;
-  }
-
-  button {
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 0.2rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: transform 0.2s ease;
-  }
-
-  button:hover {
-    transform: scale(0.9);
-  }
-
-  span.active {
-    animation: bounce 0.25s ease;
-  }
-
-  span {
-    transform: scale(0.7);
+    display: block;
   }
 
   @keyframes bounce {
@@ -120,6 +55,15 @@
   }
 
   /* Standard responsive media queries */
+  @media (min-width: 600px) {
+    .topbar {
+        height: 85px; /* Base height for this breakpoint */
+        /* height: calc(85px + env(safe-area-inset-top, 0px)); */ /* Optional calc */
+        padding: 0 1.5rem;
+        padding-top: calc(env(safe-area-inset-top, 0px) + 0.2rem);
+    }
+  }
+
   @media (min-width: 700px) and (min-height: 1000px) {
     .topbar {
       height: 90px;
@@ -130,15 +74,6 @@
       width: auto;
       max-width: 140px;
       margin: 0;
-    }
-
-    .topbar-buttons {
-      gap: 2rem;
-      margin-right: 2rem;
-    }
-
-    span {
-      transform: scale(1.2);
     }
   }
 
@@ -152,15 +87,6 @@
       width: auto;
       max-width: 200px;
       margin: 0;
-    }
-
-    .topbar-buttons {
-      gap: 4rem;
-      margin-right: 2rem;
-    }
-
-    span {
-      transform: scale(1.6);
     }
   }
 </style>

@@ -1,7 +1,7 @@
 <script>
   import Home from "../assets/Home.svelte";
-  import BaonList from "../assets/BaonList.svelte";
   import Calendar from "../assets/Calendar.svelte";
+  import Menu from "../assets/Menu.svelte";
   import { createEventDispatcher } from 'svelte';
 
   const dispatch = createEventDispatcher();
@@ -13,10 +13,16 @@
     console.log("Navigating to:", targetScreen); // For debugging
     dispatch('navigate', targetScreen); // Dispathc screen name to App.svelte for navigation
   }
+
+  // Function to dispatch event to open the side menu
+  function openMenu() {
+    dispatch('toggleMenu'); // <<< Dispatch a new event type
+  }
 </script>
 
 <nav class="navbar">
   <button
+    id="navbar-home-btn" 
     on:click={() => handleNav('home')}
     class:active={current === 'home'}
     class="nav-btn"
@@ -28,7 +34,9 @@
     </span>
     <span class="label">Home</span>
   </button>
+
   <button
+    id="navbar-calendar-btn" 
     on:click={() => handleNav('calendar')}
     class:active={current === 'calendar'}
     class="nav-btn"
@@ -40,17 +48,22 @@
     </span>
      <span class="label">Calendar</span>
   </button>
+
+  <!-- Menu Button (Replaces Baon List) -->
   <button
-    on:click={() => handleNav('baonlist')}
-    class:active={current === 'baonlist'}
+    id="navbar-menu-btn" 
+    on:click={openMenu} 
     class="nav-btn"
-    aria-label="Baon List"
-    aria-current={current === 'baonlist' ? 'page' : undefined}
+    class:active={false} 
+    aria-label="Open Menu"
   >
-    <span class="icon-wrapper">
-      <BaonList />
+    <span 
+      class="icon-wrapper"
+      style="transform: scale(1.2);"  
+    >
+      <Menu />
     </span>
-     <span class="label">Baon List</span>
+     <span class="label">Menu</span>
   </button>
 </nav>
 
@@ -62,13 +75,13 @@
     position: fixed; bottom: 0; left: 0; right: 0;
     background: #191337;
     display: flex; justify-content: space-around; align-items: center;
-    padding: 0.6rem 0.6rem; /* Increased base vertical padding */
-    padding-bottom: calc(0.6rem + env(safe-area-inset-bottom, 0rem)); /* Adjust safe area */
-    gap: 1rem;
+    padding: 0.6rem 0.6rem; /* Top/bottom base padding */
+    /* --- ADD Safe Area Padding to bottom --- */
+    padding-bottom: calc(0.6rem + env(safe-area-inset-bottom, 0rem));
     box-shadow: 0 -4px 15px rgba(0,0,0,0.3);
     z-index: 999;
     border-top: 1px solid #3a3375;
-    height: 75px; /* << SET A BASE HEIGHT */
+    height: 75px; /* Base height */
     box-sizing: border-box;
   }
 
@@ -122,10 +135,11 @@
 
   /* Tablets and potentially larger phones in landscape */
   @media (min-width: 600px) {
-    .navbar { height: 85px; 
-      padding: 0.8rem 0; 
-      padding-bottom: calc(0.8rem + env(safe-area-inset-bottom, 0rem)); 
-    }
+    .navbar {
+      height: 85px; /* Base height for this breakpoint */
+      padding: 0.8rem 0;
+      padding-bottom: calc(0.8rem + env(safe-area-inset-bottom, 0rem));
+     }
     .nav-btn { font-size: 0.85rem; gap: 0.3rem; }
     .icon-wrapper :global(svg) { width: 34px; height: 34px; }
     .label { margin-top: 0.2rem; }

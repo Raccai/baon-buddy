@@ -142,13 +142,13 @@
                 <!-- Make the whole item clickable for editing -->
                 {@const displaySrc = getDisplayImageSrc(meal.image)}
                 <div
-                class="meal-item"
-                on:click={() => openEditForm(meal)}
-                role="button"
-                tabindex="0"
-                aria-label="Edit {meal.name}"
-                on:keydown={(e) => {if (e.key === 'Enter' || e.key === ' ') openEditForm(meal)}}
-                animate:flip={{duration: 300}}
+                    class="meal-item"
+                    on:click={() => openEditForm(meal)}
+                    role="button"
+                    tabindex="0"
+                    aria-label="Edit {meal.name}"
+                    on:keydown={(e) => {if (e.key === 'Enter' || e.key === ' ') openEditForm(meal)}}
+                    animate:flip={{duration: 300}}
                 >
                     <!-- ADDED: Image/Emoji Column -->
                     <div class="meal-item-visual">
@@ -321,27 +321,27 @@
     .edit-btn:hover { color: #b388eb; }
     .delete-btn:hover { color: #e74c3c; }
 
-  .no-meals-message {
-      text-align: center; padding: 3rem 1rem; color: #fff5e1a8;
-  }
-   .no-meals-message p { margin-bottom: 1.5rem; font-size: 1.1em; }
-   .add-first-btn { /* Style like add-new-btn */
-       background-color: #b388eb; 
-       color: #1a163f;
-       border: none; 
-       padding: 0.6rem 1.2rem; 
-       border-radius: 2rem;
-       font-weight: 600; 
-       cursor: pointer; font-size: 0.95rem;
-       display: inline-flex; 
-       align-items: center; gap: 0.4rem;
-       transition: all 0.2s ease; 
-       box-shadow: 0 2px 5px rgba(179, 136, 235, 0.3);
-   }
-   .add-first-btn:hover {
-       background-color: #c7a4ff; 
-       transform: translateY(-1px);
-       box-shadow: 0 4px 8px rgba(179, 136, 235, 0.4);
+    .no-meals-message {
+        text-align: center; padding: 3rem 1rem; color: #fff5e1a8;
+    }
+    .no-meals-message p { margin-bottom: 1.5rem; font-size: 1.1em; }
+    .add-first-btn { /* Style like add-new-btn */
+        background-color: #b388eb; 
+        color: #1a163f;
+        border: none; 
+        padding: 0.6rem 1.2rem; 
+        border-radius: 2rem;
+        font-weight: 600; 
+        cursor: pointer; font-size: 0.95rem;
+        display: inline-flex; 
+        align-items: center; gap: 0.4rem;
+        transition: all 0.2s ease; 
+        box-shadow: 0 2px 5px rgba(179, 136, 235, 0.3);
+    }
+    .add-first-btn:hover {
+        background-color: #c7a4ff; 
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(179, 136, 235, 0.4);
     }
 
     /* Form Modal Styling */

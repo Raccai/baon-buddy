@@ -1,6 +1,7 @@
 import { writable } from 'svelte/store'; // No need for derived or get here
 // Import the getter - it's safe to import, just don't call it immediately
 import { getAllMeals as getAllMealsFromStorage } from './storage.js';
+import { meals as defaultMealsFromFile } from './meals.js';
 
 const allMealsStore = writable([]);
 

@@ -104,7 +104,7 @@
         inset: 0;
         background: rgba(10, 8, 30, 0.7); /* Themed backdrop */
         backdrop-filter: blur(4px);
-        z-index: 991; /* Below panel */
+        z-index: 1000; /* Below panel */
     }
 
     .modal-panel {
@@ -118,7 +118,7 @@
         color: #fff5e1; /* Creamy text */
         padding: 1rem;
         box-shadow: -4px 0 20px rgba(0,0,0,0.3); /* Shadow on the left */
-        z-index: 992;
+        z-index: 1001;
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
         border-left: 1px solid #4a4090; /* Left border */

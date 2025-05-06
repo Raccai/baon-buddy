@@ -19,6 +19,14 @@ export const tagStyles = {
     label: "Instant",
     color: "#3399FF"
   },
+  silog: {
+    label: "Silog",
+    color: "#8399FF"
+  },
+  custom: { 
+    label: 'Custom', 
+    color: '#795548'
+  },
   dafeult: {
     label: "Unknown",
     color: "#999999"
