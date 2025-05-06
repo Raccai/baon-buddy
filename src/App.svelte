@@ -157,7 +157,7 @@
 
   let appStateListener = null;
   const APP_VERSION_KEY = 'baonAppVersion';
-  const CURRENT_APP_VERSION = '1.4';
+  const CURRENT_APP_VERSION = '1.5';
   onMount(() => {
     // Check if we need to update default meals
     const storedVersion = localStorage.getItem(APP_VERSION_KEY);

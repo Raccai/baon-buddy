@@ -15,6 +15,7 @@ const SEEN_KEY = "seenMeals";                // Key for seen meal names
 const ONBOARDING_KEY = 'baonBuddyOnboardingStatus'; // Onboarding status
 const MUSIC_KEY = 'musicEnabled';            // Music preference
 const LAST_SCREEN_KEY = 'lastScreen';          // Last visited screen
+const DELETED_DEFAULT_MEAL_IDS_KEY = "baonDeletedDefaultMealIds";
 
 // --- Simple In-Memory Cache ---
 let allMealsCache = null;
@@ -22,20 +23,16 @@ let allMealsCache = null;
 // --- Meal Data Initialization ---
 export function initializeDefaultMealsIfEmpty() {
     try {
-        if (localStorage.getItem(ALL_BAON_KEY) === null) {
-            console.log("No meals found in storage. Initializing defaults...");
-            const initialMeals = defaultMeals.map((meal, index) => ({
-                ...meal,
-                id: `default_${meal.name.toLowerCase().replace(/[^a-z0-9]+/g, '_')}_${index}`,
-                isUserDefined: false
-            }));
-            saveAllMeals(initialMeals);
-            refreshMealsStore(); // Trigger store refresh after initialization
+        if (localStorage.getItem(ALL_BAON_KEY) === null) { // Only if COMPLETELY empty
+            console.log("[storage] No meals found in storage. Running forceUpdateDefaultMeals to initialize ALL defaults...");
+            forceUpdateDefaultMeals(); // This will handle adding all current defaults
+        } else {
+            if (allMealsCache === null) {
+                getAllMeals();
+            }
         }
     } catch (e) {
-        if (allMealsCache === null) {
-            getAllMeals(); // This will read from localStorage and populate cache
-        }    
+        console.error("[storage] Error initializing default meals:", e);
     }
 }
 
@@ -146,15 +143,40 @@ export const updateMeal = (updatedMeal) => {
     }
 };
 
+// --- Function to get the list of deleted default meal IDs ---
+export const getDeletedDefaultMealIds = () => {
+    try {
+        const stored = localStorage.getItem(DELETED_DEFAULT_MEAL_IDS_KEY);
+        return stored ? JSON.parse(stored) : [];
+    } catch (e) {
+        console.error("Error reading deleted default meal IDs:", e);
+        return [];
+    }
+};
+
+// --- Function to add an ID to the deleted list ---
+const addDeletedDefaultMealId = (mealId) => {
+    if (!mealId) return;
+    try {
+        const currentDeleted = getDeletedDefaultMealIds();
+        if (!currentDeleted.includes(mealId)) {
+            localStorage.setItem(DELETED_DEFAULT_MEAL_IDS_KEY, JSON.stringify([...currentDeleted, mealId]));
+        }
+    } catch (e) {
+        console.error("Error saving deleted default meal ID:", e);
+    }
+};
+
 export const deleteMeal = async (mealId) => { 
     if (!mealId) return false;
     let currentMeals = getAllMeals();
-    const mealIndex = currentMeals.findIndex(m => m.id === mealId); // Find index too
-    const mealToDelete = mealIndex !== -1 ? currentMeals[mealIndex] : null;
+    // const mealIndex = currentMeals.findIndex(m => m.id === mealId);
+    const mealToDelete = currentMeals.find(m => m.id === mealId);
 
-    if (!mealToDelete) {
-        console.warn(`Meal ID ${mealId} not found for deletion.`);
-        return false;
+    // --- If it was a default meal, record its deletion ---
+    if (mealToDelete.isUserDefined === false) { // Or check if ID starts with 'default_'
+        addDeletedDefaultMealId(mealToDelete.id);
+        console.log(`Default meal ${mealToDelete.name} (ID: ${mealToDelete.id}) marked as deleted by user.`);
     }
 
     const updatedMeals = currentMeals.filter(m => m.id !== mealId);
@@ -307,25 +329,62 @@ export function incrementCounter(key) {
     }
 }
 
-// --- Force Update Default Meals ---
+// --- Refined forceUpdateDefaultMeals ---
 export function forceUpdateDefaultMeals() {
-    console.log("Forcing update of default meals...");
-    
-    // Get all user-defined meals
-    const allMeals = getAllMeals();
-    const userMeals = allMeals.filter(meal => meal.isUserDefined === true);
-    
-    // Process default meals with IDs
-    const defaultMealsWithIds = defaultMeals.map((meal, index) => ({
-        ...meal,
-        id: `default_${meal.name.toLowerCase().replace(/[^a-z0-9]+/g, '_')}_${index}`,
-        isUserDefined: false
-    }));
-    
-    // Combine user meals with updated defaults
-    saveAllMeals([...userMeals, ...defaultMealsWithIds]);
-    
-    showToast("Default meals have been updated!", "success");
+    console.log("[storage] Forcing update of default meals based on meals.js...");
+
+    const currentStoredMeals = getAllMeals(); // Get all meals currently in storage
+    const userDefinedMeals = currentStoredMeals.filter(meal => meal.isUserDefined === true);
+    const storedDefaultMeals = currentStoredMeals.filter(meal => meal.isUserDefined === false);
+    const deletedDefaultIds = getDeletedDefaultMealIds();
+
+    console.log("[storage] User defined meals in storage:", userDefinedMeals.length);
+    console.log("[storage] Stored default meals in storage:", storedDefaultMeals.length);
+    console.log("[storage] User-deleted default IDs:", deletedDefaultIds);
+
+    const newOrUpdatedDefaults = [];
+
+    defaultMeals.forEach((newDefaultMealData, index) => {
+        const potentialId = newDefaultMealData.id || `default_${newDefaultMealData.name.toLowerCase().replace(/[^a-z0-9]+/g, '_')}_${index}`;
+
+        // 1. Skip if this default meal ID was previously deleted by the user
+        if (deletedDefaultIds.includes(potentialId)) {
+            console.log(`[storage] Skipping default meal "${newDefaultMealData.name}" (ID: ${potentialId}) as it was previously deleted by user.`);
+            return; // Skip to next default meal
+        }
+
+        // 2. Check if this default meal (by ID) already exists in storage
+        const existingStoredDefault = storedDefaultMeals.find(m => m.id === potentialId);
+
+        const processedDefault = {
+            ...newDefaultMealData, // Start with fresh data from meals.js
+            id: potentialId,
+            isUserDefined: false
+        };
+
+        if (existingStoredDefault) {
+            // It's an existing default meal. Update it with data from meals.js.
+            // You might want more sophisticated merging here if users could edit defaults
+            // (but current setup implies defaults are static until a new app version).
+            console.log(`[storage] Updating existing default meal "${processedDefault.name}" (ID: ${potentialId}).`);
+            newOrUpdatedDefaults.push(processedDefault);
+        } else {
+            // It's a NEW default meal (not in storage, not deleted)
+            console.log(`[storage] Adding NEW default meal "${processedDefault.name}" (ID: ${potentialId}).`);
+            newOrUpdatedDefaults.push(processedDefault);
+        }
+    });
+
+    // Combine the user's own meals with the new/updated list of defaults
+    const finalMealList = [...userDefinedMeals, ...newOrUpdatedDefaults];
+
+    // Final de-duplication by ID to be absolutely sure (e.g., if a user meal somehow got a default ID)
+    const uniqueFinalMealList = Array.from(new Map(finalMealList.map(meal => [meal.id, meal])).values());
+
+    console.log(`[storage] Saving ${uniqueFinalMealList.length} meals after force update.`);
+    saveAllMeals(uniqueFinalMealList);
+
+    showToast("Baon list updated with latest defaults!", "success");
     return true;
 }
 
@@ -333,6 +392,7 @@ export function forceUpdateDefaultMeals() {
 export function resetStorage() {
     console.log("Resetting application storage...");
     localStorage.removeItem(ALL_BAON_KEY);
+    localStorage.removeItem(DELETED_DEFAULT_MEAL_IDS_KEY);
     localStorage.removeItem(FAVORITES_KEY);
     localStorage.removeItem(SEEN_KEY);
     localStorage.removeItem(ONBOARDING_KEY);
