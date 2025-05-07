@@ -117,6 +117,8 @@
         background: #1a163f; /* Darker background */
         color: #fff5e1; /* Creamy text */
         padding: 1rem;
+        padding-top: env(safe-area-inset-top, 0rem);
+        padding-bottom: calc(var(--custom-safe-area-bottom, env(safe-area-inset-bottom, 0px)));
         box-shadow: -4px 0 20px rgba(0,0,0,0.3); /* Shadow on the left */
         z-index: 1001;
         overflow-y: auto;

@@ -9,10 +9,12 @@
   import RecipeSheet from '../RecipeSheet.svelte';
   import DayModal from '../DayModal.svelte';
   import Sparkle from '../../assets/Sparkle.svelte';
+  import StreakCalendar from "../StreakCalendar.svelte";
+  import BaonBuddyPlanner from "/titles/BaonBuddyPlanner.png";
 
   // --- Onboarding Imports ---
   import { onMount, tick } from 'svelte';
-  import { getOnboardingStatus, markScreenAsDone, isScreenDone, isOverallOnboardingComplete } from '../../lib/onboardingStore.js';
+  import { markScreenAsDone, isScreenDone, isOverallOnboardingComplete } from '../../lib/onboardingStore.js';
   import HintPopover from '../HintPopover.svelte';
 
   // Component state
@@ -23,6 +25,10 @@
   let modalMode = 'view';
   let copiedMeals = null;
   let transitionDirection = 1;
+
+  // This reactive variable is passed to StreakCalendar
+  // currentMonth is the main calendar's currently viewed month
+  $: streakCalendarDisplayMonth = currentMonth;
 
   // --- Onboarding State ---
   const FORCE_ONBOARDING_TESTING = false; // Set to false for normal behavior
@@ -196,6 +202,7 @@
 
   <!-- Calendar Content container -->
   <div class="calendar-cont">
+    <img src={BaonBuddyPlanner} alt="Baon Buddy Planner" class="baon-buddy-planner">
     <!-- Month and Year Header -->
     <div class="calendar-header">
       <!-- ADD ID -->
@@ -271,6 +278,8 @@
         </div>
       {/key}
     </div> <!-- End calendar-container -->
+    
+    <StreakCalendar displayMonth={streakCalendarDisplayMonth} />
   </div> <!-- End calendar-cont -->
 </div> <!-- End calendar-main -->
 
@@ -417,6 +426,12 @@
     background-color: #1a163f; /* Dark base background */
     position: relative; /* For positioning background elements */
     color: #fff5e1; /* Default text color (creamy white) */
+    padding-top: env(safe-area-inset-top, 0rem);
+    padding-bottom: calc(60px + var(--custom-safe-area-bottom, env(safe-area-inset-bottom, 0px)));
+  }
+
+  .baon-buddy-planner {
+    width: 160px;
   }
 
   .calendar-cont {
@@ -575,7 +590,6 @@
     z-index: 1;
     flex-grow: 1; /* Allow container to fill remaining space */
     display: flex; /* To help center absolute grid? Not strictly needed */
-    margin-bottom: 1rem; /* Space at the bottom */
   }
 
   .calendar {

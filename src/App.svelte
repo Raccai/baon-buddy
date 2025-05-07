@@ -1,6 +1,9 @@
 <script>
   import { onMount, onDestroy } from 'svelte';
   import { App as CapacitorApp } from '@capacitor/app';
+  import { StatusBar } from '@capacitor/status-bar';
+  import { SafeArea } from "capacitor-plugin-safe-area";
+  import { Capacitor } from '@capacitor/core';
   import { fade } from 'svelte/transition';
   import { forceUpdateDefaultMeals, getFavorites, incrementCounter, initializeDefaultMealsIfEmpty } from './lib/storage';
   import { checkAndUnlockAchievements } from './lib/achievementStore';
@@ -20,6 +23,7 @@
   import BaonList from './components/screens/BaonList.svelte';
   import ManageBaonScreen from './components/ManageBaonScreen.svelte';
   import { initializeMealsStore } from './lib/mealStore';
+  import { initializeStreakStore } from './lib/streakStore';
 
   let showOnboarding = localStorage.getItem("hasSeenOnboarding") !== "true";
   let currentScreen = localStorage.getItem("lastScreen") || 'home';
@@ -155,10 +159,19 @@
     }
   }
 
+  function updateNavBarHeight() {
+    // If visualViewport is available, use it:
+    const visibleH = window.visualViewport?.height ?? document.documentElement.clientHeight;
+    const fullH    = window.innerHeight;
+    const navBarH  = fullH - visibleH;
+    document.documentElement.style.setProperty('--android-nav-height', `${navBarH}px`);
+    console.log('Android nav bar height =', navBarH);
+  }
+
   let appStateListener = null;
   const APP_VERSION_KEY = 'baonAppVersion';
-  const CURRENT_APP_VERSION = '1.5';
-  onMount(() => {
+  const CURRENT_APP_VERSION = '1.6';
+  onMount(async () => {
     // Check if we need to update default meals
     const storedVersion = localStorage.getItem(APP_VERSION_KEY);
     if (storedVersion !== CURRENT_APP_VERSION) {
@@ -170,9 +183,64 @@
       // Store the new version
       localStorage.setItem(APP_VERSION_KEY, CURRENT_APP_VERSION);
     }
+
+    // --- Capacitor Platform Specific Setup ---
+    if (Capacitor.isNativePlatform()) {
+        try {
+            // Configure Status Bar for edge-to-edge
+            await StatusBar.setOverlaysWebView({ overlay: true });
+            console.log('StatusBar overlay configured.');
+            // Optional: Set status bar style if needed
+            // await StatusBar.setStyle({ style: Style.Light }); // Or Style.Dark
+        } catch (e) {
+            console.error('Error configuring StatusBar:', e);
+        }
+
+        // --- Use capacitor-plugin-safe-area ---
+        try {
+            const safeAreaData = await SafeArea.getSafeAreaInsets();
+            const { insets } = safeAreaData;
+
+            // Set CSS custom properties on the :root (html element) for global access
+            // Using slightly different names to avoid confusion with Ionic's default --ion-safe-area-*
+            // if you ever mix with Ionic components, though your names are fine too.
+            document.documentElement.style.setProperty('--custom-safe-area-top', `${insets.top}px`);
+            document.documentElement.style.setProperty('--custom-safe-area-right', `${insets.right}px`);
+            document.documentElement.style.setProperty('--custom-safe-area-bottom', `${insets.bottom}px`);
+            document.documentElement.style.setProperty('--custom-safe-area-left', `${insets.left}px`);
+
+            console.log('SafeArea Insets from plugin:', insets);
+
+            // The plugin might also provide an event listener for changes (e.g., rotation)
+            // Check the plugin's documentation for an event like 'safeAreaChanged'
+            // Example (syntax might vary based on the plugin):
+            SafeArea.addListener('safeAreaChanged', (changedData) => {
+                const { insets: newInsets } = changedData;
+                document.documentElement.style.setProperty('--custom-safe-area-top', `${newInsets.top}px`);
+                document.documentElement.style.setProperty('--custom-safe-area-right', `${newInsets.right}px`);
+                document.documentElement.style.setProperty('--custom-safe-area-bottom', `${newInsets.bottom}px`);
+                document.documentElement.style.setProperty('--custom-safe-area-left', `${newInsets.left}px`);
+                console.log('SafeArea Insets updated:', newInsets);
+            });
+
+        } catch (e) {
+            console.error("Error getting/setting safe area insets from plugin:", e);
+            // Fallback if plugin fails: try to set 0 or rely on CSS env()
+            document.documentElement.style.setProperty('--custom-safe-area-bottom', '0px'); // Or some default
+        }
+
+    } else {
+        // For web, you might want to set fallbacks or rely on CSS env()
+        // The plugin likely won't work on web, so these vars won't be set by it.
+        // CSS will then fall back to env() or 0px.
+        console.log("Not a native platform. Plugin won't set dynamic safe areas.");
+    }
     
     // Increment count when app opens
     incrementCounter("baonAppOpens");
+
+    // Init streak
+    initializeStreakStore();
 
     // --- Initialize Combined Meals Store ---
     initializeDefaultMealsIfEmpty();
@@ -234,9 +302,16 @@
         pauseMusic(); // Always pause when going to background
       }
     });
+
+    updateNavBarHeight();
+    // Recalculate on changes (rotation, keyboard up/down, etc)
+    window.visualViewport?.addEventListener('resize', updateNavBarHeight);
+    window.addEventListener('resize', updateNavBarHeight);
   });
 
   onDestroy(() => {
+    window.visualViewport?.removeEventListener('resize', updateNavBarHeight);
+    window.removeEventListener('resize', updateNavBarHeight);
     if (appStateListener) {
       appStateListener.remove();
     }
@@ -262,14 +337,15 @@
     {/key}
   </main>
 
-  <div class="navbar-wrapper">
-    <Navbar 
-      on:navigate={handleNavigate} 
-      on:toggleMenu={toggleSideMenu}
-      current={currentScreen} 
-    />
-  </div>
+  <!-- <div class="navbar-wrapper">
+  </div> -->
 </div>
+
+<Navbar 
+  on:navigate={handleNavigate} 
+  on:toggleMenu={toggleSideMenu}
+  current={currentScreen} 
+/>
 
 <Toast />
 
@@ -333,6 +409,9 @@
     display: flex;
     flex-direction: column;
     background-color: #1a163f;
+    /* Add padding at the bottom to account for navbar plus safe area */
+    padding-bottom: calc(60px + var(--custom-safe-area-bottom, env(safe-area-inset-bottom, 0px)));
+    box-sizing: border-box;
   }
 
   .topbar-wrapper {
@@ -349,11 +428,11 @@
 
   .main-content-area {
     flex-grow: 1;
-    overflow: hidden; /* Hide overflow here */
-    position: relative; /* For absolute transition wrapper */
-    /* Use margin instead of padding if possible, depends on transition needs */
+    overflow: hidden;
+    position: relative;
     margin-top: 68px;  /* Match Topbar height */
-    margin-bottom: 70px; /* Match Navbar height */
+    /* Add bottom margin for navbar */
+    margin-bottom: calc(env(safe-area-inset-bottom, 0px));
   }
 
   .screen-transition-wrapper {
@@ -369,18 +448,6 @@
     flex-grow: 1; /* Should fill the flex container */
     width: 100%;
     /* height: 100%; // Usually handled by flex-grow */
-  }
-
-  .navbar-wrapper {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    z-index: 999;
-    flex-shrink: 0;
-    /* Define height EXPLICITLY if Navbar doesn't have one */
-    height: 70px; /* Example Height */
-    background-color: #231d52; /* Example background */
   }
 
   /* Styling for the Achievements Overlay */

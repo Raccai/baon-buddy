@@ -11,7 +11,7 @@
   // Function to dispatch navigation event WITH the target screen name
   function handleNav(targetScreen) {
     console.log("Navigating to:", targetScreen); // For debugging
-    dispatch('navigate', targetScreen); // Dispathc screen name to App.svelte for navigation
+    dispatch('navigate', targetScreen); // Dispatch screen name to App.svelte for navigation
   }
 
   // Function to dispatch event to open the side menu
@@ -21,82 +21,108 @@
 </script>
 
 <nav class="navbar">
-  <button
-    id="navbar-home-btn" 
-    on:click={() => handleNav('home')}
-    class:active={current === 'home'}
-    class="nav-btn"
-    aria-label="Home"
-    aria-current={current === 'home' ? 'page' : undefined}
-  >
-    <span class="icon-wrapper">
-      <Home />
-    </span>
-    <span class="label">Home</span>
-  </button>
-
-  <button
-    id="navbar-calendar-btn" 
-    on:click={() => handleNav('calendar')}
-    class:active={current === 'calendar'}
-    class="nav-btn"
-    aria-label="Calendar"
-    aria-current={current === 'calendar' ? 'page' : undefined}
-  >
-    <span class="icon-wrapper">
-      <Calendar />
-    </span>
-     <span class="label">Calendar</span>
-  </button>
-
-  <!-- Menu Button (Replaces Baon List) -->
-  <button
-    id="navbar-menu-btn" 
-    on:click={openMenu} 
-    class="nav-btn"
-    class:active={false} 
-    aria-label="Open Menu"
-  >
-    <span 
-      class="icon-wrapper"
-      style="transform: scale(1.2);"  
+  <div class="navbar-content">
+    <button
+      id="navbar-home-btn" 
+      on:click={() => handleNav('home')}
+      class:active={current === 'home'}
+      class="nav-btn"
+      aria-label="Home"
+      aria-current={current === 'home' ? 'page' : undefined}
     >
-      <Menu />
-    </span>
-     <span class="label">Menu</span>
-  </button>
-</nav>
+      <span class="icon-wrapper">
+        <Home />
+      </span>
+      <span class="label">Home</span>
+    </button>
 
-<!-- Add safe area padding at the bottom -->
-<div class="safe-area-bottom"></div>
+    <button
+      id="navbar-calendar-btn" 
+      on:click={() => handleNav('calendar')}
+      class:active={current === 'calendar'}
+      class="nav-btn"
+      aria-label="Calendar"
+      aria-current={current === 'calendar' ? 'page' : undefined}
+    >
+      <span class="icon-wrapper">
+        <Calendar />
+      </span>
+       <span class="label">Calendar</span>
+    </button>
+
+    <!-- Menu Button (Replaces Baon List) -->
+    <button
+      id="navbar-menu-btn" 
+      on:click={openMenu} 
+      class="nav-btn"
+      class:active={false} 
+      aria-label="Open Menu"
+    >
+      <span 
+        class="icon-wrapper"
+        style="transform: scale(1.2);"  
+      >
+        <Menu />
+      </span>
+       <span class="label">Menu</span>
+    </button>
+  </div>
+
+  <div class="safe-area-spacer"></div>
+</nav>
 
 <style>
   .navbar {
-    position: fixed; bottom: 0; left: 0; right: 0;
-    background: #191337;
-    display: flex; justify-content: space-around; align-items: center;
-    padding: 0.6rem 0.6rem; /* Top/bottom base padding */
-    /* --- ADD Safe Area Padding to bottom --- */
-    padding-bottom: calc(0.6rem + env(safe-area-inset-bottom, 0rem));
-    box-shadow: 0 -4px 15px rgba(0,0,0,0.3);
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
     z-index: 999;
+    /* display: flex; flex-direction: column; NO LONGER NEEDED if spacer div is removed */
+    box-shadow: 0 -4px 15px rgba(0,0,0,0.3);
     border-top: 1px solid #3a3375;
-    height: 75px; /* Base height */
-    box-sizing: border-box;
+
+    /* Apply the background here */
+    background: #191337;
+
+    /* Add padding to the bottom of the entire navbar */
+    padding-bottom: env(safe-area-inset-bottom, 0px); /* <<< KEY CHANGE */
+  }
+
+  .navbar-content {
+    /* background: #191337; MOVED to .navbar if you want the padding area to have the same bg */
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding: 0.6rem 0.6rem; /* Keep original padding for content */
+    min-height: 60px; /* Adjust if needed based on your design */
+  }
+
+  .safe-area-spacer {
+    /* Use the custom var from the plugin, fallback to env(), then to 0px */
+    height: var(--custom-safe-area-bottom, env(safe-area-inset-bottom, 0px));
+    background-color: #191337;
+    width: 100%;
+    flex-shrink: 0;
   }
 
   .nav-btn {
-    background: none; border: none; color: #fff5e1a8;
-    font-size: 0.75rem; /* Slightly larger base label size */
-    cursor: pointer; display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    gap: 0.2rem; /* Increased gap */
-    padding: 2rem .8rem; /* Adjusted padding */
+    background: none; 
+    border: none; 
+    color: #fff5e1a8;
+    font-size: 0.75rem; 
+    cursor: pointer; 
+    display: flex; 
+    flex-direction: column;
+    align-items: center; 
+    justify-content: center;
+    gap: 0.2rem; 
+    padding: 0.6rem 0.8rem; 
     border-radius: 8px;
     transition: color 0.2s ease, background-color 0.2s ease, transform 0.15s ease;
-    flex-grow: 1; position: relative;
+    flex-grow: 1; 
+    position: relative;
     -webkit-tap-highlight-color: transparent;
-    height: 100%; /* Make button fill height */
   }
 
   .icon-wrapper {
@@ -104,16 +130,17 @@
     /* Style the SVG inside */
     & :global(svg) {
       display: block;
-      width: 30px; /* << INCREASED BASE ICON SIZE */
+      width: 30px; 
       height: 30px;
-      fill: currentColor; stroke: none;
+      fill: currentColor; 
+      stroke: none;
       transition: transform 0.2s ease;
      }
   }
 
   .label {
     white-space: nowrap;
-    margin-top: 0.1rem; /* Adjust label spacing */
+    margin-top: 0.1rem; 
   }
 
   /* Hover/Active States */
@@ -135,31 +162,26 @@
 
   /* Tablets and potentially larger phones in landscape */
   @media (min-width: 600px) {
-    .navbar {
-      height: 85px; /* Base height for this breakpoint */
+    .navbar-content {
       padding: 0.8rem 0;
-      padding-bottom: calc(0.8rem + env(safe-area-inset-bottom, 0rem));
-     }
+    }
     .nav-btn { font-size: 0.85rem; gap: 0.3rem; }
     .icon-wrapper :global(svg) { width: 34px; height: 34px; }
     .label { margin-top: 0.2rem; }
-      .nav-btn.active::before { height: 4px; left: 25%; right: 25%; }
+    .nav-btn.active::before { height: 4px; left: 25%; right: 25%; }
   }
 
   /* Larger Tablets / Small Desktops */
   @media (min-width: 900px) {
-    .navbar { height: 90px; }
     .nav-btn { font-size: 0.9rem; }
     .icon-wrapper :global(svg) { width: 36px; height: 36px; }
   }
 
   /* Problem screens, specific styling */
   @media (min-width: 700px) and (min-height: 1000px) {
-    .navbar { 
-      height: 120px; 
+    .navbar-content { 
       padding: 0.8rem 0.8rem; 
       gap: 2rem; 
-      padding-bottom: calc(0.8rem + env(safe-area-inset-bottom, 0rem)); 
     }
     .icon-wrapper :global(svg) { width: 50px; height: 50px; }
     .label { margin-top: 0.2rem; font-size: 1rem; }
@@ -167,10 +189,9 @@
   }
 
   @media (min-width: 900px) and (min-height: 1300px) {
-    .navbar { height: 150px; 
+    .navbar-content { 
       padding: 0.8rem 0.8rem; 
       gap: 2rem; 
-      padding-bottom: calc(0.8rem + env(safe-area-inset-bottom, 0rem)); 
     }
     .icon-wrapper :global(svg) { width: 70px; height: 70px; }
     .label { margin-top: 0.2rem; font-size: 1.4rem; }

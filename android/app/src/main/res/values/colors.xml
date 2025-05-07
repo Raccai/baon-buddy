@@ -1,5 +1,5 @@
 <resources>
-    <color name="colorPrimary">#YOUR_PRIMARY_COLOR_HEX</color>    
-    <color name="colorPrimaryDark">#YOUR_DARKER_PRIMARY_COLOR_HEX</color> 
-    <color name="colorAccent">#YOUR_ACCENT_COLOR_HEX</color>  
+    <color name="colorPrimary">#3a3375</color>    
+    <color name="colorPrimaryDark">#191337</color> 
+    <color name="colorAccent">#b388eb</color>  
 </resources>

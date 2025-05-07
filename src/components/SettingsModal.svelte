@@ -130,9 +130,9 @@
                         <span class="stat-icon">🍲</span> {timesGenerated} Meals
                     </span>
                 </div>
-                <div class="version-info">
+                <!-- <div class="version-info">
                     <p>📦 Version 1.0.0</p>
-                </div>
+                </div> -->
             </section>
 
             <!-- Removed separate close button, using header one -->
@@ -350,14 +350,6 @@
         gap: 0.3rem;
     }
     .stat-icon { font-size: 1.1em; }
-
-    .version-info {
-        text-align: center;
-        font-size: 0.8rem;
-        color: #fff5e180; /* Fainter version text */
-        margin-top: 0.2rem;
-    }
-    .version-info p { margin: 0; }
 
 
     /* --- Link Setting Style (for Achievements Button) --- */

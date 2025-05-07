@@ -225,6 +225,8 @@
     flex-direction: column;
     overflow: hidden; 
     background-color: #1a163f;
+    padding-top: env(safe-area-inset-top, 0rem);
+    padding-bottom: env(safe-area-inset-bottom, 0rem);
   }
   .fixed-controls {
     position: sticky; 

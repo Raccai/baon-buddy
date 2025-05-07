@@ -15,12 +15,14 @@
     left: 0; 
     right: 0;
     /* Base height for the content area */
-    height: 68px;
+    /* height: 68px; */
+    height: calc(68px + env(safe-area-inset-top));
     background: #191337;
     color: #fff5e1; /* Changed default color */
     /* --- ADD Safe Area Padding --- */
     padding: 0 0.4rem; /* Keep horizontal */
-    padding-top: calc(env(safe-area-inset-top, 0px) + 0.2rem); /* Add safe area to your existing top padding */
+    padding-top: env(safe-area-inset-top);
+    padding-top: constant(safe-area-inset-top);
     /* --- Adjust height if background should fill safe area --- */
     /* height: calc(68px + env(safe-area-inset-top, 0px)); */
     /* If using calc for height, internal elements might need relative positioning */

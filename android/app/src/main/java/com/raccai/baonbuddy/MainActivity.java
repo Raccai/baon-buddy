@@ -1,4 +1,4 @@
-package your.package.name; // Make sure this matches your actual package name
+package com.raccai.baonbuddy; // Make sure this matches your actual package name
 
 import android.os.Bundle;
 import androidx.core.view.WindowCompat; // <<< IMPORT THIS
