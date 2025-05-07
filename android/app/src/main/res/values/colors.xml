@@ -1,0 +1,5 @@
+<resources>
+    <color name="colorPrimary">#YOUR_PRIMARY_COLOR_HEX</color>    
+    <color name="colorPrimaryDark">#YOUR_DARKER_PRIMARY_COLOR_HEX</color> 
+    <color name="colorAccent">#YOUR_ACCENT_COLOR_HEX</color>  
+</resources>
