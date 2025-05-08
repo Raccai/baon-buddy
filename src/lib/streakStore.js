@@ -1,16 +1,49 @@
+// src/lib/streakStore.js
 import { writable } from 'svelte/store';
-import { getStreakData as getInitialStreakData } from './storage.js';
+// Import the getter function itself safely
+import { getStreakData as getStreakDataFromStorage } from './storage.js';
 
-// Initialize with a safe default, actual data loaded later
-export const streakStore = writable({ lastActionDate: null, currentStreak: 0, longestStreak: 0 });
+// --- Default state ---
+const defaultStreakState = { lastActionDate: null, currentStreak: 0, longestStreak: 0 };
 
-export function initializeStreakStore() {
-    console.log("[StreakStore] Initializing with data from localStorage...");
-    streakStore.set(getInitialStreakData());
+// --- Create Writable Store - Initialize with DEFAULT ---
+const streakStore = writable(defaultStreakState); // <<< Initialize with default object
+console.log("[streakStore] Store created with default state.");
+
+// --- Function to load initial data AFTER module resolution ---
+let storeInitialized = false;
+function loadInitialData() {
+    if (storeInitialized) return;
+    try {
+        console.log("[streakStore] Attempting to load initial data from storage...");
+        const storedData = getStreakDataFromStorage(); // Now call the imported function
+        streakStore.set(storedData); // Update the store with actual data
+        storeInitialized = true;
+        console.log("[streakStore] Initial data loaded:", storedData);
+    } catch (e) {
+        console.error("[streakStore] Error loading initial streak data:", e);
+        streakStore.set(defaultStreakState); // Ensure it's set to default on error
+    }
 }
 
-// refreshStreakStore is called by storage.js when data changes
+// --- Function to refresh the store (called by storage.js) ---
 export function refreshStreakStore() {
-    console.log("[StreakStore] Refreshing with data from localStorage...");
-    streakStore.set(getInitialStreakData());
+    // Only refresh if already initialized, otherwise loadInitialData handles it
+    if (!storeInitialized) {
+        console.log("[streakStore] Refresh called before initial load, calling loadInitialData instead.");
+        loadInitialData();
+    } else {
+        console.log("[streakStore] Refreshing streak data from storage...");
+        streakStore.set(getStreakDataFromStorage());
+    }
+}
+
+// --- Export the store ---
+export { streakStore };
+
+// --- Trigger initial load slightly after module evaluation ---
+// This allows storage.js to fully initialize its constants first.
+// Run this only in the browser environment.
+if (typeof window !== 'undefined') {
+    setTimeout(loadInitialData, 0); // Schedule loading for the next tick
 }

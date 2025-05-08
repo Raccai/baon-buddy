@@ -1,4 +1,5 @@
 // --- LocalStorage Keys ---
+const STREAK_DATA_KEY = "baonDailyActionStreak";
 const ALL_BAON_KEY = "baonAllEntries";       // Unified key for all meals
 const FAVORITES_KEY = "baonFavorites";       // Key for favorite meal IDs/names
 const SEEN_KEY = "seenMeals";                // Key for seen meal names
@@ -6,21 +7,33 @@ const ONBOARDING_KEY = 'baonBuddyOnboardingStatus'; // Onboarding status
 const MUSIC_KEY = 'musicEnabled';            // Music preference
 const LAST_SCREEN_KEY = 'lastScreen';          // Last visited screen
 const DELETED_DEFAULT_MEAL_IDS_KEY = "baonDeletedDefaultMealIds";
-const STREAK_DATA_KEY = "baonDailyActionStreak";
 
 import { showToast } from './toast.js'; // For user feedback
 // Import refresh function from the store file
 import { refreshMealsStore } from './mealStore.js';
 import { meals as defaultMeals } from './meals.js'; // Import default meal data
 import { get } from 'svelte/store';
-import { calendarData, saveCalendarData } from './calendar.js';
+import { calendarData, saveCalendarData, CALENDAR_STORAGE_KEY } from './calendar.js';
 import { refreshStreakStore, streakStore } from './streakStore.js';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { isSameDay, subDays, formatISO, parseISO, differenceInCalendarDays } from 'date-fns';
 import { checkAndUnlockAchievements } from './achievementStore.js';
+import { resetAchievements } from './achievementStore.js';
 
 // --- Simple In-Memory Cache ---
 let allMealsCache = null;
+
+let _refreshMealsStore;
+let _refreshStreakStore;
+// Only import in browser environment if needed immediately, otherwise import within functions
+if (typeof window !== 'undefined') {
+    import('./mealStore.js')
+        .then(mod => _refreshMealsStore = mod.refreshMealsStore)
+        .catch(e => console.error("Failed to load mealStore refresh", e));
+    import('./streakStore.js')
+        .then(mod => _refreshStreakStore = mod.refreshStreakStore)
+        .catch(e => console.error("Failed to load streakStore refresh", e));
+}
 
 // --- Meal Data Initialization ---
 export function initializeDefaultMealsIfEmpty() {
@@ -57,11 +70,11 @@ export const getAllMeals = () => {
 
 const saveAllMeals = (mealsArray) => {
     try {
-        const mealsToSave = mealsArray || [];
-        localStorage.setItem(ALL_BAON_KEY, JSON.stringify(mealsToSave));
-        allMealsCache = [...mealsToSave]; // Update cache with a copy
-        console.log(`[storage] Saved ${mealsToSave.length} meals. Triggering store refresh.`);
-        refreshMealsStore(); // Notify the reactive store
+        localStorage.setItem(ALL_BAON_KEY, JSON.stringify(mealsArray || []));
+        allMealsCache = [...(mealsArray || [])];
+        if (typeof _refreshMealsStore === 'function') {
+            _refreshMealsStore();
+        } else { console.warn("Meal store refresh function not yet loaded."); }
     } catch (e) {
         console.error("[storage] Error saving all meals:", e);
     }
@@ -394,14 +407,14 @@ export function forceUpdateDefaultMeals() {
 export function getStreakData() {
     try {
         const stored = localStorage.getItem(STREAK_DATA_KEY);
-        // Ensure default structure if not found or malformed
-        const data = stored ? JSON.parse(stored) : { lastActionDate: null, currentStreak: 0, longestStreak: 0 };
-        if (typeof data.currentStreak !== 'number') data.currentStreak = 0;
-        if (typeof data.longestStreak !== 'number') data.longestStreak = 0;
-        if (data.lastActionDate && typeof data.lastActionDate !== 'string') data.lastActionDate = null;
-        return data;
+        // Provide default values if parsing fails or data is missing
+        const defaults = { lastActionDate: null, currentStreak: 0, longestStreak: 0 };
+        if (!stored) return defaults;
+        const parsed = JSON.parse(stored);
+        // Return parsed data merged with defaults to ensure all keys exist
+        return { ...defaults, ...parsed };
     } catch (e) {
-        console.error("Error reading daily action streak data:", e);
+        console.error("[storage] Error reading streak data:", e);
         return { lastActionDate: null, currentStreak: 0, longestStreak: 0 };
     }
 }
@@ -409,61 +422,57 @@ export function getStreakData() {
 function saveStreakData(data) {
     try {
         localStorage.setItem(STREAK_DATA_KEY, JSON.stringify(data));
-        refreshStreakStore();
+        // Refresh the Svelte store after saving
+        if (typeof refreshStreakStore === 'function') {
+            _refreshStreakStore();
+        } else {
+            console.warn("[storage] refreshStreakStore function not available to update streak UI.");
+        }
     } catch (e) {
-        console.error("Error saving daily action streak data:", e);
+        console.error("[storage] Error saving streak data:", e);
     }
 }
 
-/**
- * Call this function whenever a significant Baon planning action occurs
- * (add, remove, copy, paste to calendar).
- * It updates the streak if the action is on a new day or a consecutive day.
- */
-export function recordDailyBaonAction() {
+export async function updateStreakOnAction() {
+    // Dynamically import date-fns functions only when needed
+    const { isSameDay, subDays, formatISO, parseISO, startOfDay } = await import('date-fns');
+
     const streakData = getStreakData();
-    const today = new Date(); // The actual current date the action is performed
+    const today = startOfDay(new Date()); // Get start of today for consistent comparison
     const todayKey = formatISO(today, { representation: 'date' }); // 'YYYY-MM-DD'
 
-    console.log(`[Streak] Recording action for today: ${todayKey}. Last action: ${streakData.lastActionDate}`);
-
-    if (streakData.lastActionDate === todayKey) {
-        // Action already recorded for today, streak doesn't change further today.
-        console.log("[Streak] Action already recorded for today. Streak remains:", streakData.currentStreak);
-        // No need to save or check achievements again for subsequent actions on the same day
-        return;
-    }
+    console.log(`[storage] updateStreakOnAction called. Today: ${todayKey}, Last Action: ${streakData.lastActionDate}, Current: ${streakData.currentStreak}`);
 
     if (!streakData.lastActionDate) {
-        // First ever action recorded for streaks
+        // First ever planning action recorded
+        console.log("[storage] First planning action, starting streak.");
         streakData.currentStreak = 1;
-        console.log("[Streak] First action, streak started at 1.");
     } else {
-        const lastActionDay = parseISO(streakData.lastActionDate);
+        const lastActionDay = startOfDay(parseISO(streakData.lastActionDate));
         const yesterday = subDays(today, 1);
 
         if (isSameDay(lastActionDay, yesterday)) {
-            // Action performed on the day after the last action day - streak continues
+            // Action occurred yesterday, continue streak
+            console.log("[storage] Streak continued.");
             streakData.currentStreak++;
-            console.log(`[Streak] Continued to ${streakData.currentStreak}.`);
-        } else {
-            // Action performed, but not on the day after the last action day - streak resets to 1
-            // This includes cases where a day (or more) was skipped.
+        } else if (!isSameDay(lastActionDay, today)) {
+            // Last action was not yesterday OR today, streak broken. Start new streak.
+            console.log("[storage] Streak broken, starting new streak.");
             streakData.currentStreak = 1;
-            console.log("[Streak] Gap since last action, streak reset to 1.");
+        } else {
+             // Action already recorded for today, do nothing to current streak
+             console.log("[storage] Action already recorded for today, streak unchanged.");
         }
     }
 
-    streakData.lastActionDate = todayKey; // Update last action date to today
+    // Always update lastActionDate to today
+    streakData.lastActionDate = todayKey;
+    // Update longest streak if current is greater
+    streakData.longestStreak = Math.max(streakData.longestStreak, streakData.currentStreak);
 
-    if (streakData.currentStreak > streakData.longestStreak) {
-        streakData.longestStreak = streakData.currentStreak;
-        console.log(`[Streak] New longest streak: ${streakData.longestStreak}`);
-    }
-
-    console.log("[Streak] Final Daily Action Streak Data:", streakData);
+    console.log("[storage] Saving updated Streak Data:", streakData);
     saveStreakData(streakData);
-    checkAndUnlockAchievements(); // Check achievements after streak update
+    checkAndUnlockAchievements(); // Re-check achievements related to streaks
 }
 
 // --- General Reset ---
@@ -477,11 +486,13 @@ export function resetStorage() {
     localStorage.removeItem(MUSIC_KEY);
     localStorage.removeItem(LAST_SCREEN_KEY);
     localStorage.removeItem(STREAK_DATA_KEY);
+    localStorage.removeItem(CALENDAR_STORAGE_KEY);
     localStorage.removeItem('counter_baonAppOpens');
     localStorage.removeItem('counter_baonMealGenerations');
     // Add any other keys used by your app here
     allMealsCache = null;
     initializeDefaultMealsIfEmpty();
     refreshMealsStore();
+    resetAchievements();
     console.log("Application storage reset, defaults re-initialized.");
 }

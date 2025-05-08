@@ -33,6 +33,7 @@
         left: 1rem;
         display: flex;
         flex-direction: column;
+        padding-top: env(safe-area-inset-top, 0rem);
         gap: 0.5rem;
         z-index: 1005;
         align-items: flex-start;

@@ -1,37 +1,63 @@
 <script>
-  // Default meal import no longer needed directly here
-  // import { meals } from "../../lib/meals.js";
   import BaonCard from '../BaonCard.svelte';
   import { getFavorites } from "../../lib/storage"; // Keep for initial favorite check? Or pass down from App?
   import RecipeSheet from "../RecipeSheet.svelte";
   import { tagStyles } from "../../lib/tags.js";
-  import { fade } from 'svelte/transition';
+  import { fade, slide } from 'svelte/transition';
   // --- Use the reactive store ---
   import { allMeals } from "../../lib/mealStore.js"; 
+  import { meals as defaultMeals } from "../../lib/meals.js";
   // --- Onboarding Imports ---
   import { onMount, tick } from 'svelte';
   import { getOnboardingStatus, markScreenAsDone, isScreenDone, isOverallOnboardingComplete } from '../../lib/onboardingStore.js';
   import HintPopover from '../HintPopover.svelte';
+  import SearchIcon from '../../assets/SearchIcon.svelte';
+  import { quintOut } from 'svelte/easing';
 
   let selectedFilters = [];
   let filteredMeals = []; // Initialize empty, will be populated by reactive block
   let selectedMeal = null;
   let showRecipe = false;
+  let searchTerm = ''; // State for search input
+  let showSearchBar = false;
+
   // Initialize favoriteNames directly or receive as prop if App manages it centrally
   let favoriteNames = getFavorites().map(meal => meal.name);
 
   // Assume tagStyles has all valid tags as keys
   const allTags = Object.keys(tagStyles);
 
-  // --- Reactive block to filter meals ---
-  // Runs whenever $allMeals store changes OR selectedFilters changes
-  $: filteredMeals = ($allMeals || []).filter(meal => { // Use store value, default to empty array
-    // Safety check for meal structure
-    if (!meal || typeof meal !== 'object') return false;
-    // Filter logic
-    const matchFilter = selectedFilters.length === 0 || selectedFilters.includes(meal.type);
-    return matchFilter;
-  }).sort((a,b) => a.name.localeCompare(b.name)); // Optional: Keep sorted alphabetically
+  // --- REACTIVE FILTERING (depends on store AND filters/search) ---
+  $: {
+      const currentFilters = selectedFilters;
+      const currentSearch = searchTerm.toLowerCase().trim();
+      const currentAllMeals = $allMeals || [];
+
+      filteredMeals = currentAllMeals.filter(meal => {
+          if (!meal || !meal.name) return false;
+
+          // Check Type Filter
+          const matchFilter = currentFilters.length === 0 || (meal.type && currentFilters.includes(meal.type));
+          if (!matchFilter) return false;
+
+          // Check Search Term Filter
+          if (currentSearch === '') return true; // No search term matches all
+
+          // --- EXPANDED SEARCH ---
+          const nameMatch = meal.name.toLowerCase().includes(currentSearch);
+          const messageMatch = meal.message && meal.message.toLowerCase().includes(currentSearch);
+          // Check if any ingredient includes the search term
+          const ingredientMatch = meal.recipe?.ingredients && Array.isArray(meal.recipe.ingredients) &&
+                                 meal.recipe.ingredients.some(ing =>
+                                     typeof ing === 'string' && ing.toLowerCase().includes(currentSearch)
+                                 );
+
+          return nameMatch || messageMatch || ingredientMatch; // Return true if any part matches
+          // --- END EXPANDED SEARCH ---
+
+      }).sort((a, b) => a.name.localeCompare(b.name));
+  }
+  
 
   function toggleFilter(tag) {
     if (selectedFilters.includes(tag)) {
@@ -65,6 +91,7 @@
   let hintIndex = 0;
   let currentHintData = null;
   const baonListHints = [
+    { targetSelector: '#baonlist-search', text: '1. Type here to search for specific Baon by name!', position: 'bottom' },
     { targetSelector: '#baonlist-filters', text: '1. Tap these tags to filter the Baon list!', position: 'bottom' },
     { targetSelector: '#first-baon-card-wrapper', text: '2. Here are the Baon ideas! Tap the icon on the right to see a recipe, or tap the heart to add/remove from favorites.', position: 'bottom' },
   ];
@@ -151,8 +178,38 @@
 
 <div class="baonlist-page">
   <div class="fixed-controls">
+    <!-- Conditionally Rendered Search Bar -->
+    {#if showSearchBar}
+      <div class="search-wrapper-outer" transition:slide={{ duration: 300, easing: quintOut }}>
+        <div class="search-wrapper">
+          <input
+            type="search"
+            id="baonlist-search"
+            placeholder="Search Baon..."
+            bind:value={searchTerm}
+            aria-label="Search Baon List"
+          />
+          {#if searchTerm}
+            <button class="clear-search-btn" on:click={() => searchTerm = ''} aria-label="Clear search">×</button>
+          {/if}
+        </div>
+      </div>
+    {/if}
+
     <div class="filters-scroll">
       <div class="filters-inner" id="baonlist-filters">
+        <!-- Search Toggle Chip -->
+        <button
+          class="filter-tag-btn search-toggle-btn"
+          class:active={showSearchBar}
+          on:click={() => showSearchBar = !showSearchBar}
+          aria-label={showSearchBar ? "Hide Search Bar" : "Show Search Bar"}
+          aria-expanded={showSearchBar}
+        >
+          <span class="icon"><SearchIcon /></span> 
+        </button>
+
+        <!-- All Filter Chip -->
         <button class:selected={selectedFilters.length === 0} class="filter-all-btn" on:click={() => selectedFilters = []}>All</button>
         {#each allTags as tag}
           {#if tagStyles[tag]}
@@ -188,8 +245,13 @@
       </div>
     {:else}
       <div class="no-results" transition:fade>
-        <p>No Baon matches your filters!</p>
-        <span>Try selecting different tags.</span>
+        {#if searchTerm}
+          <p>No Baon found matching "{searchTerm}"!</p>
+          <span>Try clearing the search or filters.</span>
+        {:else}
+          <p>No Baon matches your filters!</p>
+          <span>Try selecting different tags.</span>
+        {/if}
       </div>
     {/if}
   </div>
@@ -276,10 +338,10 @@
   }
   .filters-inner button:hover {
     opacity: 1; 
-    transform: translateY(-1px); 
     filter: brightness(1.1);
   }
-  .filters-inner button.selected {
+  .filters-inner button.selected,
+  .search-toggle-btn.active {
     opacity: 1; 
     outline: none; 
     border: 2px solid #fff5e1;
@@ -314,6 +376,53 @@
   }
   .no-results p { font-size: 1.2em; font-weight: 600; margin-bottom: 0.5rem; }
   .no-results span { font-size: 0.9em; }
+
+  .search-wrapper {
+    padding: 0 1rem 0.75rem 1rem; /* Padding around search */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative; /* For clear button */
+  }
+  input[type="search"] {
+    width: 100%;
+    padding: 0.7rem 1rem;
+    padding-right: 2.5rem; /* Space for clear button */
+    border-radius: 1.5rem; /* Pill shape */
+    border: 1px solid #4a4090;
+    background-color: #2c2663; /* Lighter input bg */
+    color: #fff5e1;
+    font-size: 1rem;
+    box-sizing: border-box;
+  }
+  input[type="search"]::placeholder { color: #fff5e199; }
+  input[type="search"]:focus {
+    outline: none; border-color: #b388eb;
+    box-shadow: 0 0 0 2px rgba(179, 136, 235, 0.3);
+  }
+  /* Hide default clear button */
+  input[type="search"]::-webkit-search-decoration,
+  input[type="search"]::-webkit-search-cancel-button,
+  input[type="search"]::-webkit-search-results-button,
+  input[type="search"]::-webkit-search-results-decoration {
+    -webkit-appearance:none;
+  }
+
+  .clear-search-btn {
+    position: absolute;
+    right: 1.5rem;
+    top: 34%;
+    transform: translateY(-50%);
+    background: none; border: none; color: #fff5e1a8;
+    font-size: 1.5rem; line-height: 1; padding: 0.2rem; cursor: pointer;
+  }
+  .clear-search-btn:hover { color: #fff; }
+
+  /* Search Toggle Button Styles */
+  .search-toggle-btn {
+    background-color: #4a4090; 
+    border-color: #6a5acd;
+  }
 
   /* Problem Screen 1: Tall Tablets (e.g., iPad Portrait) */
   @media (min-width: 700px) and (min-height: 1000px) {

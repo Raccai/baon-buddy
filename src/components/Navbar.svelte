@@ -77,7 +77,7 @@
     bottom: 0;
     left: 0;
     right: 0;
-    z-index: 999;
+    z-index: 990;
     /* display: flex; flex-direction: column; NO LONGER NEEDED if spacer div is removed */
     box-shadow: 0 -4px 15px rgba(0,0,0,0.3);
     border-top: 1px solid #3a3375;

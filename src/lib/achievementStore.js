@@ -5,6 +5,22 @@ import { showToast } from './toast.js';
 const UNLOCKED_KEY = 'baonUnlockedAchievements';
 export const unlockedAchievements = writable(getUnlockedAchievements());
 
+// Preload sound slightly after module load to avoid blocking initial paint
+let achievementSound;
+if (typeof window !== 'undefined') {
+    setTimeout(() => {
+        try {
+            achievementSound = new Audio('/music/achievementUnlocked.mp3');
+            achievementSound.volume = 0.7; // Adjust volume
+            achievementSound.load(); // Attempt to load it
+            console.log("Achievement sound loaded.");
+        } catch(e) {
+            console.error("Failed to load achievement sound:", e);
+            achievementSound = null;
+        }
+    }, 500);
+ }
+
 // Function to get the list of unlocked achievement IDs
 export function getUnlockedAchievements() {
     try {
@@ -51,6 +67,13 @@ export function checkAndUnlockAchievements() {
             console.log(`Achievement Unlocked: ${achievement.name}`);
             newlyUnlocked.push(achievement.id);
             showToast(`Achievement Unlocked: ${achievement.name}`, 'achievement', 4000);
+
+            // --- PLAY SOUND ---
+            if (achievementSound) {
+                achievementSound.currentTime = 0; // Rewind if playing
+                achievementSound.play().catch(e => console.warn("Achievement sound play failed:", e));
+            }
+            // --- END PLAY SOUND ---
         }
     });
 

@@ -172,7 +172,7 @@
         box-shadow: 0 4px 12px rgba(0,0,0,0.35);
         width: 88%;
         max-width: 300px;
-        z-index: 10001;
+        z-index: 991;
         line-height: 1.5;
         font-size: 0.95rem;
         top: -9999px; left: -9999px;

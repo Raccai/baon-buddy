@@ -9,6 +9,7 @@
   import BaonList from "../assets/BaonList.svelte";
   import AchievementsIcon from '../assets/AchievementsIcon.svelte';
   import BaonBuddySideMenu from "/titles/BaonBuddySideMenu.png";
+  import AddIcon from '../assets/AddIcon.svelte';
 
   export let visible = false;
 
@@ -69,10 +70,10 @@
         <span class="menu-label">Favorites</span>
       </button>
       <!-- Manage Baon Screen Toggle -->
-      <button class="menu-item" on:click={() => handleMenuAction('openManageBaon')}>
+      <!-- <button class="menu-item" on:click={() => handleMenuAction('openManageBaon')}>
         <span class="menu-icon"><ManageBaonIcon /></span>
         <span class="menu-label">Manage My Baon</span>
-      </button>
+      </button> -->
       <!-- Settings Modal Toggle -->
       <button class="menu-item" on:click={() => handleMenuAction('openSettings')}>
         <span class="menu-icon"><Settings /></span>
@@ -82,6 +83,11 @@
       <button class="menu-item" on:click={() => handleMenuAction('openAchievements')}>
         <span class="menu-icon"><AchievementsIcon /></span>
         <span class="menu-label">Achievements</span>
+      </button>
+      <!-- Add Baon -->
+      <button class="menu-item" on:click={() => handleMenuAction('openAddBaon')}>
+        <span class="menu-icon"><AddIcon /></span>
+        <span class="menu-label">Add/Edit Baon</span>
       </button>
     </nav>
     <div class="menu-footer">

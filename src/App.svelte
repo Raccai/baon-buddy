@@ -21,16 +21,11 @@
   import Home from './components/screens/Home.svelte';
   import Calendar from './components/screens/Calendar.svelte';
   import BaonList from './components/screens/BaonList.svelte';
+  import BaonForm from './components/BaonForm.svelte';
   import ManageBaonScreen from './components/ManageBaonScreen.svelte';
-  import { initializeMealsStore } from './lib/mealStore';
-  import { initializeStreakStore } from './lib/streakStore';
-
   let showOnboarding = localStorage.getItem("hasSeenOnboarding") !== "true";
   let currentScreen = localStorage.getItem("lastScreen") || 'home';
-
-  function handleDone() {
-    showOnboarding = false;
-  }
+  let showAddBaonForm = false;
 
   function handleNavigate(event) { // Accept the event object
     const screenName = event.detail; // Extract screen name from detail
@@ -239,12 +234,8 @@
     // Increment count when app opens
     incrementCounter("baonAppOpens");
 
-    // Init streak
-    initializeStreakStore();
-
     // --- Initialize Combined Meals Store ---
     initializeDefaultMealsIfEmpty();
-    initializeMealsStore();
     if (localStorage.getItem("hasSeenOnboarding") === "true") {
       incrementCounter("baonAppOpens");
     }
@@ -358,6 +349,7 @@
   on:openSettings={openSettings}
   on:openManageBaon={openManageBaon}
   on:openAchievements={openAchievements} 
+  on:openAddBaon={openManageBaon} 
 />
 
 <FavoritesModal
@@ -397,6 +389,7 @@
 
 {#if manageBaonVisible}
   <div class="manage-baon-overlay" transition:fade={{duration: 250}}>
+    <!-- ManageBaonScreen handles showing BaonForm internally -->
     <ManageBaonScreen on:close={closeManageBaon} on:userMealsChanged={refreshAppFavorites} />
   </div>
 {/if}

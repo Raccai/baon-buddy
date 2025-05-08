@@ -13,13 +13,34 @@
     const dispatch = createEventDispatcher();
 
     let userMeals = [];
+    let filteredUserMeals = [];
     let showForm = false;
     let editingMeal = null;
     let formMode = 'add';
+    let searchTerm = '';
 
     function loadUserMeals() {
-        userMeals = getAllMeals();
-        console.log("Loaded user meals:", userMeals);
+        userMeals = getAllMeals(); // Load into the main list
+        filterMeals();
+    }
+
+    // --- Reactive Filtering ---
+    function filterMeals() {
+        const search = searchTerm.toLowerCase().trim();
+        if (!search) {
+            filteredUserMeals = [...userMeals]; // Show all if no search term
+        } else {
+            filteredUserMeals = userMeals.filter(meal =>
+                meal.name?.toLowerCase().includes(search) ||
+                meal.type?.toLowerCase().includes(search) ||
+                meal.message?.toLowerCase().includes(search)
+                // Add ingredient/step search later if needed
+            );
+        }
+    }
+    // Re-filter whenever the search term OR the underlying allUserMeals list changes
+    $: if (searchTerm || userMeals) {
+        filterMeals();
     }
 
     onMount(() => {
@@ -135,48 +156,68 @@
         </div>
     {/if}
 
-    {#if userMeals.length > 0}
-        <p class="instruction-text">Tap a Baon to edit, or use the buttons.</p>
-        <div class="meals-list">
-            {#each userMeals as meal (meal.id)}
-                <!-- Make the whole item clickable for editing -->
-                {@const displaySrc = getDisplayImageSrc(meal.image)}
-                <div
-                    class="meal-item"
-                    on:click={() => openEditForm(meal)}
-                    role="button"
-                    tabindex="0"
-                    aria-label="Edit {meal.name}"
-                    on:keydown={(e) => {if (e.key === 'Enter' || e.key === ' ') openEditForm(meal)}}
-                    animate:flip={{duration: 300}}
-                >
-                    <!-- ADDED: Image/Emoji Column -->
-                    <div class="meal-item-visual">
-                        {#if displaySrc}
-                            <img src={displaySrc} alt="" class="meal-item-image" loading="lazy"/>
-                        {:else if meal.emoji}
-                            <span class="meal-item-emoji">{meal.emoji}</span>
-                        {:else}
-                            <span class="meal-item-emoji">🍽️</span> <!-- Default -->
-                        {/if}
+    <!-- Search Bar Area -->
+    <div class="search-wrapper-manage">
+        <input
+            type="search"
+            placeholder="Search your Baon..."
+            bind:value={searchTerm}
+            aria-label="Search Your Baon List"
+        />
+         {#if searchTerm}
+            <button class="clear-search-btn-manage" on:click={() => searchTerm = ''} aria-label="Clear search">×</button>
+         {/if}
+    </div>
+
+    {#if userMeals.length > 0} <!-- Check original list length -->
+        {#if filteredUserMeals.length > 0} <!-- Check filtered list length -->
+            <p class="instruction-text">Tap a Baon to edit, or use the buttons.</p>
+            <div class="meals-list">
+                {#each filteredUserMeals as meal (meal.id)} <!-- Loop over FILTERED list -->
+                    {@const displaySrc = getDisplayImageSrc(meal.image)}
+                    <div
+                        class="meal-item"
+                        on:click={() => openEditForm(meal)}
+                        role="button"
+                        tabindex="0"
+                        aria-label="Edit {meal.name}"
+                        on:keydown={(e) => {if (e.key === 'Enter' || e.key === ' ') openEditForm(meal)}}
+                        animate:flip={{duration: 300}}
+                    >
+                        <!-- ADDED: Image/Emoji Column -->
+                        <div class="meal-item-visual">
+                            {#if displaySrc}
+                                <img src={displaySrc} alt="" class="meal-item-image" loading="lazy"/>
+                            {:else if meal.emoji}
+                                <span class="meal-item-emoji">{meal.emoji}</span>
+                            {:else}
+                                <span class="meal-item-emoji">🍽️</span> <!-- Default -->
+                            {/if}
+                        </div>
+                        <div class="meal-details">
+                            <span class="meal-item-name">{meal.name}</span>
+                            <span class="meal-item-type">{meal.type}</span>
+                        </div>
+                        <div class="meal-actions">
+                            <button class="edit-btn" on:click|stopPropagation={() => openEditForm(meal)} aria-label="Edit {meal.name}">✏️</button>
+                            <button class="delete-btn" on:click|stopPropagation={() => handleDelete(meal.id, meal.name)} aria-label="Delete {meal.name}">🗑️</button>
+                        </div>
                     </div>
-                    <div class="meal-details">
-                        <span class="meal-item-name">{meal.name}</span>
-                        <span class="meal-item-type">{meal.type}</span>
-                    </div>
-                    <div class="meal-actions">
-                        <button class="edit-btn" on:click|stopPropagation={() => openEditForm(meal)} aria-label="Edit {meal.name}">✏️</button>
-                        <button class="delete-btn" on:click|stopPropagation={() => handleDelete(meal.id, meal.name)} aria-label="Delete {meal.name}">🗑️</button>
-                    </div>
-                </div>
-            {/each}
-        </div>
-    {:else if !showForm}
+                {/each}
+            </div>
+        {:else}
+            <!-- Show only if filtering produced no results -->
             <div class="no-meals-message" transition:fade>
-                <p>You haven't created any custom Baon yet!</p>
-                <button class="add-first-btn" on:click={openAddForm}>+ Add your first Baon</button>
+                <p>No Baon found matching "{searchTerm}"!</p>
             </div>
         {/if}
+    {:else if !showForm}
+        <!-- Show only if the user has NO meals AT ALL -->
+        <div class="no-meals-message" transition:fade>
+            <p>You haven't created any custom Baon yet!</p>
+            <button class="add-first-btn" on:click={openAddForm}>+ Add your first Baon</button>
+        </div>
+    {/if}
     </div>
 </div>
 
@@ -366,9 +407,41 @@
         scrollbar-width: thin; 
         scrollbar-color: #6a5acd #3a3375;
     }
-     .form-wrapper::-webkit-scrollbar { width: 8px; }
-     .form-wrapper::-webkit-scrollbar-track { background: #3a3375; border-radius: 4px;}
-     .form-wrapper::-webkit-scrollbar-thumb { background-color: #6a5acd; border-radius: 4px; }
+    .form-wrapper::-webkit-scrollbar { width: 8px; }
+    .form-wrapper::-webkit-scrollbar-track { background: #3a3375; border-radius: 4px;}
+    .form-wrapper::-webkit-scrollbar-thumb { background-color: #6a5acd; border-radius: 4px; }
+
+    /* Search Bar Styles (similar to BaonList) */
+    .search-wrapper-manage {
+        padding: 0 0 1.5rem 0; /* Padding below search */
+        position: relative;
+        max-width: 600px; /* Limit search bar width */
+        width: 100%;
+        margin-left: auto; /* Center search bar */
+        margin-right: auto;
+    }
+    .search-wrapper-manage input[type="search"] {
+        width: 100%; padding: 0.7rem 1rem; padding-right: 2.5rem;
+        border-radius: 1.5rem; border: 1px solid #4a4090;
+        background-color: #2c2663; color: #fff5e1; font-size: 1rem;
+        box-sizing: border-box;
+    }
+    .search-wrapper-manage input[type="search"]::placeholder { color: #fff5e199; }
+    .search-wrapper-manage input[type="search"]:focus {
+        outline: none; border-color: #b388eb;
+        box-shadow: 0 0 0 2px rgba(179, 136, 235, 0.3);
+    }
+    .search-wrapper-manage input[type="search"]::-webkit-search-cancel-button { -webkit-appearance:none; }
+    .clear-search-btn-manage {
+        position: absolute; right: 0.5rem; top: 28%;
+        transform: translateY(-50%); background: none; border: none;
+        color: #fff5e1a8; font-size: 1.5rem; line-height: 1;
+        padding: 0.2rem; cursor: pointer;
+    }
+    .clear-search-btn-manage:hover { color: #fff; }
+
+    /* Ensure list has some top margin */
+    .meals-list { margin-top: 0.5rem; }
 
     /* Responsive adjustments */
     @media (min-width: 768px) {
@@ -382,6 +455,8 @@
         .meal-item-type { font-size: 0.9rem; }
         .meal-actions button { font-size: 1.4rem; width: 38px; height: 38px;}
         .form-wrapper { max-width: 550px; }
+        .search-wrapper-manage input[type="search"] { font-size: 1.1rem; padding: 0.8rem 1.2rem; padding-right: 2.8rem;}
+        .clear-search-btn-manage { right: 0.8rem; }
     }
 
     /* Further adjustments for very large screens if desired */

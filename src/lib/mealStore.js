@@ -1,31 +1,49 @@
-import { writable } from 'svelte/store'; // No need for derived or get here
-// Import the getter - it's safe to import, just don't call it immediately
+// src/lib/mealStore.js
+import { writable } from 'svelte/store';
+// Import the storage function - it's safe to import the function definition
 import { getAllMeals as getAllMealsFromStorage } from './storage.js';
-import { meals as defaultMealsFromFile } from './meals.js';
 
-const allMealsStore = writable([]);
+// --- Create Writable Store - Initialize EMPTY ---
+const allMealsStore = writable([]); // <<< Initialize EMPTY array
+console.log("[mealStore] Store created empty.");
 
-// --- Function to REFRESH the store ---
-// Called by storage.js after changes AND by initializeMealsStore
-export function refreshMealsStore() {
-    console.log("Refreshing meals store...");
+// --- Function to load initial/refreshed data ---
+// This combines initialization and refresh logic
+let storeInitialized = false;
+function loadOrRefreshMeals() {
     try {
-        // Fetch latest from storage and update the store using .set()
-        allMealsStore.set(getAllMealsFromStorage());
+        if (!storeInitialized) {
+            console.log("[mealStore] Attempting to load initial meal data...");
+        } else {
+            console.log("[mealStore] Refreshing meals store...");
+        }
+        // Fetch latest combined list from storage (getAllMeals already handles cache)
+        const currentMeals = getAllMealsFromStorage();
+        allMealsStore.set(currentMeals); // Update the store with actual data
+        storeInitialized = true;
+        if (!storeInitialized) console.log("[mealStore] Initial meal data loaded.");
+
     } catch (e) {
-        console.error("Error refreshing meals store:", e);
-        allMealsStore.set([]); // Set to empty on error
+        console.error("[mealStore] Error loading/refreshing meals store:", e);
+        allMealsStore.set([]); // Ensure it's empty on error
+        storeInitialized = true; // Mark as initialized even on error to prevent loops
     }
 }
 
-// --- Function to initialize the store on app load ---
-// Ensures store has data after initial module loads
-export function initializeMealsStore() {
-    console.log("Initializing meals store (called from App)...");
-    // This call happens AFTER all modules are loaded, so it's safe
-    refreshMealsStore();
+
+// --- Exported REFRESH function (called by storage.js) ---
+// This now just calls the combined load/refresh function
+export function refreshMealsStore() {
+    loadOrRefreshMeals();
 }
 
+// --- REMOVE initializeMealsStore function ---
+// export function initializeMealsStore() { ... }
+
 // --- Export the main store ---
-// Components will import this store directly
 export { allMealsStore as allMeals };
+
+// --- Trigger initial load slightly after module evaluation ---
+if (typeof window !== 'undefined') {
+    setTimeout(loadOrRefreshMeals, 0); // Schedule loading for the next tick
+}

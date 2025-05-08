@@ -44,6 +44,7 @@
     { targetSelector: '#calendar-prev-month-btn', text: '1. Use these arrows to navigate between months.', position: 'right' },
     { targetSelector: '#calendar-today-btn', text: '2. Tap here to jump quickly back to the current month.', position: 'bottom' },
     { targetSelector: '#calendar-first-day-cell', text: '3. Tap any day to view or add Baon for that date.', position: 'bottom' },
+    { targetSelector: '#streak-calendar', text: '4. Scroll down to find your streak. Keep it going by adding, pasting, and even removing baon from the planner.', position: 'top' },
   ];
   const totalCalendarHints = calendarHints.length;
   // --- Onboarding Functions ---
@@ -279,6 +280,8 @@
       {/key}
     </div> <!-- End calendar-container -->
     
+    <div id="streak-calendar">
+    </div>
     <StreakCalendar displayMonth={streakCalendarDisplayMonth} />
   </div> <!-- End calendar-cont -->
 </div> <!-- End calendar-main -->
@@ -685,6 +688,11 @@
     transition: all 0.2s ease;
     box-shadow: 0 1px 1px rgba(0,0,0,0.3);
     flex-shrink: 0; /* Prevent indicators from shrinking */
+  }
+
+  #streak-calendar {
+    padding: 0;
+    margin: 0;
   }
 
   /* Media Queries for Responsiveness */

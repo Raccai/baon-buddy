@@ -1,9 +1,9 @@
 // src/lib/calendar.js
 import { writable, get } from 'svelte/store'; // Import get
 import { format, parseISO, setHours, setMinutes, setSeconds } from 'date-fns';
-import { recordDailyBaonAction } from './storage';
+import { updateStreakOnAction } from './storage.js';
 
-const CALENDAR_STORAGE_KEY = 'baonCalendarData';
+export const CALENDAR_STORAGE_KEY = 'baonCalendarData';
 
 // Function to load data
 function loadCalendarData() {
@@ -49,7 +49,7 @@ export function addBaon(dateKey, mealsToAdd) {
     saveCalendarData(currentData); // Save the modified object
 
     if (mealsToAdd && mealsToAdd.length > 0) {
-        recordDailyBaonAction();
+        updateStreakOnAction();
     }
 }
 
@@ -83,7 +83,7 @@ export function removeBaon(dateKey, mealIndex) {
 
             // Save the updated calendar data
             saveCalendarData(currentData);
-            recordDailyBaonAction();
+            updateStreakOnAction();
         } else {
             console.warn(`Invalid index ${mealIndex} for date ${dateKey} which has ${dayMeals.length} meals.`);
         }
@@ -107,6 +107,6 @@ export function pasteBaon(dateKey, mealsToPaste) {
     saveCalendarData(currentData);
 
     if (currentData[dateKey] && currentData[dateKey].length > 0) {
-        recordDailyBaonAction();
+        updateStreakOnAction();
     }
 }

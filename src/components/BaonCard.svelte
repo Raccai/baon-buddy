@@ -232,24 +232,40 @@
         line-height: 1;
     }
 
-    .info-column {
+    /* Meal Content/Information */
+    .baon-info {
         display: flex;
         flex-direction: column;
-        flex-grow: 1; /* Take remaining space */
-        justify-content: center; /* Center content vertically */
-        align-items: flex-start; /* Align text left */
-        min-width: 0; /* Prevent overflow */
-        gap: 0.3rem; /* Space between info elements */
+        gap: 2px;
+        justify-content: center;
+        align-items: center;
+        flex-grow: 1;
+        min-width: 0; /* <<< CRUCIAL FOR WRAPPING IN FLEX */
+        gap: 0.3rem;
+        overflow: hidden;
     }
-
+    .meal-type {
+        font-size: 0.9rem;
+        padding: 8px 16px;
+        text-transform: capitalize;
+        border-radius: 14px;
+        width: fit-content;
+        transition: background-color 0.3s ease, color 0.3s ease;
+    }
     .meal-name {
-        margin: 0; /* Reset margin */
-        font-size: 1.25rem; /* Good default size */
-        font-weight: 700; /* Bolder */
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 700;
         color: #231F47;
         line-height: 1.3;
+        width: 100%; /* Use available width */
+        /* Text wrapping properties */
+        white-space: normal;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        word-break: break-all;
+        transition: font-size 0.3s ease-out;
     }
-
     .meal-type {
         font-size: 0.8rem;
         padding: 0.2rem 0.7rem;
@@ -260,13 +276,15 @@
         display: inline-block; /* Respect padding */
         margin-bottom: 0.2rem; /* Space below tag */
     }
-
     .meal-message {
-        font-style: italic;
-        margin: 0.2rem 0 0.5rem 0; /* Adjusted margin */
-        color: #4d467c; /* Slightly lighter message color */
-        font-size: 0.9rem;
-        line-height: 1.4;
+        font-style: italic; margin: 0.2rem 0 0.5rem 0;
+        color: #4d467c; font-size: 0.9rem; line-height: 1.4;
+        width: 100%;
+        /* Text wrapping properties */
+        white-space: normal;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        transition: font-size 0.3s ease-out;
     }
 
     .button-container {
@@ -317,36 +335,6 @@
         40% { transform: scale(1.4); }
         60% { transform: scale(0.9); }
         100% { transform: scale(1); }
-    }
-
-    /* Meal Content/Information */
-    .baon-info {
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-        justify-content: center;
-        align-items: center;
-    }
-
-    .meal-name {
-        margin: 0.5rem 0 0.25rem;
-        font-size: 1.4rem;
-        color: #231F47;
-    }
-
-    .meal-type {
-        font-size: 0.9rem;
-        padding: 8px 16px;
-        text-transform: capitalize;
-        border-radius: 14px;
-        width: fit-content;
-        transition: background-color 0.3s ease, color 0.3s ease;
-    }
-
-    .meal-message {
-        font-style: italic;
-        margin-top: 0.5rem;
-        color: #231F47;
     }
 
     /* Bounce animation */
