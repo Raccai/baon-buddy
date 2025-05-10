@@ -4,10 +4,30 @@
   import { StatusBar } from '@capacitor/status-bar';
   import { SafeArea } from "capacitor-plugin-safe-area";
   import { Capacitor } from '@capacitor/core';
-  import { fade } from 'svelte/transition';
-  import { forceUpdateDefaultMeals, getFavorites, incrementCounter, initializeDefaultMealsIfEmpty } from './lib/storage';
-  import { checkAndUnlockAchievements } from './lib/achievementStore';
+  import { fade, fly } from 'svelte/transition';
+  import { quintOut } from 'svelte/easing';
 
+  // Import ASYNC storage functions
+  import {
+    initializeAppStorageAndMeals,
+    getFavorites, // ASYNC
+    incrementCounter, // Assuming synchronous (uses localStorage for small counters)
+    updateMeal,     // ASYNC
+    addMeal,        // ASYNC
+    deleteMeal      // ASYNC
+    // forceUpdateDefaultMeals is now primarily called by initializeAppStorageAndMeals
+  } from './lib/storage.js';
+
+  // Svelte Stores & Store Loaders
+  import { allMeals as allMealsStore, loadMealsIntoStoreFromFS } from './lib/mealStore.js';
+  import { initializeCalendarStore } from './lib/calendar.js'; // Calendar store itself is in calendar.js
+  import { get as getStoreValue } from 'svelte/store'; // To read store values synchronously if needed
+
+  // Other Utilities
+  import { checkAndUnlockAchievements } from './lib/achievementStore.js';
+  import { showToast } from './lib/toast.js';
+
+  // Components
   import Navbar from './components/Navbar.svelte';
   import Topbar from './components/Topbar.svelte';
   import SideMenu from './components/SideMenu.svelte';
@@ -15,55 +35,66 @@
   import SettingsModal from './components/SettingsModal.svelte';
   import RecipeSheet from './components/RecipeSheet.svelte';
   import Toast from './components/Toast.svelte';
+  import BaonForm from './components/BaonForm.svelte';
 
   // Screens
   import AchievementScreen from './components/screens/AchievementScreen.svelte';
   import Home from './components/screens/Home.svelte';
   import Calendar from './components/screens/Calendar.svelte';
   import BaonList from './components/screens/BaonList.svelte';
-  import BaonForm from './components/BaonForm.svelte';
   import ManageBaonScreen from './components/ManageBaonScreen.svelte';
-  let showOnboarding = localStorage.getItem("hasSeenOnboarding") !== "true";
-  let currentScreen = localStorage.getItem("lastScreen") || 'home';
-  let showAddBaonForm = false;
 
-  function handleNavigate(event) { // Accept the event object
-    const screenName = event.detail; // Extract screen name from detail
-    console.log(`App received navigate event for: ${screenName}`); // Debug log
-    // Add validation if needed
-    if (screenName && ['home', 'calendar', 'baonlist'].includes(screenName)) {
-      currentScreen = screenName; // Update state with the correct name
+  // --- App State ---
+  let currentScreen = localStorage.getItem("lastScreen") || 'home';
+  // Modal/Overlay Visibility
+  let sideMenuVisible = false;
+  let favoritesVisible = false;
+  let settingsVisible = false;
+  let achievementsVisible = false;
+  let manageBaonVisible = false;
+  let showRecipeSheet = false;
+  let showBaonForm = false;
+  // BaonForm State
+  let currentBaonFormMode = "add"; // 'add' or 'edit'
+  let baonFormInitialData = null;   // Data passed to BaonForm when editing
+  // Data for UI
+  let favoriteNames = [];         // Array of names of favorited meals
+  let selectedRecipeMeal = null;  // Meal object for RecipeSheet
+  // Audio
+  let audio;
+  let musicEnabled = localStorage.getItem("musicEnabled") === "true";
+  let appIsActive = true;
+  let musicShouldPlay = musicEnabled;
+  // App Version (can be const if only used in onMount)
+  const CURRENT_APP_VERSION = '1.8'; // Bump for significant changes like storage
+  // For FavoritesModal binding
+  let favoritesRef;
+
+
+  // --- Navigation & Modal Control ---
+  function handleNavigate(event) {
+    const screenName = event.detail;
+    if (['home', 'calendar', 'baonlist'].includes(screenName)) {
+      currentScreen = screenName;
       localStorage.setItem("lastScreen", screenName);
-      closeAllModals(); // Close overlays
+      closeAllModals();
       closeSideMenu();
     } else {
-      console.warn("Invalid screen name received in handleNavigate:", screenName);
+      console.warn("Invalid screen name for navigation:", screenName);
     }
   }
 
-  function toggleSideMenu() { // <<< ADD function to toggle menu
-    const newState = !sideMenuVisible;
-    console.log(`Toggling side menu from ${sideMenuVisible} to ${newState}`);
-    sideMenuVisible = newState;
-  }
-  function closeSideMenu() { // <<< ADD function to close menu
-    console.log(`Closing side menu (current: ${sideMenuVisible})`);
-    sideMenuVisible = false;
-  }
+  function toggleSideMenu() { sideMenuVisible = !sideMenuVisible; }
+  function closeSideMenu() { sideMenuVisible = false; }
 
-  // Helper to close all overlays (except optionally the one being opened)
-  function closeAllModals() { // Updated to include side menu
+  function closeAllModals() {
     favoritesVisible = false;
     settingsVisible = false;
     showRecipeSheet = false;
     achievementsVisible = false;
     manageBaonVisible = false;
-    // Does not close side menu here, specific actions handle it
+    // showBaonForm is controlled by its own open/close handlers
   }
-
-  let favoriteNames = getFavorites().map(meal => meal.name);
-  let selectedRecipeMeal = null;
-  let showRecipeSheet = false;
 
   function openRecipeSheet(meal) {
     selectedRecipeMeal = meal;
@@ -71,242 +102,246 @@
   }
   function closeRecipeSheet() {
     showRecipeSheet = false;
+    selectedRecipeMeal = null;
   }
 
-  // Favorites and Settings functions
-  let favoritesRef; // Keep the ref if you need it for other reasons, but not for open/close
-  let favoritesVisible = false;
-  let settingsVisible = false;
-  let achievementsVisible = false;
-  let manageBaonVisible = false;
-  let sideMenuVisible = false; // <<< ADD state for side menu
-  let audio;
-  let musicEnabled = localStorage.getItem("musicEnabled") === "true"; // Default to true if not "false"
-  let appIsActive = true;
-  let musicShouldPlay = musicEnabled;
-
-  function toggleFavorites() {
-    favoritesVisible = !favoritesVisible;
-  }
-  function openSettings() {
-    settingsVisible = true;
-  }
-
-  // --- Functions for Achievements ---
-  function openAchievements() {
-    console.log("Opening Achievements"); // Debug log
-    closeAllModals(); // Close others before opening
-    achievementsVisible = true;
-  }
+  function toggleFavorites() { favoritesVisible = !favoritesVisible; }
+  function openSettings() { settingsVisible = true; }
+  function openAchievements() { closeAllModals(); achievementsVisible = true; }
   function closeAchievements() { achievementsVisible = false; }
+  function openManageBaon() { closeAllModals(); manageBaonVisible = true; }
+  function closeManageBaon() { manageBaonVisible = false; }
 
-  // --- Functions for Manage Baon ---
-  function openManageBaon() { // <<< ADD Function to open
-    console.log("Opening Manage Baon"); // Debug log
-    closeAllModals(); // Close others before opening
-    manageBaonVisible = true;
-  }
-  function closeManageBaon() { // <<< ADD Function to close
-    manageBaonVisible = false;
-  }
+  async function refreshAppFavorites() {
+    console.log("[App] Refreshing app favorites...");
+    try {
+      const favoriteMealIds = await getFavorites(); // Returns array of IDs
+      const allCurrentMeals = getStoreValue(allMealsStore);
 
-  function refreshAppFavorites() {
-    console.log("Refreshing app favorites list...");
-    favoriteNames = getFavorites().map(meal => meal.name);
-    // If the FavoritesModal is currently open AND has an exported refresh method, call it.
-    if (favoritesVisible && favoritesRef?.refresh) {
-      console.log("Refreshing FavoritesModal instance.");
-      favoritesRef.refresh();
+      if (favoriteMealIds && Array.isArray(favoriteMealIds) && allCurrentMeals && Array.isArray(allCurrentMeals)) {
+        favoriteNames = favoriteMealIds
+          .map(id => {
+            const foundMeal = allCurrentMeals.find(m => m.id === id);
+            return foundMeal ? foundMeal.name : null;
+          })
+          .filter(Boolean);
+        console.log("[App] Updated favoriteNames:", favoriteNames);
+      } else {
+        console.warn("[App] Could not derive favorite names. fav IDs:", favoriteMealIds, "all meals count:", allCurrentMeals?.length);
+        favoriteNames = [];
+      }
+      console.log("[App] Updated favoriteNames:", favoriteNames);
+
+      if (favoritesVisible && favoritesRef?.refresh) {
+        favoritesRef.refresh(); // If FavoritesModal has a sync refresh method
+      }
+
+      await checkAndUnlockAchievements();
+    } catch (error) {
+        console.error("[App] Error refreshing app favorites:", error);
+        favoriteNames = []; // Fallback
     }
-    // Achievement checks might depend on favorite counts, so check again
-    checkAndUnlockAchievements();
   }
 
   // --- Music Control ---
   function playMusic() {
-    if (audio && !audio.paused) return; // Already playing
-    if (audio && musicEnabled && appIsActive) { // Only play if enabled AND app is active
-      console.log("Attempting to play music...");
-      audio.play().catch(e => console.warn("Music play failed (likely needs interaction or already playing):", e));
+    console.log(`[App] Attempting playMusic. musicEnabled: ${musicEnabled}, appIsActive: ${appIsActive}, audio object:`, audio);
+    if (audio && !audio.paused) { console.log("[App] Music already playing."); return; }
+    if (audio && musicEnabled && appIsActive) {
+        console.log("[App] Conditions met. Calling audio.play()...");
+        audio.play()
+            .then(() => console.log("[App] Music playback started."))
+            .catch(e => console.error("[App] Music play() failed:", e));
     } else {
-      console.log("Music not playing (disabled or app inactive).");
+        console.log("[App] Conditions not met for playing music.");
     }
   }
-
   function pauseMusic() {
-    if (audio && !audio.paused) { // Only pause if playing
-      console.log("Pausing music...");
+    if (audio && !audio.paused) {
       audio.pause();
     }
   }
-
   function toggleMusic() {
-    // This function is CALLED BY SettingsModal when the user manually toggles
-    const newMusicEnabledState = localStorage.getItem("musicEnabled") === "true"; // Get state saved by SettingsModal
-    musicEnabled = newMusicEnabledState; // Update App.svelte's state
-    musicShouldPlay = newMusicEnabledState; // Update desired state
-
-    console.log("App received toggleMusic event. New state:", musicEnabled);
-    if (musicEnabled) {
-      playMusic(); // Attempt to play if now enabled (respects appIsActive flag)
+    musicEnabled = localStorage.getItem("musicEnabled") === "true"; // Re-read from LS
+    musicShouldPlay = musicEnabled;
+    if (musicEnabled && appIsActive) {
+      playMusic();
     } else {
-      pauseMusic(); // Pause if now disabled
+      pauseMusic();
     }
   }
 
-  function updateNavBarHeight() {
-    // If visualViewport is available, use it:
-    const visibleH = window.visualViewport?.height ?? document.documentElement.clientHeight;
-    const fullH    = window.innerHeight;
-    const navBarH  = fullH - visibleH;
-    document.documentElement.style.setProperty('--android-nav-height', `${navBarH}px`);
-    console.log('Android nav bar height =', navBarH);
+  // --- BaonForm Handling ---
+  function openAddBaonForm() {
+    closeAllModals();
+    baonFormInitialData = null;
+    currentBaonFormMode = 'add';
+    showBaonForm = true;
   }
 
+  function handleRequestOpenAddForm() { // From SideMenu
+    openAddBaonForm();
+  }
+
+  function handleEditBaonRequest(event) { // From BaonCard (Home, BaonList)
+    const mealFromCard = event.detail;
+    if (!mealFromCard) {
+      showToast("Error: No meal data to edit.", "error");
+      return;
+    }
+    closeAllModals();
+    baonFormInitialData = JSON.parse(JSON.stringify(mealFromCard)); // Deep copy
+    currentBaonFormMode = 'edit';
+    showBaonForm = true;
+  }
+
+  async function handleSaveBaonFromForm(event) {
+    const formDataFromBaonForm = event.detail;
+    let success = false;
+
+    try {
+      if (currentBaonFormMode === 'add') {
+        success = await addMeal(formDataFromBaonForm);
+      } else if (currentBaonFormMode === 'edit') {
+        if (!baonFormInitialData || !baonFormInitialData.id) {
+          showToast("Save error: Edit context lost.", "error");
+          return;
+        }
+        const originalId = baonFormInitialData.id;
+        const wasDefault = baonFormInitialData.isUserDefined === false || originalId.startsWith('default_');
+
+        if (wasDefault) {
+          const newUserMeal = {
+            ...formDataFromBaonForm,
+            id: `user_mod_${Date.now()}_${Math.random().toString(16).slice(2)}`,
+            isUserDefined: true,
+            originalDefaultId: originalId
+          };
+          if (await addMeal(newUserMeal)) {
+            await deleteMeal(originalId);
+            success = true;
+          }
+        } else {
+          const mealToUpdate = {
+            ...formDataFromBaonForm,
+            id: originalId,
+            isUserDefined: true,
+            originalDefaultId: formDataFromBaonForm.originalDefaultId || baonFormInitialData.originalDefaultId || null
+          };
+          success = await updateMeal(mealToUpdate);
+        }
+      }
+    } catch (error) {
+        console.error("[App] Error during save/update operation:", error);
+        showToast("An unexpected error occurred while saving.", "error");
+        success = false;
+    }
+
+    if (success) {
+      showBaonForm = false;
+      baonFormInitialData = null;
+      await refreshAppFavorites(); // Refresh favorites list which might impact UI
+      // The $allMeals store is updated directly by saveAllMeals in storage.js
+    }
+    // If not success, form remains open. Toasts for specific errors (like name collision)
+    // are handled within addMeal/updateMeal.
+  }
+
+  function handleCancelBaonForm() {
+    showBaonForm = false;
+    baonFormInitialData = null;
+  }
+
+  // --- Lifecycle & Platform Setup ---
   let appStateListener = null;
-  const APP_VERSION_KEY = 'baonAppVersion';
-  const CURRENT_APP_VERSION = '1.6';
+
   onMount(async () => {
-    // Check if we need to update default meals
-    const storedVersion = localStorage.getItem(APP_VERSION_KEY);
-    if (storedVersion !== CURRENT_APP_VERSION) {
-      console.log(`App version changed from ${storedVersion || 'none'} to ${CURRENT_APP_VERSION}, updating default meals...`);
-      
-      // Update the default meals
-      forceUpdateDefaultMeals();
-      
-      // Store the new version
-      localStorage.setItem(APP_VERSION_KEY, CURRENT_APP_VERSION);
-    }
+    console.log("[App] onMount: Starting initialization...");
 
-    // --- Capacitor Platform Specific Setup ---
+    // 1. Initialize core storage: handles migrations, default meals to FS.
+    await initializeAppStorageAndMeals(CURRENT_APP_VERSION);
+
+    // 2. Load data from Filesystem into Svelte stores.
+    await loadMealsIntoStoreFromFS(); // Populates $allMeals
+    await initializeCalendarStore();  // Populates $calendarData
+
+    // 3. Populate UI-dependent data like favoriteNames.
+    await refreshAppFavorites();
+
+    // 4. Capacitor Platform Specific Setup
     if (Capacitor.isNativePlatform()) {
+      try {
+        await StatusBar.setOverlaysWebView({ overlay: true });
+      } catch (e) { console.error('Error configuring StatusBar:', e); }
+
+      if (Capacitor.isPluginAvailable('SafeArea')) {
         try {
-            // Configure Status Bar for edge-to-edge
-            await StatusBar.setOverlaysWebView({ overlay: true });
-            console.log('StatusBar overlay configured.');
-            // Optional: Set status bar style if needed
-            // await StatusBar.setStyle({ style: Style.Light }); // Or Style.Dark
-        } catch (e) {
-            console.error('Error configuring StatusBar:', e);
-        }
+          const safeAreaData = await SafeArea.getSafeAreaInsets();
+          const { insets } = safeAreaData;
+          document.documentElement.style.setProperty('--custom-safe-area-top', `${insets.top}px`);
+          document.documentElement.style.setProperty('--custom-safe-area-right', `${insets.right}px`);
+          document.documentElement.style.setProperty('--custom-safe-area-bottom', `${insets.bottom}px`);
+          document.documentElement.style.setProperty('--custom-safe-area-left', `${insets.left}px`);
 
-        // --- Use capacitor-plugin-safe-area ---
-        try {
-            const safeAreaData = await SafeArea.getSafeAreaInsets();
-            const { insets } = safeAreaData;
-
-            // Set CSS custom properties on the :root (html element) for global access
-            // Using slightly different names to avoid confusion with Ionic's default --ion-safe-area-*
-            // if you ever mix with Ionic components, though your names are fine too.
-            document.documentElement.style.setProperty('--custom-safe-area-top', `${insets.top}px`);
-            document.documentElement.style.setProperty('--custom-safe-area-right', `${insets.right}px`);
-            document.documentElement.style.setProperty('--custom-safe-area-bottom', `${insets.bottom}px`);
-            document.documentElement.style.setProperty('--custom-safe-area-left', `${insets.left}px`);
-
-            console.log('SafeArea Insets from plugin:', insets);
-
-            // The plugin might also provide an event listener for changes (e.g., rotation)
-            // Check the plugin's documentation for an event like 'safeAreaChanged'
-            // Example (syntax might vary based on the plugin):
-            SafeArea.addListener('safeAreaChanged', (changedData) => {
-                const { insets: newInsets } = changedData;
-                document.documentElement.style.setProperty('--custom-safe-area-top', `${newInsets.top}px`);
-                document.documentElement.style.setProperty('--custom-safe-area-right', `${newInsets.right}px`);
-                document.documentElement.style.setProperty('--custom-safe-area-bottom', `${newInsets.bottom}px`);
-                document.documentElement.style.setProperty('--custom-safe-area-left', `${newInsets.left}px`);
-                console.log('SafeArea Insets updated:', newInsets);
-            });
-
-        } catch (e) {
-            console.error("Error getting/setting safe area insets from plugin:", e);
-            // Fallback if plugin fails: try to set 0 or rely on CSS env()
-            document.documentElement.style.setProperty('--custom-safe-area-bottom', '0px'); // Or some default
-        }
-
+          SafeArea.addListener('safeAreaChanged', (changedData) => {
+            const { insets: newInsets } = changedData;
+            document.documentElement.style.setProperty('--custom-safe-area-top', `${newInsets.top}px`);
+            document.documentElement.style.setProperty('--custom-safe-area-right', `${newInsets.right}px`);
+            document.documentElement.style.setProperty('--custom-safe-area-bottom', `${newInsets.bottom}px`);
+            document.documentElement.style.setProperty('--custom-safe-area-left', `${newInsets.left}px`);
+          });
+        } catch (e) { console.error("Error with SafeArea plugin:", e); }
+      } else {
+        console.warn("SafeArea plugin not available.");
+      }
     } else {
-        // For web, you might want to set fallbacks or rely on CSS env()
-        // The plugin likely won't work on web, so these vars won't be set by it.
-        // CSS will then fall back to env() or 0px.
-        console.log("Not a native platform. Plugin won't set dynamic safe areas.");
+      console.log("Not a native platform. Skipping some native-specific setup.");
     }
     
-    // Increment count when app opens
-    incrementCounter("baonAppOpens");
+    // 5. Other initializations
+    incrementCounter("baonAppOpens"); // Assuming this uses localStorage and is quick
+    await checkAndUnlockAchievements();
 
-    // --- Initialize Combined Meals Store ---
-    initializeDefaultMealsIfEmpty();
-    if (localStorage.getItem("hasSeenOnboarding") === "true") {
-      incrementCounter("baonAppOpens");
-    }
-
-    // For Achievements
-    checkAndUnlockAchievements();
-
-    // --- Preloader Logic ---
+    // --- Preloader ---
     const preloader = document.getElementById('preloader');
     if (preloader) {
-      // Ensure initial opacity is set if needed by CSS
-      // preloader.style.opacity = '1'; // Might not be needed if CSS handles it
-
-      // Shorter delay before starting fade out (e.g., 500ms)
       setTimeout(() => {
-        if (preloader) { // Check again in case component unmounted quickly
+        if (preloader) {
           preloader.style.transition = 'opacity 0.8s ease';
           preloader.style.opacity = '0';
-          // Remove after fade out transition ends
-          setTimeout(() => {
-              if (preloader) preloader.remove();
-          }, 800); // Match fade duration
+          setTimeout(() => preloader.remove(), 800);
         }
-      }, 500); // << SHORTER DELAY
+      }, 500);
     }
 
-    // --- Audio Logic (Separate Try/Catch) ---
+    // --- Audio ---
     try {
-      audio = new Audio("/music/InVain.mp3");
-      audio.loop = true;
-      audio.volume = 0.8;
+      audio = new Audio("/music/InVain.mp3"); // Path relative to public folder
+      audio.loop = true; audio.volume = 0.8;
+      musicShouldPlay = musicEnabled; // musicEnabled is from localStorage
+      if (musicShouldPlay && appIsActive) playMusic(); // playMusic checks musicEnabled and appIsActive again
+    } catch (err) { console.error("Audio init error:", err); }
 
-      // Store desired state based on settings
-      musicShouldPlay = musicEnabled;
-
-      // Initial play attempt ONLY if enabled and app starts active
-      if (musicShouldPlay && appIsActive) {
-        playMusic(); // Use the helper function
-      }
-    } catch (err) {
-      console.error("Error initializing audio:", err);
+    // --- App State Listener ---
+    if (Capacitor.isPluginAvailable('App')) {
+      appStateListener = CapacitorApp.addListener('appStateChange', ({ isActive }) => {
+        appIsActive = isActive;
+        if (isActive && musicShouldPlay) playMusic();
+        else if (!isActive) pauseMusic();
+      });
     }
-
-    // --- Capacitor App State Listener ---
-    appStateListener = CapacitorApp.addListener('appStateChange', ({ isActive }) => {
-      console.log('App state changed. Is active?', isActive);
-      appIsActive = isActive; // Update our tracking variable
-      if (isActive) {
-        // App came to foreground
-        if (musicShouldPlay) { // Check if music SHOULD be playing based on settings
-          playMusic();
-        }
-      } else {
-        // App went to background
-        pauseMusic(); // Always pause when going to background
-      }
-    });
-
-    updateNavBarHeight();
-    // Recalculate on changes (rotation, keyboard up/down, etc)
-    window.visualViewport?.addEventListener('resize', updateNavBarHeight);
-    window.addEventListener('resize', updateNavBarHeight);
+    console.log("[App] onMount: Initialization finished.");
   });
 
   onDestroy(() => {
-    window.visualViewport?.removeEventListener('resize', updateNavBarHeight);
-    window.removeEventListener('resize', updateNavBarHeight);
-    if (appStateListener) {
-      appStateListener.remove();
+    if (appStateListener) appStateListener.remove();
+    if (audio) {
+      audio.pause();
+      audio.src = ''; // Release audio resource
+      audio = null;
     }
-  })
+    // Remove other listeners if any were added directly to window/document
+  });
 </script>
 
 <div class="app-container">
@@ -314,50 +349,55 @@
     <Topbar />
   </div>
 
-  <main class="main-content-area"> {#key currentScreen}
-    <!-- Wrapper for TRANSITIONS ONLY -->
-    <div class="screen-transition-wrapper" transition:fade={{ duration: 200 }}>
-      {#if currentScreen === 'home'}
-        <Home on:viewRecipe={(e) => openRecipeSheet(e.detail)} />
-      {:else if currentScreen === 'calendar'}
-        <Calendar />
-      {:else if currentScreen === 'baonlist'}
-        <BaonList />
-      {/if}
-    </div>
+  <main class="main-content-area"> 
+    {#key currentScreen}
+      <div class="screen-transition-wrapper" transition:fade={{ duration: 200 }}>
+        {#if currentScreen === 'home'}
+          <Home 
+            on:viewRecipe={(e) => openRecipeSheet(e.detail)} 
+            on:editBaon={handleEditBaonRequest}
+            {favoriteNames}
+            on:requestFavoriteRefresh={refreshAppFavorites} 
+          />
+        {:else if currentScreen === 'calendar'}
+          <Calendar />
+        {:else if currentScreen === 'baonlist'}
+          <BaonList
+            on:editBaon={handleEditBaonRequest}
+            on:viewRecipe={(e) => openRecipeSheet(e.detail)}
+            {favoriteNames}
+            on:requestFavoriteRefresh={refreshAppFavorites}
+          />
+        {/if}
+      </div>
     {/key}
   </main>
 
-  <!-- <div class="navbar-wrapper">
-  </div> -->
+  <Navbar 
+    on:navigate={handleNavigate} 
+    on:toggleMenu={toggleSideMenu}
+    current={currentScreen} 
+  />
 </div>
-
-<Navbar 
-  on:navigate={handleNavigate} 
-  on:toggleMenu={toggleSideMenu}
-  current={currentScreen} 
-/>
 
 <Toast />
 
 <!-- Modals and Sheets -->
 <SideMenu
   visible={sideMenuVisible}
-  on:close={() => sideMenuVisible = false}
-  on:navigate={handleNavigate} 
+  on:close={closeSideMenu} 
+  on:navigate={handleNavigate}
   on:toggleFavorites={toggleFavorites}
   on:openSettings={openSettings}
   on:openManageBaon={openManageBaon}
-  on:openAchievements={openAchievements} 
-  on:openAddBaon={openManageBaon} 
+  on:openAchievements={openAchievements}
+  on:requestOpenAddForm={handleRequestOpenAddForm}
 />
 
 <FavoritesModal
   bind:this={favoritesRef}
   visible={favoritesVisible}
-  on:faveChange={() => {
-    favoriteNames = getFavorites().map(meal => meal.name); // Still need to update this if BaonCard uses it
-  }}
+  on:faveChange={refreshAppFavorites} 
   on:close={() => favoritesVisible = false}
   on:viewRecipe={(e) => openRecipeSheet(e.detail)} 
 />
@@ -365,15 +405,11 @@
 <SettingsModal
   visible={settingsVisible}
   on:close={() => settingsVisible = false}
-  on:faveChange={() => {
-    favoriteNames = getFavorites().map(meal => meal.name);
-    // No need to call refresh on favoritesRef if using visible prop
-  }}
+  on:faveChange={refreshAppFavorites}
   on:toggleMusic={toggleMusic}
   on:openAchievements={openAchievements}
 />
 
-<!-- Pass correct state to RecipeSheet -->
 <RecipeSheet
   visible={showRecipeSheet}
   meal={selectedRecipeMeal}
@@ -382,101 +418,121 @@
 
 {#if achievementsVisible}
   <div class="achievements-overlay" transition:fade={{ duration: 250 }}>
-    <!-- Add a close button wrapper if needed -->
     <AchievementScreen on:close={closeAchievements} />
   </div>
 {/if}
 
 {#if manageBaonVisible}
   <div class="manage-baon-overlay" transition:fade={{duration: 250}}>
-    <!-- ManageBaonScreen handles showing BaonForm internally -->
-    <ManageBaonScreen on:close={closeManageBaon} on:userMealsChanged={refreshAppFavorites} />
+    <ManageBaonScreen 
+      on:close={closeManageBaon} 
+      on:userMealsChanged={refreshAppFavorites} 
+    />
+  </div>
+{/if}
+
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+{#if showBaonForm}
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <div class="form-modal-backdrop" on:click|self={handleCancelBaonForm} transition:fade>
+    <div class="form-wrapper" transition:fly={{y: 30, duration: 250, easing: quintOut }}>
+      <BaonForm
+        formMode={currentBaonFormMode} 
+        initialData={baonFormInitialData}
+        on:save={handleSaveBaonFromForm}
+        on:cancel={handleCancelBaonForm}
+      />
+    </div>
   </div>
 {/if}
 
 <style>
   .app-container {
-    height: 100vh;
+    height: 100vh; /* Or 100dvh for dynamic viewport height */
     width: 100vw;
     overflow: hidden;
     display: flex;
     flex-direction: column;
     background-color: #1a163f;
-    /* Add padding at the bottom to account for navbar plus safe area */
     padding-bottom: calc(60px + var(--custom-safe-area-bottom, env(safe-area-inset-bottom, 0px)));
     box-sizing: border-box;
   }
 
   .topbar-wrapper {
-    position: fixed;
+    position: fixed; /* Or sticky, depending on desired scroll behavior with main content */
     top: 0;
     left: 0;
     width: 100%;
     z-index: 990;
     flex-shrink: 0;
-    /* Define height EXPLICITLY if Topbar doesn't have one */
-    height: 68px; /* Example Height */
-    background-color: #231d52; /* Example background */
+    height: 68px; /* Adjust to actual Topbar height */
+    background-color: #231d52; /* Or Topbar's actual background */
+    /* Add padding-top for safe area if Topbar is transparent or overlays status bar */
+    padding-top: var(--custom-safe-area-top, env(safe-area-inset-top, 0px));
+    box-sizing: content-box; /* If height is fixed and padding-top adds to it */
   }
+  /* If Topbar height should include safe-area padding: */
+  /* .topbar-wrapper { height: calc(68px + var(--custom-safe-area-top, env(safe-area-inset-top, 0px))); } */
+
 
   .main-content-area {
     flex-grow: 1;
-    overflow: hidden;
-    position: relative;
-    margin-top: 68px;  /* Match Topbar height */
-    /* Add bottom margin for navbar */
-    margin-bottom: calc(env(safe-area-inset-bottom, 0px));
+    overflow: hidden; /* Important for child absolute positioning and transitions */
+    position: relative; /* For screen-transition-wrapper */
+    /* Adjust margin-top to be Topbar's effective height */
+    margin-top: calc(68px + var(--custom-safe-area-top, env(safe-area-inset-top, 0px)));
+    /* margin-bottom is handled by app-container's padding-bottom for the Navbar */
   }
 
   .screen-transition-wrapper {
     position: absolute;
-    inset: 0; /* Fill the main-content-area (between margins) */
-    overflow: hidden; /* Clip content during transition */
-    display: flex; /* Make child fill space */
+    inset: 0;
+    overflow: hidden; 
+    display: flex; 
   }
 
-  /* Make screen component fill the transition wrapper */
-  /* Ensure the screen component itself has height: 100% */
   .screen-transition-wrapper > :global(*) {
-    flex-grow: 1; /* Should fill the flex container */
+    flex-grow: 1;
     width: 100%;
-    /* height: 100%; // Usually handled by flex-grow */
+    height: 100%; /* Ensure screens fill the wrapper */
+    overflow-y: auto; /* Allow individual screens to scroll if their content exceeds viewport */
+    -webkit-overflow-scrolling: touch;
   }
 
-  /* Styling for the Achievements Overlay */
-  .achievements-overlay {
-    position: fixed;
-    inset: 0; /* Cover the whole screen */
-    z-index: 1000; /* High z-index */
-    background-color: rgba(10, 8, 30, 0.5); /* Optional backdrop */
-    backdrop-filter: blur(3px); /* Optional blur */
-    display: flex; /* Allow centering or positioning */
-    /* You might want padding or specific alignment here */
-    padding-top: 68px; /* Example: Space for topbar */
-    padding-bottom: 70px; /* Example: Space for navbar */
+  .form-modal-backdrop {
+    position: fixed; inset: 0;
+    background-color: rgba(10, 8, 30, 0.7);
+    backdrop-filter: blur(4px);
+    z-index: 10010;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 1rem; /* Provides some space around the form on small screens */
     box-sizing: border-box;
-    overflow: hidden; /* Prevent wrapper scroll */
   }
-
-  /* Ensure AchievementsScreen component fills the overlay */
-  /* Adjust selector if AchievementsScreen root element is different */
-  .achievements-overlay > :global(.achievements-page) {
+  .form-wrapper {
     width: 100%;
-    height: 100%; /* Fill the overlay */
-    /* Override background if needed, or let it be transparent */
-    background-color: #1a163f; /* Or make it slightly transparent */
-    border-radius: 0; /* Remove radius if it had one */
-    padding: 1.5rem 1rem 1rem 1rem; /* Adjust padding if needed */
+    max-width: 450px;
+    max-height: 90vh; /* Can be 90dvh for dynamic viewport */
+    /* BaonForm itself will handle its internal scrolling due to its grid layout */
+    /* overflow-y: auto; No need here if BaonForm is designed to scroll internally */
   }
-
-  /* For ManageBaon */
-  .manage-baon-overlay {
+  
+  /* Overlay styles for other modals */
+  .achievements-overlay, .manage-baon-overlay {
     position: fixed; inset: 0; z-index: 1000;
-    background-color: rgba(10, 8, 30, 0.5); backdrop-filter: blur(3px);
-    display: flex; padding-top: 0; padding-bottom: 0;
-    box-sizing: border-box; overflow: hidden;
+    background-color: rgba(10, 8, 30, 0.5); 
+    backdrop-filter: blur(3px);
+    display: flex; 
+    /* Let the child screen component handle its own padding and safe areas */
+    /* padding-top: var(--custom-safe-area-top, env(safe-area-inset-top, 0px)); */
+    /* padding-bottom: var(--custom-safe-area-bottom, env(safe-area-inset-bottom, 0px)); */
+    box-sizing: border-box; 
+    overflow: hidden; 
   }
-  .manage-baon-overlay > :global(*) { /* Target ManageBaonScreen root */
-    width: 100%; height: 100%;
+  .achievements-overlay > :global(*), .manage-baon-overlay > :global(*) {
+    width: 100%; 
+    height: 100%;
+    /* The screen components (AchievementScreen, ManageBaonScreen) should handle their own internal scrolling and padding */
   }
 </style>

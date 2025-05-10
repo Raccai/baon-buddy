@@ -1,93 +1,130 @@
 <script>
-  // Import the single source of truth store
   import { allMeals } from '../lib/mealStore.js'; 
-  import { createEventDispatcher } from 'svelte';
+  import { createEventDispatcher, onDestroy } from 'svelte';
   import { fade } from 'svelte/transition';
   import { flip } from 'svelte/animate';
   import { quintOut } from 'svelte/easing';
-  import { tagStyles } from '../lib/tags.js'; // Adjust path if needed
+  import { tagStyles } from '../lib/tags.js';
   import { getDisplayImageSrc } from '../lib/imageUtils.js';
+  import { showToast } from '../lib/toast.js'; // Assuming you have this for limit toast
 
   const dispatch = createEventDispatcher();
 
-  export let currentSelection = []; // Meals currently selected for the specific day
-  let selectedMealsInternal = [];
-  let sortedCombinedMeals = []; // Holds the sorted list from the store
+  export let currentSelection = []; // Parent provides array of FULL MEAL OBJECTS for initial state
+  
+  let selectedMealsInternal = [];   // Internal state: Array of FULL MEAL OBJECTS
+  let sortedAndFilteredMeals = [];  // Displayed list: Array of FULL MEAL OBJECTS
+  
+  let searchTerm = "";
+  let debouncedSearchTerm = "";
+  let searchTimeoutId = null;
 
-  // Initialize internal state when prop changes
+  // Debounce searchTerm changes
   $: {
-    const validSelection = Array.isArray(currentSelection) ? currentSelection : [];
-    selectedMealsInternal = [...validSelection];
-    // Trigger sorting whenever selection OR the main store changes
-    sortCombinedList($allMeals, selectedMealsInternal);
+    if (searchTimeoutId) clearTimeout(searchTimeoutId);
+    searchTimeoutId = setTimeout(() => {
+      debouncedSearchTerm = searchTerm;
+    }, 250);
   }
 
-  // React directly to the allMeals store changing
-  $: if ($allMeals) {
-    sortCombinedList($allMeals, selectedMealsInternal);
+  // Sync internal selection with the `currentSelection` prop from parent (DayModal)
+  $: {
+    const propSelectionArray = Array.isArray(currentSelection) ? currentSelection : [];
+    if (JSON.stringify(selectedMealsInternal.map(m=>m.id).sort()) !== JSON.stringify(propSelectionArray.map(m=>m.id).sort())) {
+        // console.log('[BaonCardSelector] Prop `currentSelection` changed. Updating internal state.');
+        // console.log('[BaonCardSelector] Old selectedMealsInternal IDs:', JSON.stringify(selectedMealsInternal.map(m=>m.id)));
+        // console.log('[BaonCardSelector] New prop currentSelection IDs:', JSON.stringify(propSelectionArray.map(m=>m.id)));
+        selectedMealsInternal = [...propSelectionArray]; // Make a new array copy from prop
+    }
   }
 
-  // Function now takes the combined list as an argument
-  function sortCombinedList(combinedList, currentInternalSelection) {
-    const selected = [];
-    const unselected = [];
-    const mealsToProcess = combinedList || []; // Use store value or empty array
+  // Main reactive update for the displayed list
+  $: if ($allMeals || selectedMealsInternal || debouncedSearchTerm !== undefined) {
+    applySortAndFilter($allMeals, selectedMealsInternal, debouncedSearchTerm);
+  }
+
+  function applySortAndFilter(sourceMealList, currentInternalFullMealSelection, currentSearch) {
+    const selectedOutput = [];
+    const unselectedOutput = [];
+    const mealsToProcess = sourceMealList || [];
+    const searchLower = typeof currentSearch === 'string' ? currentSearch.toLowerCase().trim() : "";
 
     mealsToProcess.forEach(meal => {
-      if (!meal) return; // Skip invalid entries
-      const keyToCheck = meal.id || meal.name; // Use ID primarily
-      if (isSelected(keyToCheck, currentInternalSelection)) {
-        selected.push(meal);
+      if (!meal || !meal.id) { // Check for meal and meal.id
+          // console.warn("[BaonCardSelector] Meal missing or no ID in applySortAndFilter:", meal);
+          return;
+      }
+      if (searchLower) {
+        const nameMatch = meal.name && meal.name.toLowerCase().includes(searchLower);
+        const typeMatch = meal.type && meal.type.toLowerCase().includes(searchLower);
+        if (!nameMatch && !typeMatch) return; 
+      }
+      const mealKey = meal.id; // Use ID consistently
+      if (currentInternalFullMealSelection.some(selMeal => selMeal.id === mealKey)) {
+        selectedOutput.push(meal);
       } else {
-        unselected.push(meal);
+        unselectedOutput.push(meal);
       }
     });
-
-    // Combine and sort
-    sortedCombinedMeals = [
-      ...selected.sort((a, b) => a.name.localeCompare(b.name)),
-      ...unselected.sort((a, b) => a.name.localeCompare(b.name))
+    sortedAndFilteredMeals = [
+      ...selectedOutput.sort((a, b) => a.name.localeCompare(b.name)),
+      ...unselectedOutput.sort((a, b) => a.name.localeCompare(b.name))
     ];
   }
 
-  function toggleMeal(meal) {
-    if (!meal) return;
-    const keyToCheck = meal.id || meal.name;
-    // Use the current internal state for finding index
-    const index = selectedMealsInternal.findIndex(m => (m.id || m.name) === keyToCheck);
+  function toggleMeal(mealToToggle) {
+    if (!mealToToggle || !mealToToggle.id) {
+        console.error("[BaonCardSelector] toggleMeal called with invalid meal object", mealToToggle);
+        return;
+    }
+    
+    const mealIdToToggle = mealToToggle.id;
     const limit = 3;
-
-    let newSelection = [...selectedMealsInternal]; // Work with a copy
+    let newInternalSelectionArray = [...selectedMealsInternal]; 
+    const index = newInternalSelectionArray.findIndex(m => m.id === mealIdToToggle);
 
     if (index !== -1) {
-      newSelection.splice(index, 1); // Remove if found
-    } else if (newSelection.length < limit) {
-      newSelection.push(meal); // Add if not found and limit not reached
+      newInternalSelectionArray.splice(index, 1);
+    } else if (newInternalSelectionArray.length < limit) {
+      newInternalSelectionArray.push(mealToToggle);
     } else {
-      console.log(`Maximum selection limit (${limit}) reached.`);
       dispatch('limitReached', { limit });
-      return; // Don't update selection or dispatch
+      showToast(`You can select up to ${limit} Baon.`, "warning");
+      return; 
     }
-
-    selectedMealsInternal = newSelection; // Update internal state (triggers reactivity)
-    dispatch('select', [...selectedMealsInternal]); // Dispatch a copy of the new selection
+    selectedMealsInternal = newInternalSelectionArray;
+    dispatch('select', [...selectedMealsInternal]); // Dispatch array of FULL MEAL OBJECTS
   }
 
-  // isSelected now needs the current internal selection passed to it
-  function isSelected(key, currentInternalSelection) {
-    return currentInternalSelection.some(m => (m.id || m.name) === key);
+  function isSelected(mealIdToCheck, currentFullMealSelection) { // Renamed parameter for clarity
+    return currentFullMealSelection.some(m => m.id === mealIdToCheck);
   }
-
-  function viewRecipe(meal, event) {
-      event.stopPropagation();
-    if (meal) dispatch('viewRecipe', meal);
-  }
-
+  
+  function clearSearch() { searchTerm = ""; }
+  function viewRecipe(meal, event) { event.stopPropagation(); if (meal) dispatch('viewRecipe', meal); }
+  onDestroy(() => { if (searchTimeoutId) clearTimeout(searchTimeoutId); });
 </script>
 
+<div class="selector-controls">
+  <input
+    type="search"
+    class="search-input"
+    placeholder="Search Baon..."
+    bind:value={searchTerm}
+    aria-label="Search available Baon"
+  />
+  {#if searchTerm} 
+    <button 
+      class="clear-search-btn" 
+      on:click={clearSearch} 
+      aria-label="Clear search"
+    >×</button>
+  {/if}
+</div>
+
 <div class="selector">
-  {#if sortedCombinedMeals.length > 0}
-    {#each sortedCombinedMeals as meal (meal.id || meal.name)}
+  {#if sortedAndFilteredMeals.length > 0}
+    {#each sortedAndFilteredMeals as meal (meal.id || meal.name)}
       {@const mealKey = meal.id || meal.name}
       {@const isCurrentlySelected = isSelected(mealKey, selectedMealsInternal)}
       {@const isDisabled = selectedMealsInternal.length >= 3 && !isCurrentlySelected}
@@ -137,10 +174,16 @@
     {/each}
   {:else}
     <div class="no-meals" transition:fade>
-      <p>No Baon available!</p>
+      {#if debouncedSearchTerm} <!-- Show message based on debounced term -->
+        <p>No Baon found matching "{debouncedSearchTerm}"!</p>
+      {:else}
+        <p>No Baon available!</p>
+        <span>(Perhaps add some in "Manage Baon"?)</span>
+      {/if}
     </div>
   {/if}
 </div>
+
 
 <style>
   /* Visually hidden class for accessibility */
@@ -171,6 +214,50 @@
   .selector::-webkit-scrollbar { width: 6px; }
   .selector::-webkit-scrollbar-track { background: #eee; border-radius: 10px; }
   .selector::-webkit-scrollbar-thumb { background-color: #ccc; border-radius: 10px; }
+
+  .selector-controls {
+    padding: 0.5rem 0.7rem 0.8rem 0.7rem; /* Adjusted padding */
+    border-bottom: 1px solid #b388eb; /* Separator */
+    flex-shrink: 0; /* Prevent controls from shrinking */
+    position: relative; /* For clear button positioning */
+  }
+
+  .search-input {
+    width: 100%;
+    padding: 0.7rem 1rem;
+    padding-right: 2.5rem; /* Space for clear button */
+    border-radius: 1.5rem; /* Pill shape */
+    border: 1px solid #4a4090;
+    background-color: #2c2663; /* Lighter input bg */
+    color: #fff5e1;
+    font-size: 1rem;
+    box-sizing: border-box;
+  }
+
+  .search-input:focus {
+    outline: none; border-color: #b388eb;
+    box-shadow: 0 0 0 2px rgba(179, 136, 235, 0.3);
+  }
+
+  /* Hide default clear button for search inputs */
+  .search-input::-webkit-search-decoration,
+  .search-input::-webkit-search-cancel-button,
+  .search-input::-webkit-search-results-button,
+  .search-input::-webkit-search-results-decoration {
+    -webkit-appearance: none;
+  }
+
+  .clear-search-btn {
+    position: absolute;
+    right: 1.5rem;
+    top: 40%;
+    transform: translateY(-50%);
+    background: none; border: none; color: #fff5e1a8;
+    font-size: 1.5rem; line-height: 1; padding: 0.2rem; cursor: pointer;
+  }
+  .clear-search-btn:hover {
+    color: #333;
+  }
 
   .mini-card {
     display: flex;
@@ -308,9 +395,9 @@
   }
 
   .recipe-btn svg {
-      width: 20px; /* Control SVG size */
-      height: 20px;
-      display: block; /* Remove extra space */
+    width: 20px; /* Control SVG size */
+    height: 20px;
+    display: block; /* Remove extra space */
   }
 
   .recipe-btn:hover, .recipe-btn:focus-visible {
@@ -321,10 +408,13 @@
   }
 
   .no-meals {
-    text-align: center;
-    padding: 2rem 1rem;
-    color: #666;
-    font-size: 0.9rem;
+    margin-top: 1rem; /* Give some space if it's the only thing */
+  }
+  .no-meals span {
+    font-size: 0.8rem;
+    color: #888;
+    margin-top: 0.3rem;
+    display: block;
   }
 
   /* --- RESPONSIVE STYLES (Matching DayModal's :global) --- */

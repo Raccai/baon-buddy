@@ -1,49 +1,31 @@
 // src/lib/mealStore.js
 import { writable } from 'svelte/store';
-// Import the storage function - it's safe to import the function definition
-import { getAllMeals as getAllMealsFromStorage } from './storage.js';
+// getAllMeals will be imported dynamically or App.svelte will call loadMealsIntoStoreFromFS
 
-// --- Create Writable Store - Initialize EMPTY ---
-const allMealsStore = writable([]); // <<< Initialize EMPTY array
-console.log("[mealStore] Store created empty.");
+export const _allMealsStore = writable([]); // Initialize empty
+console.log("[mealStore] Store created (initially empty for async FS load).");
 
-// --- Function to load initial/refreshed data ---
-// This combines initialization and refresh logic
-let storeInitialized = false;
-function loadOrRefreshMeals() {
+// Called from App.svelte onMount
+export async function loadMealsIntoStoreFromFS() {
+    console.log("[mealStore] Attempting load from FS via storage.js::getAllMeals...");
     try {
-        if (!storeInitialized) {
-            console.log("[mealStore] Attempting to load initial meal data...");
-        } else {
-            console.log("[mealStore] Refreshing meals store...");
-        }
-        // Fetch latest combined list from storage (getAllMeals already handles cache)
-        const currentMeals = getAllMealsFromStorage();
-        allMealsStore.set(currentMeals); // Update the store with actual data
-        storeInitialized = true;
-        if (!storeInitialized) console.log("[mealStore] Initial meal data loaded.");
-
+        const { getAllMeals } = await import('./storage.js'); // Ensure storage.js doesn't import this file at top level
+        const mealsFromStorage = await getAllMeals();
+        _allMealsStore.set(mealsFromStorage || []);
+        console.log(`[mealStore] FS Load: Store updated with ${mealsFromStorage?.length || 0} meals.`);
     } catch (e) {
-        console.error("[mealStore] Error loading/refreshing meals store:", e);
-        allMealsStore.set([]); // Ensure it's empty on error
-        storeInitialized = true; // Mark as initialized even on error to prevent loops
+        console.error("[mealStore] Error loading meals into store from FS:", e);
+        _allMealsStore.set([]);
     }
 }
 
-
-// --- Exported REFRESH function (called by storage.js) ---
-// This now just calls the combined load/refresh function
+// This function is primarily for storage.js to call after saveAllMeals if it doesn't update _allMealsStore directly
+// OR for other parts of the app to manually trigger a refresh.
+// Since saveAllMeals in storage.js now directly calls _allMealsStore.set(), this might be less critical
+// but good to have.
 export function refreshMealsStore() {
-    loadOrRefreshMeals();
+    console.log("[mealStore] Refresh triggered, reloading from FS...");
+    loadMealsIntoStoreFromFS();
 }
 
-// --- REMOVE initializeMealsStore function ---
-// export function initializeMealsStore() { ... }
-
-// --- Export the main store ---
-export { allMealsStore as allMeals };
-
-// --- Trigger initial load slightly after module evaluation ---
-if (typeof window !== 'undefined') {
-    setTimeout(loadOrRefreshMeals, 0); // Schedule loading for the next tick
-}
+export { _allMealsStore as allMeals };

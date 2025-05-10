@@ -1,20 +1,10 @@
 <script>
     // @ts-ignore
-    // @ts-ignore
-    // @ts-ignore
-    // @ts-ignore
-    // @ts-ignore
-    // @ts-ignore
     import { createEventDispatcher, onMount } from 'svelte';
     import { tagStyles } from '../lib/tags.js'; // Adjust path if needed
     import { fly } from 'svelte/transition';
     import { quintOut } from 'svelte/easing'; // Import easing
     import { Capacitor } from '@capacitor/core';
-    // @ts-ignore
-    // @ts-ignore
-    // @ts-ignore
-    // @ts-ignore
-    // @ts-ignore
     // @ts-ignore
     import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
     import { showToast } from '../lib/toast.js';
@@ -40,6 +30,10 @@
     let imagePreviewUrl = null; // For displaying selected file preview (Data URL)
     let selectedFile = null;    // Holds the actual File object selected by user
     let imageAction = 'keep'; // 'keep', 'replace', 'remove' (for edit mode)
+    // @ts-ignore
+    let originalDefaultIdFromInitial = null; // <<< ADD THIS STATE VARIABLE
+    // @ts-ignore
+    let isUserDefinedFromInitial = false;
 
     // Function to generate a unique filename
     function generateUniqueFilename(originalName = 'image') { // Add default name
@@ -50,9 +44,8 @@
 
     // --- Initialize/Reset Form ---
     // @ts-ignore
-    // @ts-ignore
-     // @ts-ignore
-       $: {
+   // @ts-ignore
+     $: {
         // Reset relevant state on prop changes
         selectedFile = null; // Always clear selected file state
         imageAction = (formMode === 'add') ? 'add' : 'keep'; // Set initial action based on mode
@@ -78,6 +71,10 @@
             talaTip = initialData.recipe?.talaTip || '';
             // @ts-ignore
             formTitle = `Edit "${initialData.name || 'Baon'}"`;
+            // @ts-ignore
+            originalDefaultIdFromInitial = initialData.originalDefaultId || null; 
+            // @ts-ignore
+            isUserDefinedFromInitial = initialData.isUserDefined;
 
             // Set initial preview ONLY from currentImageUrl
             if (currentImageUrl) {
@@ -87,11 +84,13 @@
             } else { imagePreviewUrl = null; }
 
         } else if (formMode === 'add') {
-             // Clear fields for add mode
+            // Clear fields for add mode
             internalId = null; name = ''; type = mealTypes[0] || 'custom'; message = ''; emoji = '';
             currentImageUrl = null; ingredientsStr = ''; stepsStr = ''; talaTip = '';
             formTitle = 'Add New Baon';
             imagePreviewUrl = null; // Ensure preview is clear
+            originalDefaultIdFromInitial = null; // <<< CLEAR IT
+            isUserDefinedFromInitial = false;
         }
     }
 
@@ -277,7 +276,8 @@
 
         // 2. Construct final meal data object
         const mealData = {
-            ...(formMode === 'edit' && internalId && { id: internalId }),
+            // ...(formMode === 'edit' && internalId && { id: internalId }),
+            id: internalId,
             name: name.trim(),
             type: type,
             message: message.trim(),
@@ -288,7 +288,8 @@
                 steps: parseList(stepsStr, '\n'),
                 talaTip: talaTip.trim() || null
             },
-            // Let storage functions handle isUserDefined flag on add/update
+            originalDefaultId: originalDefaultIdFromInitial,
+            isUserDefined: isUserDefinedFromInitial   
         };
 
         // 3. Dispatch the save event
@@ -306,118 +307,173 @@
 
 <!-- Form Structure -->
 <div class="baon-form-container" transition:fly={{ y: 20, duration: 300, easing: quintOut }}>
-    <h3 class="form-title">{formTitle}</h3>
+    <!-- The title is outside the form structure to stay at the top -->
+    <h3 class="form-title">{formTitle}</h3> <!-- Grid Row 1 -->
+
     {#key formMode + internalId}
-    <form class="baon-form" on:submit|preventDefault={handleSubmit}>
-        <div class="form-group">
-            <label for="baon-name-{formMode}">Name*</label> <!-- Unique ID per instance -->
-            <input type="text" id="baon-name-{formMode}" bind:value={name} required placeholder="e.g., Chicken Adobo">
-        </div>
+        <!-- This div.form-content-wrapper will be Grid Row 2 (the 1fr scrollable part's container) -->
+        <div class="form-content-wrapper">
+            <!-- Scrollable Content Area -->
+            <div class="form-scrollable-content">
+                <form class="baon-form" on:submit|preventDefault={handleSubmit} id="baon-actual-form-{formMode}-{internalId || 'add'}">
+                    <!-- Form Fields -->
+                    <div class="form-group">
+                        <label for="baon-name-{formMode}">Name*</label>
+                        <input type="text" id="baon-name-{formMode}" bind:value={name} required placeholder="e.g., Chicken Adobo">
+                    </div>
 
-        <div class="form-group">
-            <label for="baon-type-{formMode}">Type</label>
-            <select id="baon-type-{formMode}" bind:value={type}>
-                {#each mealTypes as typeOption}
-                    {#if tagStyles[typeOption]} <!-- Ensure tag exists -->
-                       <option value={typeOption}>{tagStyles[typeOption].label || typeOption}</option>
-                    {/if}
-                {/each}
-                 <option value="custom">Custom</option>
-            </select>
-        </div>
+                    <div class="form-group">
+                        <label for="baon-type-{formMode}">Type</label>
+                        <select id="baon-type-{formMode}" bind:value={type}>
+                            {#each mealTypes as typeOption}
+                                {#if tagStyles[typeOption]}
+                                <option value={typeOption}>{tagStyles[typeOption].label || typeOption}</option>
+                                {/if}
+                            {/each}
+                            <option value="custom">Custom</option>
+                        </select>
+                    </div>
 
-         <div class="form-group">
-            <label for="baon-emoji-{formMode}">Emoji</label>
-            <input type="text" id="baon-emoji-{formMode}" bind:value={emoji} placeholder="e.g., 🍗 (Optional)">
-        </div>
+                    <div class="form-group">
+                        <label for="baon-emoji-{formMode}">Emoji</label>
+                        <input type="text" id="baon-emoji-{formMode}" bind:value={emoji} placeholder="e.g., 🍗 (Optional)">
+                    </div>
 
-        <!-- Image Input -->
-        <div class="form-group">
-            <label for="baon-image-file-{internalId || 'add'}">Image (Optional)</label>
-            <input type="file" id="baon-image-file-{internalId || 'add'}" accept="image/*" on:change={handleFileSelect} />
-            {#if imagePreviewUrl}
-                <div class="image-preview-container">
-                    <img src={imagePreviewUrl} alt="Preview" class="image-preview"/>
-                    <button type="button" class="btn-remove-img" on:click={handleRemoveImage} title="Remove Image">×</button>
-                </div>
-            {:else if formMode === 'edit' && currentImageUrl}
-                <p class="current-image-note">(Keeping current image)</p>
-            {/if}
-        </div>
+                    <div class="form-group">
+                        <label for="baon-image-file-{internalId || 'add'}">Image (Optional)</label>
+                        <input type="file" id="baon-image-file-{internalId || 'add'}" accept="image/*" on:change={handleFileSelect} />
+                        {#if imagePreviewUrl}
+                            <div class="image-preview-container">
+                                <img src={imagePreviewUrl} alt="Preview" class="image-preview"/>
+                                <button type="button" class="btn-remove-img" on:click={handleRemoveImage} title="Remove Image">×</button>
+                            </div>
+                        {:else if formMode === 'edit' && currentImageUrl}
+                            <p class="current-image-note">(Keeping current image)</p>
+                        {/if}
+                    </div>
 
-        <div class="form-group">
-            <label for="baon-message-{formMode}">Short Message/Tagline</label>
-            <input type="text" id="baon-message-{formMode}" bind:value={message} placeholder="e.g., A classic favorite!">
-        </div>
+                    <div class="form-group">
+                        <label for="baon-message-{formMode}">Short Message/Tagline</label>
+                        <input type="text" id="baon-message-{formMode}" bind:value={message} placeholder="e.g., A classic favorite!">
+                    </div>
 
-        <hr class="separator">
-        <h4 class="recipe-title">Recipe Details (Optional)</h4>
+                    <hr class="separator">
+                    <h4 class="recipe-title">Recipe Details (Optional)</h4>
 
-        <div class="form-group">
-            <label for="baon-ingredients-{formMode}">Ingredients (comma-separated)</label>
-            <textarea id="baon-ingredients-{formMode}" rows="3" bind:value={ingredientsStr} placeholder="e.g., Chicken, Soy Sauce, Vinegar, Garlic"></textarea>
-        </div>
+                    <div class="form-group">
+                        <label for="baon-ingredients-{formMode}">Ingredients (comma-separated)</label>
+                        <textarea id="baon-ingredients-{formMode}" rows="3" bind:value={ingredientsStr} placeholder="e.g., Chicken, Soy Sauce, Vinegar, Garlic"></textarea>
+                    </div>
 
-        <div class="form-group">
-            <label for="baon-steps-{formMode}">Steps (one step per line)</label>
-            <textarea id="baon-steps-{formMode}" rows="5" bind:value={stepsStr} placeholder="1. Marinate chicken...{'\n'}2. Sauté garlic..."></textarea>
-        </div>
+                    <div class="form-group">
+                        <label for="baon-steps-{formMode}">Steps (one step per line)</label>
+                        <textarea id="baon-steps-{formMode}" rows="5" bind:value={stepsStr} placeholder="1. Marinate chicken...{'\n'}2. Sauté garlic..."></textarea>
+                    </div>
 
-         <div class="form-group">
-            <label for="baon-tala-tip-{formMode}">Tala's Tip</label>
-            <input type="text" id="baon-tala-tip-{formMode}" bind:value={talaTip} placeholder="e.g., Add a bit of sugar!">
+                    <div class="form-group">
+                        <label for="baon-tala-tip-{formMode}">Tala's Tip</label>
+                        <input type="text" id="baon-tala-tip-{formMode}" bind:value={talaTip} placeholder="e.g., Add a bit of sugar!">
+                    </div>
+                </form>
+            </div>
+            <!-- REMOVE form-actions from here -->
         </div>
-
-        <div class="form-actions">
-            <button type="button" class="btn-cancel" on:click={handleCancel}>Cancel</button>
-            <button type="submit" class="btn-save">{formMode === 'edit' ? 'Update Baon' : 'Add Baon'}</button> <!-- Dynamic button text -->
-        </div>
-    </form>
     {/key}
+    
+    <!-- Fixed Footer with Actions - MOVED HERE (Grid Row 3) -->
+    <div class="form-actions">
+        <button type="button" class="btn-cancel" on:click={handleCancel}>Cancel</button>
+        <!-- The on:click handler will trigger submit.
+             Optionally, link to form for better semantics if Enter key submission in form fields is desired:
+             form="baon-actual-form-{formMode}-{internalId || 'add'}"
+        -->
+        <button type="submit" class="btn-save" on:click={handleSubmit} >{formMode === 'edit' ? 'Update Baon' : 'Add Baon'}</button>
+    </div>
 </div>
 
 <style>
     .baon-form-container {
-        background-color: #2c2663;
-        padding: 1.5rem 1.8rem;
-        border-radius: 12px;
-        border: 1px solid #4a4090;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        color: #fff5e1;
-        width: 100%;
-        box-sizing: border-box;
-        /* --- ADD THESE --- */
-        overflow-y: auto; /* Allow vertical scroll INSIDE the container if needed */
-        max-height: 100%; /* Ensure it doesn't try to be taller than its wrapper */
-        display: flex; /* Use flexbox */
-        flex-direction: column; /* Stack title and form */
-        /* --- End Adds --- */
-    }
+        /* --- Full Screen Styling --- */
+        position: fixed; /* Position it relative to the viewport */
+        top: 0;
+        left: 0;
+        width: 100vw;    /* Full viewport width */
+        height: 100vh;   /* Full viewport height */
+        z-index: 1000;   /* Ensure it's on top (adjust if you have other fixed/absolute elements) */
 
-     /* Add specific class to form for potential scroll */
-    .baon-form {
-        display: flex;
-        flex-direction: column;
-        gap: 0.8rem; /* Space between groups */
+        /* --- Appearance for Full Screen (Simplified) --- */
+        background-color: #2c2663;
+        color: #fff5e1;
+        border-radius: 0; /* Remove rounded corners for a true full-screen feel */
+        border: none;     /* Remove border */
+        box-shadow: none; /* Remove shadow */
+
+        /* --- Internal Layout (Grid - Keep as before) --- */
+        display: grid;
+        grid-template-rows:
+            auto    /* 1) h3.form-title */
+            1fr     /* 2) div.form-content-wrapper (scrollable content) */
+            auto;   /* 3) div.form-actions (fixed footer) */
+        gap: 0;          /* No gap between grid rows */
+        overflow: hidden;/* CRUCIAL: Prevent the full-screen container itself from scrolling */
+        box-sizing: border-box;
+
+        /* --- Padding --- */
+        /* Top and side padding for the content within the full-screen view.
+        Bottom padding will be effectively provided by .form-actions' own padding. */
+        padding: 1.5rem 1.8rem 0;
     }
 
     .form-title {
-        text-align: center;
-        color: #fff;
-        margin: 0 0 1.5rem 0;
-        font-size: 1.4rem;
+        text-align: center; 
+        color: #fff; 
+        margin: 0 0 1.2rem 0;
+        font-size: 1.4rem; 
         font-weight: 600;
+        flex-shrink: 0; 
     }
+
+    /* This is the keyed element, and it will be the middle (1fr) row of .baon-form-container's grid */
+    .form-content-wrapper {
+        /* grid-row: 2; /* This is now implicit due to its position, can be removed for clarity */
+        display: flex; /* This is important for its child .form-scrollable-content */
+        flex-direction: column;
+        overflow: hidden; /* Crucial: allows child to manage its own scroll without this wrapper scrolling */
+        min-height: 0; /* Good practice for flex children that might contain scrolling content */
+    }
+
+    /* This is the actual scrollable area inside .form-content-wrapper */
+    .form-scrollable-content {
+        flex: 1;         /* Takes up available space in .form-content-wrapper */
+        overflow-y: auto; /* Enables vertical scrolling */
+        padding: 0.2rem 0.5rem 1rem 0.2rem; /* Keep internal padding */
+        /* Scrollbar styling */
+        scrollbar-width: thin;
+        scrollbar-color: #6a5acd #1a163f;
+    }
+    
+    .form-scrollable-content::-webkit-scrollbar { width: 6px; }
+    .form-scrollable-content::-webkit-scrollbar-track { background: #1a163f; border-radius: 3px; }
+    .form-scrollable-content::-webkit-scrollbar-thumb { background-color: #4a4090; border-radius: 3px; }
+
+    .baon-form {
+        display: flex;
+        flex-direction: column;
+        gap: 0.8rem;
+    }
+
     .form-group {
-        margin-bottom: 0.5rem; /* Reduced margin */
+        margin-bottom: 0.4rem;
     }
+
     label {
         display: block;
         margin-bottom: 0.4rem;
         font-size: 0.9rem;
         font-weight: 500;
-        color: #fff5e1b3; /* Dimmer labels */
+        color: #fff5e1b3;
     }
+
     input[type="text"],
     textarea,
     select {
@@ -425,22 +481,25 @@
         padding: 0.7rem 0.8rem;
         border-radius: 6px;
         border: 1px solid #4a4090;
-        background-color: #1a163f; /* Darker input bg */
+        background-color: #1a163f;
         color: #fff5e1;
         font-size: 1rem;
         box-sizing: border-box;
         transition: border-color 0.2s ease, box-shadow 0.2s ease;
     }
+
     input:focus, textarea:focus, select:focus {
         outline: none;
         border-color: #b388eb;
         box-shadow: 0 0 0 2px rgba(179, 136, 235, 0.3);
     }
-     textarea {
+
+    textarea {
         resize: vertical;
         min-height: 60px;
         line-height: 1.5;
     }
+
     select {
         appearance: none;
         background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%23fff5e1b3' height='24' viewBox='0 0 24 24' width='24'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
@@ -450,6 +509,7 @@
         padding-right: 2.5rem;
         cursor: pointer;
     }
+
     input::placeholder, textarea::placeholder {
         color: #fff5e170;
         opacity: 1;
@@ -460,6 +520,7 @@
         border-top: 1px dashed #4a4090;
         margin: 1.5rem 0;
     }
+
     .recipe-title {
         font-size: 1.1rem;
         color: #b388eb;
@@ -467,56 +528,67 @@
         text-align: center;
     }
 
+    /* Fixed footer with action buttons - now a direct child of .baon-form-container */
     .form-actions {
-        margin-top: 1.8rem; /* More space before actions */
+        /* ... (keep existing styles like border-top, background, display, justify-content, gap) ... */
+        border-top: 1px solid #4a4090;
+        background-color: #2c2663;
         display: flex;
-        justify-content: space-between; /* Spread buttons */
+        justify-content: space-between;
         gap: 1rem;
+        flex-shrink: 0;
+
+        /* This padding provides bottom space for the entire view and matches side padding */
+        padding: 1rem 1.8rem 1.5rem;
     }
 
     button {
-        padding: 0.8rem 1.2rem; /* Slightly larger buttons */
+        padding: 0.8rem 1.2rem;
         border: none;
         border-radius: 8px;
         font-weight: 600;
         cursor: pointer;
         transition: all 0.2s ease;
         font-size: 1rem;
-        flex-grow: 1; /* Make buttons take equal width */
+        flex-grow: 1; 
     }
+
     .btn-cancel {
         background-color: transparent;
         color: #fff5e1a8;
         border: 1px solid #4a4090;
     }
+
     .btn-cancel:hover {
         background-color: #4a409060;
         color: #fff5e1;
     }
+
     .btn-save {
-        background-color: #b388eb; /* Accent color */
-        color: #1a163f; /* Dark text */
+        background-color: #b388eb;
+        color: #1a163f;
         box-shadow: 0 2px 5px rgba(179, 136, 235, 0.3);
     }
+
     .btn-save:hover {
         background-color: #c7a4ff;
         transform: translateY(-1px);
         box-shadow: 0 4px 8px rgba(179, 136, 235, 0.4);
     }
 
-    /* --- Styles for File Input & Preview --- */
+    /* Image preview styles */
     input[type="file"] {
         background-color: #1a163f;
         color: #fff5e1b3;
-        padding: 0.5rem; /* Adjust padding */
+        padding: 0.5rem;
         border-radius: 6px;
         border: 1px solid #4a4090;
-        font-size: 0.9rem; /* Adjust font size */
+        font-size: 0.9rem;
         cursor: pointer;
         width: 100%;
     }
+
     input[type="file"]::file-selector-button {
-        /* Style the button part */
         background-color: #4a4090;
         color: #fff5e1;
         border: none;
@@ -526,28 +598,31 @@
         cursor: pointer;
         transition: background-color 0.2s ease;
     }
+
     input[type="file"]::file-selector-button:hover {
         background-color: #6a5acd;
     }
 
     .image-preview-container {
         margin-top: 0.8rem;
-        position: relative; /* For positioning remove button */
-        max-width: 150px; /* Limit preview size */
+        position: relative;
+        max-width: 150px;
         border: 1px solid #4a4090;
         border-radius: 8px;
-        overflow: hidden; /* Clip image to border radius */
+        overflow: hidden;
     }
+
     .image-preview {
         display: block;
         width: 100%;
         height: auto;
     }
+
     .btn-remove-img {
         position: absolute;
         top: 4px;
         right: 4px;
-        background-color: rgba(255, 0, 0, 0.7); /* Red semi-transparent */
+        background-color: rgba(255, 0, 0, 0.7);
         color: white;
         border: none;
         border-radius: 50%;
@@ -564,6 +639,7 @@
         box-shadow: 0 1px 3px rgba(0,0,0,0.3);
         transition: background-color 0.2s ease;
     }
+
     .btn-remove-img:hover {
         background-color: rgba(200, 0, 0, 0.9);
     }
@@ -575,17 +651,24 @@
         margin-top: 0.5rem;
     }
 
-    /* Responsive adjustments for form on larger screens if needed */
+    /* Responsive adjustments */
     @media (min-width: 768px) {
         .baon-form-container {
-            padding: 2rem;
+            padding: 2rem 2rem 0; /* Slightly more padding on larger screens */
         }
-        .form-title { font-size: 1.6rem; margin-bottom: 2rem;}
+        .form-title {
+            font-size: 1.6rem;
+            margin-bottom: 1.5rem; /* Adjusted from 2rem to give a bit more content space */
+        }
+        /* Keep other responsive styles for inputs, labels, etc. as they are likely still good */
         label { font-size: 1rem; }
         input, textarea, select { font-size: 1.1rem; padding: 0.8rem 1rem; }
         textarea { min-height: 80px; }
         button { padding: 0.9rem 1.5rem; font-size: 1.05rem; }
         .recipe-title { font-size: 1.25rem; }
-    }
 
+        .form-actions {
+            padding: 1.2rem 2rem 1.8rem; /* Match side padding and provide bottom space */
+        }
+    }
 </style>

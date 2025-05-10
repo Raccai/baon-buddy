@@ -15,12 +15,12 @@
   const dispatch = createEventDispatcher();
 
   let suggestButtonElement;
-  let favoriteNames = getFavorites().map(meal => meal.name);
+  export let favoriteNames = [];
   let suggestedMeals = [];
   let bounce = false;
 
   function dispatchViewRecipe(meal) {
-    dispatch('viewRecipe', meal); // Dispatch event up to App.svelte
+    dispatch('viewRecipe', meal.detail); // Forward event.detail if meal is in e.detail
   }
 
   const FORCE_ONBOARDING_TESTING = false; // Keep for testing
@@ -105,35 +105,26 @@
     checkAndUnlockAchievements();
   }
 
+  function forwardEditEvent(event) {
+    dispatch('editBaon', event.detail);
+  }
+
+  function handleFaveChangeFromCard() {
+    dispatch('requestFavoriteRefresh');
+  }
+
   onMount(() => {
     console.log("Home.svelte onMount");
-  
-    // Start onboarding check after delay
     setTimeout(startOnboardingHints, 300);
-  
-    // Subscribe to the store to generate the *first* meal
-    // Unsubscribe is handled automatically by Svelte for $: blocks
-    // OR use a manual unsubscribe if preferred
     const unsubscribe = allMeals.subscribe(currentMeals => {
-      console.log("Home received allMeals update, length:", (currentMeals || []).length);
-      // Generate only if meals are loaded AND we haven't suggested one yet
       if (currentMeals && currentMeals.length > 0 && suggestedMeals.length === 0) {
-        console.log("Store has meals and suggestion is empty. Generating initial meal.");
         generateMeals();
-        // Optional: unsubscribe after first generation if needed
-        // unsubscribe();
       } else if (currentMeals && currentMeals.length === 0) {
-        console.log("Store updated, but meal list is empty.");
-        suggestedMeals = []; // Ensure placeholder shows if list becomes empty
+        suggestedMeals = [];
       }
     });
-  
-    // --- Cleanup ---
-    // return () => {
-    //     console.log("Home unsubscribing from allMeals");
-    //     unsubscribe();
-    // };
-  
+    // If you need to clean up the subscription, though Svelte often handles it:
+    // return () => unsubscribe();
   });
 </script>
 
@@ -162,15 +153,14 @@
       <div class="card-container">
         {#if suggestedMeals.length > 0}
           <div id="home-baon-card">
-            {#each suggestedMeals as meal (meal.name)}
+            {#each suggestedMeals as meal (meal.id || meal.name)} <!-- Key by ID first -->
               <BaonCard
-                on:viewRecipe={(e) => dispatchViewRecipe(e.detail)}
                 {meal}
-                {favoriteNames}
+                {favoriteNames} 
                 triggerBounce={bounce}
-                on:faveChange={() => {
-                  favoriteNames = getFavorites().map(m => m.name);
-                }}
+                on:viewRecipe={dispatchViewRecipe}
+                on:editBaon={forwardEditEvent}
+                on:faveChange={handleFaveChangeFromCard} 
               />
             {/each}
           </div>
@@ -266,6 +256,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-items: stretch;
     z-index: 5;
     gap: 0.8rem;
   }

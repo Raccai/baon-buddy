@@ -1,29 +1,35 @@
 <script>
-    import { createEventDispatcher } from 'svelte'; // Import dispatcher for close event
+    import { createEventDispatcher } from 'svelte';
     import { achievements as achievementDefs } from '../../lib/achievementsData.js';
-    import { unlockedAchievements } from '../../lib/achievementStore.js';
-    import { fade, fly } from 'svelte/transition'; // Import transitions
-    import { quintOut } from 'svelte/easing';    // Import easing
+    import { unlockedAchievements } from '../../lib/achievementStore.js'; // This is the Svelte store
+    import { fade, fly } from 'svelte/transition';
+    import { quintOut } from 'svelte/easing';
     import BaonBuddyAchievementsTitle from "/titles/BaonBuddyAchievements.png"; 
 
     const dispatch = createEventDispatcher();
-
-    // No 'visible' prop needed if App.svelte controls rendering with #if
-    // export let visible = false;
-
     let achievementsWithStatus = [];
-    $: achievementsWithStatus = achievementDefs.map(def => ({
-        ...def,
-        unlocked: $unlockedAchievements.includes(def.id)
-    })).sort((a, b) => {
-        if (a.unlocked !== b.unlocked) return a.unlocked ? -1 : 1;
-        const indexA = achievementDefs.findIndex(d => d.id === a.id);
-        const indexB = achievementDefs.findIndex(d => d.id === b.id);
-        return indexA - indexB;
-    });
+
+    $: {
+        console.log("[AchievementScreen] $unlockedAchievements type:", typeof $unlockedAchievements);
+        console.log("[AchievementScreen] $unlockedAchievements value:", JSON.stringify($unlockedAchievements));
+        if (Array.isArray($unlockedAchievements)) {
+            achievementsWithStatus = achievementDefs.map(def => ({
+                ...def,
+                unlocked: $unlockedAchievements.includes(def.id)
+            })).sort((a, b) => {
+                if (a.unlocked !== b.unlocked) return a.unlocked ? -1 : 1;
+                const indexA = achievementDefs.findIndex(d => d.id === a.id);
+                const indexB = achievementDefs.findIndex(d => d.id === b.id);
+                return indexA - indexB;
+            });
+        } else {
+            console.error("[AchievementScreen] $unlockedAchievements is NOT an array!", $unlockedAchievements);
+            achievementsWithStatus = achievementDefs.map(def => ({ ...def, unlocked: false })).sort(/* ... */); // Fallback
+        }
+    }
 
     function closeModal() {
-        dispatch('close'); // Dispatch close event to App.svelte
+        dispatch('close');
     }
 </script>
 

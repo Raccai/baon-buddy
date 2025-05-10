@@ -1,18 +1,17 @@
 <script>
   import BaonCard from '../BaonCard.svelte';
-  import { getFavorites } from "../../lib/storage"; // Keep for initial favorite check? Or pass down from App?
+  // REMOVE: import { getFavorites } from "../../lib/storage";
   import RecipeSheet from "../RecipeSheet.svelte";
   import { tagStyles } from "../../lib/tags.js";
   import { fade, slide } from 'svelte/transition';
-  // --- Use the reactive store ---
-  import { allMeals } from "../../lib/mealStore.js"; 
-  import { meals as defaultMeals } from "../../lib/meals.js";
-  // --- Onboarding Imports ---
-  import { onMount, tick } from 'svelte';
+  import { allMeals } from "../../lib/mealStore.js";
+  // import { meals as defaultMeals } from "../../lib/meals.js"; // Not used if $allMeals has defaults
+  import { createEventDispatcher, onMount, tick } from 'svelte';
   import { getOnboardingStatus, markScreenAsDone, isScreenDone, isOverallOnboardingComplete } from '../../lib/onboardingStore.js';
   import HintPopover from '../HintPopover.svelte';
   import SearchIcon from '../../assets/SearchIcon.svelte';
   import { quintOut } from 'svelte/easing';
+  import { getFavorites } from '../../lib/storage';
 
   let selectedFilters = [];
   let filteredMeals = []; // Initialize empty, will be populated by reactive block
@@ -21,8 +20,10 @@
   let searchTerm = ''; // State for search input
   let showSearchBar = false;
 
+  const dispatch = createEventDispatcher();
+
   // Initialize favoriteNames directly or receive as prop if App manages it centrally
-  let favoriteNames = getFavorites().map(meal => meal.name);
+  export let favoriteNames = [];
 
   // Assume tagStyles has all valid tags as keys
   const allTags = Object.keys(tagStyles);
@@ -57,7 +58,14 @@
 
       }).sort((a, b) => a.name.localeCompare(b.name));
   }
+
+  function forwardEditEvent(event) {
+    dispatch('editBaon', event.detail);
+  }
   
+  function handleFaveChangeFromCard() {
+    dispatch('requestFavoriteRefresh');
+  }
 
   function toggleFilter(tag) {
     if (selectedFilters.includes(tag)) {
@@ -76,14 +84,6 @@
     showRecipe = false;
     selectedMeal = null; // Clear selected meal
   }
-
-  // Refresh local favoriteNames state when a BaonCard event occurs
-  // This is needed if BaonCard directly uses this prop for its heart icon state
-  function refreshFavorites() {
-    console.log("BaonList refreshing favorites state");
-    favoriteNames = getFavorites().map(meal => meal.name);
-  }
-
   // --- Onboarding Logic ---
   const FORCE_ONBOARDING_TESTING = false; // Set to false for normal behavior
   const screenName = 'baonlist';
@@ -92,8 +92,8 @@
   let currentHintData = null;
   const baonListHints = [
     { targetSelector: '#baonlist-search', text: '1. Type here to search for specific Baon by name!', position: 'bottom' },
-    { targetSelector: '#baonlist-filters', text: '1. Tap these tags to filter the Baon list!', position: 'bottom' },
-    { targetSelector: '#first-baon-card-wrapper', text: '2. Here are the Baon ideas! Tap the icon on the right to see a recipe, or tap the heart to add/remove from favorites.', position: 'bottom' },
+    { targetSelector: '#baonlist-filters', text: '2. Tap these tags to filter the Baon list!', position: 'bottom' },
+    { targetSelector: '#first-baon-card-wrapper', text: '3. Here are the Baon ideas! Tap the icon on the right to see a recipe, or tap the heart to add/remove from favorites.', position: 'bottom' },
   ];
   const totalBaonListHints = baonListHints.length;
   let onboardingCheckStarted = false;
@@ -184,7 +184,6 @@
         <div class="search-wrapper">
           <input
             type="search"
-            id="baonlist-search"
             placeholder="Search Baon..."
             bind:value={searchTerm}
             aria-label="Search Baon List"
@@ -205,6 +204,7 @@
           on:click={() => showSearchBar = !showSearchBar}
           aria-label={showSearchBar ? "Hide Search Bar" : "Show Search Bar"}
           aria-expanded={showSearchBar}
+          id="baonlist-search"
         >
           <span class="icon"><SearchIcon /></span> 
         </button>
@@ -232,13 +232,14 @@
     {#if filteredMeals.length > 0}
       <div class="meals-grid">
          <!-- Key by unique ID -->
-        {#each filteredMeals as meal, i (meal.id || meal.name)}
+        {#each filteredMeals as meal, i (meal.id || meal.name)} 
           <div id={i === 0 ? 'first-baon-card-wrapper' : null}>
             <BaonCard
-              on:viewRecipe={(e) => openRecipe(e.detail)}
               {meal}
-              {favoriteNames}
-              on:faveChange={refreshFavorites} 
+              {favoriteNames} 
+              on:viewRecipe={(e) => openRecipe(e.detail.meal || e.detail)} 
+              on:editBaon={forwardEditEvent}
+              on:faveChange={handleFaveChangeFromCard} 
             />
           </div>
         {/each}

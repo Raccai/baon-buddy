@@ -3,10 +3,10 @@
   import { createEventDispatcher } from 'svelte';
   import { fly, fade } from 'svelte/transition';
   import { quintOut } from 'svelte/easing'; // Good easing for slide
-  import Favorites from "../assets/Favorites.svelte";
-  import Settings from "../assets/Settings.svelte";
+  import FavoritesIcon from "../assets/Favorites.svelte";
+  import SettingsIcon from "../assets/Settings.svelte";
   import ManageBaonIcon from "../assets/ManageBaonIcon.svelte";
-  import BaonList from "../assets/BaonList.svelte";
+  import BaonListIcon from "../assets/BaonList.svelte";
   import AchievementsIcon from '../assets/AchievementsIcon.svelte';
   import BaonBuddySideMenu from "/titles/BaonBuddySideMenu.png";
   import AddIcon from '../assets/AddIcon.svelte';
@@ -61,12 +61,12 @@
     <nav class="menu-nav" transition:fade={{duration: 200, delay: 100}}>
       <!-- Baon List Navigation -->
       <button class="menu-item" on:click={() => handleMenuAction('navigate', 'baonlist')}>
-        <span class="menu-icon"><BaonList /></span>
+        <span class="menu-icon"><BaonListIcon /></span>
         <span class="menu-label">Baon List</span>
       </button>
       <!-- Favorites Modal Toggle -->
       <button class="menu-item" on:click={() => handleMenuAction('toggleFavorites')}>
-        <span class="menu-icon"><Favorites /></span>
+        <span class="menu-icon"><FavoritesIcon /></span>
         <span class="menu-label">Favorites</span>
       </button>
       <!-- Manage Baon Screen Toggle -->
@@ -76,7 +76,7 @@
       </button> -->
       <!-- Settings Modal Toggle -->
       <button class="menu-item" on:click={() => handleMenuAction('openSettings')}>
-        <span class="menu-icon"><Settings /></span>
+        <span class="menu-icon"><SettingsIcon /></span>
         <span class="menu-label">Settings</span>
       </button>
       <!-- Achievements (can also be found in the settings modal for now) -->
@@ -84,10 +84,15 @@
         <span class="menu-icon"><AchievementsIcon /></span>
         <span class="menu-label">Achievements</span>
       </button>
+      <!-- Manage Baon -->
+      <button class="menu-item" on:click={() => handleMenuAction('openManageBaon')}>
+        <span class="menu-icon"><ManageBaonIcon /></span>
+        <span class="menu-label">Manage Baon</span>
+      </button>
       <!-- Add Baon -->
-      <button class="menu-item" on:click={() => handleMenuAction('openAddBaon')}>
+      <button class="menu-item" on:click={() => handleMenuAction('requestOpenAddForm')}>
         <span class="menu-icon"><AddIcon /></span>
-        <span class="menu-label">Add/Edit Baon</span>
+        <span class="menu-label">Add Baon</span>
       </button>
     </nav>
     <div class="menu-footer">

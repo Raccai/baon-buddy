@@ -16,17 +16,11 @@
 
     // --- CORRECTED Interaction Logic ---
     function handleMusicToggle() {
-        // 1. Calculate the NEW intended state
         const newState = !musicEnabled;
-
-        // 2. Update the component state IMMEDIATELY
-        //    Svelte will now reliably see this change for UI updates.
-        musicEnabled = newState;
+        musicEnabled = newState; // Update local UI state
         console.log("Music toggled via UI, new state:", musicEnabled);
-
-        // 3. Perform side effects (localStorage, dispatch) AFTER updating state
-        localStorage.setItem("musicEnabled", musicEnabled.toString());
-        dispatch("toggleMusic");
+        localStorage.setItem("musicEnabled", musicEnabled.toString()); // Save to LS
+        dispatch("toggleMusic"); // Tell App.svelte to react
     }
     // --- End Corrected Logic ---
 

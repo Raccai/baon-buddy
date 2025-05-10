@@ -1,128 +1,165 @@
 <script>
-    import { onMount, tick } from 'svelte';
-    import { createEventDispatcher } from 'svelte';
-    import { fly, fade } from 'svelte/transition';
-    import { flip } from 'svelte/animate';
-    import { quintOut } from 'svelte/easing';
-    import { getAllMeals, addMeal, updateMeal, deleteMeal } from '../lib/storage.js';
-    import { showToast } from "../lib/toast.js";
-    import BaonForm from './BaonForm.svelte';
-    import { getDisplayImageSrc } from '../lib/imageUtils.js';
-    import BaonBuddyManageBaon from "/titles/BaonBuddyManageBaon.png";
+  import { onMount, tick } from 'svelte';
+  import { createEventDispatcher } from 'svelte';
+  import { fly, fade } from 'svelte/transition';
+  import { flip } from 'svelte/animate';
+  import { quintOut } from 'svelte/easing';
+  // Import ASYNC storage functions
+  import { getAllMeals, addMeal, updateMeal, deleteMeal } from '../lib/storage.js';
+  import { showToast } from "../lib/toast.js";
+  import BaonForm from './BaonForm.svelte';
+  import { getDisplayImageSrc } from '../lib/imageUtils.js';
+  import BaonBuddyManageBaon from "/titles/BaonBuddyManageBaon.png";
+  // If you need to react to the $allMeals store directly for updates from other places:
+  import { allMeals as allMealsStore } from '../lib/mealStore.js';
 
-    const dispatch = createEventDispatcher();
+  const dispatch = createEventDispatcher();
 
-    let userMeals = [];
-    let filteredUserMeals = [];
-    let showForm = false;
-    let editingMeal = null;
-    let formMode = 'add';
-    let searchTerm = '';
+  let allUserMealsFromFS = []; // Holds all meals loaded from filesystem
+  let filteredUserMeals = [];
+  let showForm = false;
+  let editingMeal = null; // This is the meal data passed TO the BaonForm
+  let formMode = 'add';
+  let searchTerm = '';
+  let isLoading = true; // Loading state
 
-    function loadUserMeals() {
-        userMeals = getAllMeals(); // Load into the main list
-        filterMeals();
+  async function loadUserMeals() {
+    isLoading = true;
+    console.log("[ManageBaonScreen] Loading user meals...");
+    try {
+      allUserMealsFromFS = await getAllMeals(); // ASYNC call
+      console.log("[ManageBaonScreen] Meals loaded:", allUserMealsFromFS.length);
+      filterMeals(); // Filter after loading
+    } catch (error) {
+      console.error("[ManageBaonScreen] Error loading meals:", error);
+      showToast("Could not load meals.", "error");
+      allUserMealsFromFS = []; // Fallback to empty
+      filterMeals();
+    } finally {
+      isLoading = false;
     }
+  }
 
-    // --- Reactive Filtering ---
-    function filterMeals() {
-        const search = searchTerm.toLowerCase().trim();
-        if (!search) {
-            filteredUserMeals = [...userMeals]; // Show all if no search term
-        } else {
-            filteredUserMeals = userMeals.filter(meal =>
-                meal.name?.toLowerCase().includes(search) ||
-                meal.type?.toLowerCase().includes(search) ||
-                meal.message?.toLowerCase().includes(search)
-                // Add ingredient/step search later if needed
-            );
+  // Reactive filtering based on loaded meals and search term
+  function filterMeals() {
+    const search = searchTerm.toLowerCase().trim();
+    if (!search) {
+      filteredUserMeals = [...allUserMealsFromFS];
+    } else {
+      filteredUserMeals = allUserMealsFromFS.filter(meal =>
+        meal.name?.toLowerCase().includes(search) ||
+        meal.type?.toLowerCase().includes(search) ||
+        meal.message?.toLowerCase().includes(search)
+      );
+    }
+  }
+
+  // Re-filter when search term changes OR when the underlying list is reloaded
+  $: if (searchTerm || allUserMealsFromFS) { // This will trigger when allUserMealsFromFS is set by loadUserMeals
+    filterMeals();
+  }
+
+  // Alternative: Subscribe to $allMealsStore if you want live updates
+  // without explicitly calling loadUserMeals after every save/delete from this screen.
+  // The current `loadUserMeals()` after success in `handleSave` and `handleDelete` is fine too.
+  // $: if ($allMealsStore) {
+  //   console.log("[ManageBaonScreen] $allMealsStore updated, re-filtering.");
+  //   allUserMealsFromFS = $allMealsStore; // This keeps it in sync
+  //   filterMeals();
+  // }
+
+
+  onMount(() => {
+    loadUserMeals(); // Load meals when component mounts
+  });
+
+  function openAddForm() {
+    editingMeal = null;
+    formMode = 'add';
+    showForm = true;
+  }
+
+  function openEditForm(mealToEdit) {
+    // Make a deep copy for the form
+    editingMeal = JSON.parse(JSON.stringify(mealToEdit));
+    // Ensure recipe structure (BaonForm does this too, but good for consistency)
+    editingMeal.recipe = editingMeal.recipe || { ingredients: [], steps: [], talaTip: '' };
+    editingMeal.recipe.ingredients = Array.isArray(editingMeal.recipe.ingredients) ? editingMeal.recipe.ingredients : [];
+    editingMeal.recipe.steps = Array.isArray(editingMeal.recipe.steps) ? editingMeal.recipe.steps : [];
+    editingMeal.recipe.talaTip = editingMeal.recipe.talaTip || '';
+    
+    formMode = 'edit';
+    showForm = true;
+  }
+
+  async function handleDelete(mealId, mealName) {
+    if (!mealId) { console.error("Invalid mealId for delete"); return; }
+    if (confirm(`Are you sure you want to delete "${mealName || 'this Baon'}"?`)) {
+      isLoading = true;
+      try {
+        const deleted = await deleteMeal(mealId); // ASYNC call
+        if (deleted) {
+          await loadUserMeals(); // Reload the list after deletion
+          dispatch('userMealsChanged'); // Notify App.svelte if needed for other global state (e.g. favorites count)
         }
+      } catch (error) {
+        console.error("Error deleting meal:", error);
+        showToast("Failed to delete Baon.", "error");
+      } finally {
+        isLoading = false;
+      }
     }
-    // Re-filter whenever the search term OR the underlying allUserMeals list changes
-    $: if (searchTerm || userMeals) {
-        filterMeals();
-    }
+  }
 
-    onMount(() => {
-        loadUserMeals();
-    });
-
-    function openAddForm() {
-        editingMeal = null; // Ensure it's null for add mode
-        formMode = 'add';
-        showForm = true;
-    }
-
-    function openEditForm(mealToEdit) {
-        // Pass a *structured copy* for editing
-        // Ensure default recipe structure if missing
-        editingMeal = {
-            id: mealToEdit.id,
-            name: mealToEdit.name || '',
-            type: mealToEdit.type || 'custom',
-            message: mealToEdit.message || '',
-            emoji: mealToEdit.emoji || '',
-            image: mealToEdit.image || '',
-            recipe: {
-                ingredients: Array.isArray(mealToEdit.recipe?.ingredients) ? [...mealToEdit.recipe.ingredients] : [],
-                steps: Array.isArray(mealToEdit.recipe?.steps) ? [...mealToEdit.recipe.steps] : [],
-                talaTip: mealToEdit.recipe?.talaTip || ''
-            },
-            isUserDefined: mealToEdit.isUserDefined // Keep the flag
+  async function handleSave(event) {
+    const mealDataFromForm = event.detail; // Data from BaonForm
+    isLoading = true;
+    let success = false;
+    try {
+      if (formMode === 'add') {
+        // mealDataFromForm already contains ID, isUserDefined, originalDefaultId (if any) from BaonForm
+        // addMeal in storage.js will generate a new ID if mealDataFromForm.id is null or not user_
+        // and will set isUserDefined = true
+        success = await addMeal(mealDataFromForm); // ASYNC call
+      } else if (formMode === 'edit') {
+        if (!mealDataFromForm.id) {
+          showToast("Error updating: Missing ID.", "error");
+          isLoading = false;
+          return;
+        }
+        // `editingMeal` here is the state *before* passing to BaonForm, used for context like originalDefaultId
+        // `mealDataFromForm` has the latest edits from the form.
+        const mealToUpdate = {
+            ...mealDataFromForm, // Contains all fields from form, including the ID
+            isUserDefined: true, // Ensure updates are marked as user-defined
+            // BaonForm passes originalDefaultId back if it received one.
+            // updateMeal in storage.js will use mealDataFromForm.id to find and update.
         };
-        formMode = 'edit';
-        showForm = true;
-    }
+        success = await updateMeal(mealToUpdate); // ASYNC call
+      }
 
-    function handleDelete(mealId, mealName) {
-        // Add null check for mealId
-        if (!mealId) {
-            console.error("handleDelete called with invalid mealId");
-            return;
-        }
-        if (confirm(`Are you sure you want to delete "${mealName || 'this Baon'}"? This cannot be undone.`)) {
-            const deleted = deleteMeal(mealId);
-            if (deleted) {
-                loadUserMeals();
-                dispatch('userMealsChanged');
-            }
-        }
-    }
-
-    function handleSave(event) {
-        const mealData = event.detail;
-        console.log("ManageBaonScreen handleSave received event. Detail:", JSON.stringify(mealData, null, 2));
-        console.log("Current formMode:", formMode);
-        let success = false;
-        if (formMode === 'add') {
-            success = addMeal(mealData);
-        } else if (formMode === 'edit') {
-            // Ensure mealData has the ID needed for update
-            if (!mealData.id) {
-                console.error("Cannot update meal, missing ID in saved data.", mealData);
-                showToast("Error updating Baon: Missing ID.", "error");
-                return; // Exit early
-            }
-            success = updateMeal(mealData);
-        }
-
-        if (success) {
-            loadUserMeals();
-            dispatch('userMealsChanged');
-            showForm = false;
-        }
-        // Keep form open on failure
-    }
-
-    function handleCancel() {
+      if (success) {
+        await loadUserMeals(); // Reload the list
+        dispatch('userMealsChanged');
         showForm = false;
-        editingMeal = null; // Clear editing state
+        editingMeal = null;
+      }
+    } catch (error) {
+      console.error(`Error saving Baon in ${formMode} mode:`, error);
+      showToast(`Failed to ${formMode} Baon.`, "error");
+    } finally {
+      isLoading = false;
     }
+  }
 
-    function closeScreen() {
-        dispatch('close');
-    }
+  function handleCancel() {
+    showForm = false;
+    editingMeal = null;
+  }
 
+  function closeScreen() {
+    dispatch('close');
+  }
 </script>
 
 <div class="manage-baon-page">
@@ -139,86 +176,92 @@
     </header>
 
     <div class="content-area">
-    {#if showForm}
-        <!-- Form Modal Overlay -->
-        <!-- svelte-ignore a11y_click_events_have_key_events -->
-        <!-- svelte-ignore a11y_no_static_element_interactions -->
-        <div class="form-modal-backdrop" on:click|self={handleCancel} transition:fade={{duration: 200}}>
-            <!-- Form Wrapper -->
-            <div class="form-wrapper" transition:fly={{y: 30, duration: 250, easing: quintOut }}>
-                <BaonForm
-                    formMode={formMode}
-                    initialData={editingMeal}
-                    on:save={handleSave}
-                    on:cancel={handleCancel}
-                />
-            </div>
-        </div>
-    {/if}
-
-    <!-- Search Bar Area -->
-    <div class="search-wrapper-manage">
-        <input
-            type="search"
-            placeholder="Search your Baon..."
-            bind:value={searchTerm}
-            aria-label="Search Your Baon List"
-        />
-         {#if searchTerm}
-            <button class="clear-search-btn-manage" on:click={() => searchTerm = ''} aria-label="Clear search">×</button>
-         {/if}
-    </div>
-
-    {#if userMeals.length > 0} <!-- Check original list length -->
-        {#if filteredUserMeals.length > 0} <!-- Check filtered list length -->
-            <p class="instruction-text">Tap a Baon to edit, or use the buttons.</p>
-            <div class="meals-list">
-                {#each filteredUserMeals as meal (meal.id)} <!-- Loop over FILTERED list -->
-                    {@const displaySrc = getDisplayImageSrc(meal.image)}
-                    <div
-                        class="meal-item"
-                        on:click={() => openEditForm(meal)}
-                        role="button"
-                        tabindex="0"
-                        aria-label="Edit {meal.name}"
-                        on:keydown={(e) => {if (e.key === 'Enter' || e.key === ' ') openEditForm(meal)}}
-                        animate:flip={{duration: 300}}
-                    >
-                        <!-- ADDED: Image/Emoji Column -->
-                        <div class="meal-item-visual">
-                            {#if displaySrc}
-                                <img src={displaySrc} alt="" class="meal-item-image" loading="lazy"/>
-                            {:else if meal.emoji}
-                                <span class="meal-item-emoji">{meal.emoji}</span>
-                            {:else}
-                                <span class="meal-item-emoji">🍽️</span> <!-- Default -->
-                            {/if}
-                        </div>
-                        <div class="meal-details">
-                            <span class="meal-item-name">{meal.name}</span>
-                            <span class="meal-item-type">{meal.type}</span>
-                        </div>
-                        <div class="meal-actions">
-                            <button class="edit-btn" on:click|stopPropagation={() => openEditForm(meal)} aria-label="Edit {meal.name}">✏️</button>
-                            <button class="delete-btn" on:click|stopPropagation={() => handleDelete(meal.id, meal.name)} aria-label="Delete {meal.name}">🗑️</button>
-                        </div>
-                    </div>
-                {/each}
-            </div>
-        {:else}
-            <!-- Show only if filtering produced no results -->
-            <div class="no-meals-message" transition:fade>
-                <p>No Baon found matching "{searchTerm}"!</p>
+        {#if isLoading}
+            <div class="loading-message">Loading Baon...</div>
+        {:else if showForm}
+            <!-- Form Modal Overlay -->
+            <!-- svelte-ignore a11y_click_events_have_key_events -->
+            <!-- svelte-ignore a11y_no_static_element_interactions -->
+            <div class="form-modal-backdrop" on:click|self={handleCancel} transition:fade={{duration: 200}}>
+                <!-- Form Wrapper -->
+                <div class="form-wrapper" transition:fly={{y: 30, duration: 250, easing: quintOut }}>
+                    <BaonForm
+                        formMode={formMode}
+                        initialData={editingMeal}
+                        on:save={handleSave}
+                        on:cancel={handleCancel}
+                    />
+                </div>
             </div>
         {/if}
-    {:else if !showForm}
-        <!-- Show only if the user has NO meals AT ALL -->
-        <div class="no-meals-message" transition:fade>
-            <p>You haven't created any custom Baon yet!</p>
-            <button class="add-first-btn" on:click={openAddForm}>+ Add your first Baon</button>
+
+        <!-- Search Bar Area -->
+        <div class="search-wrapper-manage">
+            <input
+                type="search"
+                placeholder="Search your Baon..."
+                bind:value={searchTerm}
+                aria-label="Search Your Baon List"
+            />
+            {#if searchTerm}
+                <button class="clear-search-btn-manage" on:click={() => searchTerm = ''} aria-label="Clear search">×</button>
+            {/if}
         </div>
-    {/if}
+
+        {#if allUserMealsFromFS.length > 0}
+            {#if filteredUserMeals.length > 0}
+                <p class="instruction-text">Tap a Baon to edit, or use the buttons.</p>
+                <div class="meals-list">
+                    {#each filteredUserMeals as meal (meal.id)} <!-- Loop over FILTERED list -->
+                        {@const displaySrc = getDisplayImageSrc(meal.image)}
+                        <div
+                            class="meal-item"
+                            on:click={() => openEditForm(meal)}
+                            role="button"
+                            tabindex="0"
+                            aria-label="Edit {meal.name}"
+                            on:keydown={(e) => {if (e.key === 'Enter' || e.key === ' ') openEditForm(meal)}}
+                            animate:flip={{duration: 300}}
+                        >
+                            <!-- ADDED: Image/Emoji Column -->
+                            <div class="meal-item-visual">
+                                {#if displaySrc}
+                                    <img src={displaySrc} alt="" class="meal-item-image" loading="lazy"/>
+                                {:else if meal.emoji}
+                                    <span class="meal-item-emoji">{meal.emoji}</span>
+                                {:else}
+                                    <span class="meal-item-emoji">🍽️</span> <!-- Default -->
+                                {/if}
+                            </div>
+                            <div class="meal-details">
+                                <span class="meal-item-name">{meal.name}</span>
+                                <span class="meal-item-type">{meal.type}</span>
+                            </div>
+                            <div class="meal-actions">
+                                <button class="edit-btn" on:click|stopPropagation={() => openEditForm(meal)} aria-label="Edit {meal.name}">✏️</button>
+                                <button class="delete-btn" on:click|stopPropagation={() => handleDelete(meal.id, meal.name)} aria-label="Delete {meal.name}">🗑️</button>
+                            </div>
+                        </div>
+                    {/each}
+                </div>
+            {:else}
+                <!-- Show only if filtering produced no results -->
+                <div class="no-meals-message" transition:fade>
+                    <p>No Baon found matching "{searchTerm}"!</p>
+                </div>
+            {/if}
+        {:else if !showForm}
+            <!-- Show only if the user has NO meals AT ALL -->
+            <div class="no-meals-message" transition:fade>
+                <p>You haven't created any custom Baon yet!</p>
+                <button class="add-first-btn" on:click={openAddForm}>+ Add your first Baon</button>
+            </div>
+        {/if}
     </div>
+
+    <footer class="page-footer">
+        <button class="back-btn" on:click={closeScreen}>Back</button>
+    </footer>
 </div>
 
 <style>
@@ -442,6 +485,35 @@
 
     /* Ensure list has some top margin */
     .meals-list { margin-top: 0.5rem; }
+
+    .page-footer {
+        flex-shrink: 0;
+        padding: 1rem;
+        border-top: 1px solid #4a4090;
+        background-color: #231d52;
+        display: flex;
+        justify-content: center;
+    }
+
+    /* Large, tappable Back button */
+    .back-btn {
+        background-color: #b388eb;
+        color: #1a163f;
+        border: none;
+        padding: 0.8rem 2rem;
+        border-radius: 2rem;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .back-btn:hover {
+        background-color: #c7a4ff;
+        transform: translateY(-1px);
+    }
+
+    .loading-message { text-align: center; padding: 2rem; font-style: italic; color: #fff5e1a8; }
 
     /* Responsive adjustments */
     @media (min-width: 768px) {

@@ -1,6 +1,7 @@
 <script>
     import AddedFaves from "../assets/AddedFaves.svelte";
     import NotFaves from "../assets/NotFaves.svelte";
+    import EditIcon from "../assets/EditIcon.svelte";
     import { showToast } from "../lib/toast.js";
     // Corrected import name
     import { markMealAsSeen, getSeenMeals, saveFavorite, removeFavorite } from "../lib/storage.js"; // Ensure getSeenMeals is correct
@@ -8,7 +9,6 @@
     import { tagStyles } from "../lib/tags.js";
     import { checkAndUnlockAchievements } from "../lib/achievementStore.js";
     // --- Capacitor Imports ---
-    import { Capacitor } from '@capacitor/core';
     import { getDisplayImageSrc } from "../lib/imageUtils";
 
     // --- Props ---
@@ -36,7 +36,7 @@
     $: tagData = meal && meal.type ? tagStyles[meal.type] : null;
 
     // Determine if this card is currently favorited
-    $: favorite = meal?.name ? favoriteNames.includes(meal.name) : false;
+    $: favorite = meal?.id ? favoriteNames.includes(meal.name) : false;
 
     $: imageSrc = getDisplayImageSrc(meal?.image);
 
@@ -65,22 +65,23 @@
     }
 
     // Toggle favorite status
-    function toggleFavorite() {
-        if (!meal || !meal.name) return; // Need a meal to toggle
-        if (favorite) {
-            removeFavorite(meal.name);
-            showToast("Removed from faves!", "info")
-        } else {
-            saveFavorite(meal); // Save the whole meal object (as currently implemented)
-            checkAndUnlockAchievements();
-            showToast("Added to faves!", "faves")
-            triggerSparkle();
-            // Trigger glow animation reactively
-            triggerGlow = false; // Reset flag
-            requestAnimationFrame(() => { triggerGlow = true; }); // Set flag in next frame
-        }
-        // Notify parent that favorites might have changed
-        dispatch("faveChange");
+    async function toggleFavorite() { // Make it ASYNC
+        if (!meal || !meal.id) return;
+
+        try {
+            if (favorite) { // Currently favorite, so remove
+                await removeFavorite(meal.id); // Assuming removeFavorite takes ID
+            } else { // Not favorite, so add
+                await saveFavorite(meal); // saveFavorite takes the full meal object
+                // checkAndUnlockAchievements(); // This is now called in App.svelte after refresh
+                triggerSparkle();
+                triggerGlow = false; requestAnimationFrame(() => { triggerGlow = true; });
+            }
+            dispatch("faveChange"); // Signal parent (Home/BaonList -> App) to refresh global state
+        } catch (error) {
+            console.error("Error toggling favorite:", error);
+            showToast("Could not update favorite status.", "error");
+        } 
     }
 
     // --- Pointer Events for Double Tap & Long Press ---
@@ -125,6 +126,12 @@
         if (meal) dispatch("viewRecipe", meal);
     }
 
+    function dispatchEditBaon() {
+        if (meal) { 
+            console.log('[BaonCard] Dispatching editBaon for:', meal.name, 'isUserDefined:', meal.isUserDefined);
+            dispatch("editBaon", meal);
+        }
+    }
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -189,114 +196,161 @@
                     <path d="m31.2 4.24a2.24 2.24 0 1 1 -2.2-2.24 2.24 2.24 0 0 1 2.2 2.24zm-8.2 8.32a3 3 0 1 0 -3-3 3 3 0 0 0 3 3zm19.44 31-10-15.36v-8.2a2.14 2.14 0 0 0 2.4-2.24 2 2 0 0 0 -1.84-2.16h-13.8a2 2 0 0 0 -2 2 2.09 2.09 0 0 0 0 .25 2.16 2.16 0 0 0 2.4 2.24v8.31l-10 15.2a4.26 4.26 0 0 0 -.24 4.24 3.91 3.91 0 0 0 3.52 2.16h26.12a3.9 3.9 0 0 0 3.52-2.16 4 4 0 0 0 -.16-4.24zm-18.8-14v-9.16h4.8v9.28l4.72 7.52h-14.28z" fill="#231F47" fill-rule="evenodd"/>
                 </svg>
             </button>
+
+            <button
+                class="edit-btn"
+                on:click|stopPropagation={dispatchEditBaon}
+                aria-label="Edit {meal.name}"
+                title="Edit this Baon"
+                disabled={!meal}
+            >
+                <EditIcon />
+            </button>
         </div>
     </div>
 </div>
 
 <style>
     .baon-card {
-        display: flex; /* Use flex row */
-        justify-content: center;
-        align-items: center;
-        gap: 1rem; /* Space between image and info columns */
-        background: #fff5e1;
-        border-radius: 1rem;
-        padding: 1rem; /* Adjusted padding */
-        /* margin: 1rem 0; Removed vertical margin */
-        box-shadow: 0 4px 15px rgba(35, 31, 71, 0.2); /* Softer shadow */
+        display: flex;
+        align-items: stretch; /* Make columns equal height */
+        gap: 1rem;
+        background: #fffdf7; /* Slightly creamier than pure white */
+        border-radius: 16px; /* More rounded */
+        padding: 1rem;
+        box-shadow: 0 6px 18px rgba(35, 31, 71, 0.15); /* Softer, more spread shadow */
         position: relative;
-        width: 100%; /* Fill the grid cell width */
-        box-sizing: border-box; /* Include padding in width */
-        z-index: 1; /* Base z-index */
-        border: 1px solid #eee; /* Subtle border */
+        width: 100%; /* Fill grid cell in BaonList */
+        /* max-width: 380px; /* Max width for Home screen instance */
+        box-sizing: border-box;
+        z-index: 1;
+        border: 1px solid #f0eadd; /* Softer border */
+        min-height: 170px; /* Adjust for consistent height */
+        transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
+        -webkit-tap-highlight-color: transparent; /* Remove tap highlight */
+    }
+    .baon-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 22px rgba(35, 31, 71, 0.2);
     }
 
     .image-column {
         display: flex;
         justify-content: center;
         align-items: center;
+        flex-shrink: 0;
+        width: 100px; /* Base size */
+        height: auto; /* Let content define height, or set fixed if all cards are same height */
+        align-self: center; /* Center image vertically if card stretches */
+        background-color: #f0eadd; /* Light placeholder bg */
+        border-radius: 12px;
         overflow: hidden;
-        flex-shrink: 0; /* Prevent shrinking */
-        width: 100px; /* Fixed width for image column */
-        height: 100px;
     }
-    
     .meal-image {
-        border-radius: 10px; /* Softer radius */
-        width: 100%; /* Fill the column width */
-        height: 100%; /* Fill the column height */
-        object-fit: cover; /* Show whole image */
+        display: block;
+        width: 100%;
+        height: 100%;
+        max-height: 130px; /* Max image height */
+        object-fit: cover; /* Changed to cover for better fill */
+        border-radius: 10px; /* Inherit or slightly smaller */
     }
     .emoji {
-        font-size: 3.5rem; /* Larger emoji */
+        font-size: 4rem; /* Slightly larger */
         line-height: 1;
+        padding: 0.5rem; /* Add some padding for standalone emoji */
     }
 
-    /* Meal Content/Information */
     .baon-info {
         display: flex;
         flex-direction: column;
-        gap: 2px;
-        justify-content: center;
-        align-items: center;
         flex-grow: 1;
-        min-width: 0; /* <<< CRUCIAL FOR WRAPPING IN FLEX */
-        gap: 0.3rem;
-        overflow: hidden;
+        min-width: 0; /* ← Crucial for allowing inner text to wrap instead of forcing the card wider */
     }
-    .meal-type {
-        font-size: 0.9rem;
-        padding: 8px 16px;
-        text-transform: capitalize;
-        border-radius: 14px;
-        width: fit-content;
-        transition: background-color 0.3s ease, color 0.3s ease;
+
+    .text-content {
+        width: 100%; /* Take full width for text elements */
     }
+    .meal-name,
+    .meal-message {
+        white-space: normal;       
+        overflow-wrap: break-word; 
+        word-break: break-all;
+    }
+
     .meal-name {
-        margin: 0;
-        font-size: 1.25rem;
+        margin: 0 0 0.3rem 0;
+        font-size: 1.3rem; /* Base size */
         font-weight: 700;
         color: #231F47;
-        line-height: 1.3;
-        width: 100%; /* Use available width */
-        /* Text wrapping properties */
-        white-space: normal;
-        word-wrap: break-word;
-        overflow-wrap: break-word;
-        word-break: break-all;
-        transition: font-size 0.3s ease-out;
-    }
-    .meal-type {
-        font-size: 0.8rem;
-        padding: 0.2rem 0.7rem;
-        text-transform: capitalize;
-        border-radius: 1rem; /* Pill shape */
-        font-weight: 500;
-        line-height: 1.2;
-        display: inline-block; /* Respect padding */
-        margin-bottom: 0.2rem; /* Space below tag */
-    }
-    .meal-message {
-        font-style: italic; margin: 0.2rem 0 0.5rem 0;
-        color: #4d467c; font-size: 0.9rem; line-height: 1.4;
+        line-height: 1.25; /* Tighter line height */
         width: 100%;
-        /* Text wrapping properties */
-        white-space: normal;
-        word-wrap: break-word;
+        white-space: normal; word-wrap: break-word; overflow-wrap: break-word;
+        /* Optional: Limit to 2 lines with ellipsis */
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-overflow: ellipsis;
         overflow-wrap: break-word;
-        transition: font-size 0.3s ease-out;
+        word-wrap: break-word;
+        min-height: calc(1.3rem * 1.25 * 1); /* Approx 1 line, adjust factor if 2 lines min */
+    }
+
+    .meal-type {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.8rem; /* Slightly more padding */
+        border-radius: 1rem;
+        font-weight: 600; /* Bolder type */
+        line-height: 1.2;
+        display: inline-block;
+        margin-bottom: 0.5rem; /* More space below tag */
+        /* background-color and color are set by inline style */
+    }
+
+    .meal-message {
+        font-style: normal; /* Less italic, more direct */
+        margin: 0 0 0.6rem 0; /* Control spacing */
+        color: #5c5588; /* Softer, darker message color */
+        font-size: 0.85rem;
+        line-height: 1.4;
+        width: 100%;
+        white-space: normal; word-wrap: break-word; overflow-wrap: break-word;
+        /* Optional: Limit to 2-3 lines */
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        min-height: calc(0.85rem * 1.4 * 1); /* Approx 1 line, adjust factor */
     }
 
     .button-container {
         display: flex;
-        justify-content: flex-start; /* Align buttons left */
-        gap: 0.5rem; /* Smaller gap */
-        margin-top: auto; /* Push buttons to bottom if needed */
-        padding-top: 0.3rem; /* Space above buttons */
+        justify-content: center; /* Align to start */
+        gap: 0.6rem; /* Slightly more gap */
+        width: 100%; /* Take full width of info column */
+        margin-top: auto; /* Pushes to bottom if .text-content doesn't fill */
+        padding-top: 0.4rem; /* Space above buttons */
+    }
+
+    .action-btn { /* Common class for all buttons in container */
+        background: none; border: none; cursor: pointer;
+        padding: 8px; /* Consistent padding for better touch target */
+        border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        transition: transform 0.2s ease, background-color 0.2s ease, opacity 0.2s ease;
+        color: #4a4090; /* Default dim icon color */
+        line-height: 0; /* Remove extra space from icon wrapper */
+    }
+    .action-btn:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+        transform: none;
+        background-color: transparent;
     }
 
     /* Heart Button & Recipe Button Base Styles */
-    .heart-btn, .recipe-btn {
+    .heart-btn, .recipe-btn, .edit-btn {
         background: none;
         border: none;
         cursor: pointer;
@@ -317,8 +371,8 @@
     .heart-btn span { display: inline-block; transition: transform 0.2s ease-in-out; }
     .heart-btn span.active { animation: pop 0.3s ease; }
     .heart-btn :global(svg) { /* Style SVGs inside button */
-        width: 24px;
-        height: 24px;
+        width: 28px;
+        height: 28px;
         display: block;
     }
 
@@ -327,7 +381,17 @@
         color: #231F47; 
     } 
     .recipe-btn svg { 
-        width: 22px; height: 22px; display: block; 
+        width: 28px; height: 28px; display: block; 
+    }
+
+    /* Edit Button */
+    .edit-btn {
+        transform: scale(0.5);
+        margin-left: -0.4rem;
+    }
+    .edit-btn:hover {
+        background-color: rgba(35, 31, 71, 0.08); /* Subtle hover */
+        transform: scale(0.58);
     }
 
     @keyframes pop {
@@ -436,6 +500,19 @@
         .meal-message { font-size: 0.85rem; }
         .button-container { gap: 0.3rem; }
         .heart-btn :global(svg), .recipe-btn svg { width: 20px; height: 20px; }
+    }
+
+     @media (min-width: 768px) { /* For tablets, increase sizes */
+        .baon-card { padding: 1.5rem; gap: 1.5rem; min-height: 200px; border-radius: 20px; }
+        .image-column { width: 120px; height: 120px; }
+        .emoji { font-size: 4.5rem; }
+        .meal-name { font-size: 1.6rem; -webkit-line-clamp: 2; min-height: calc(1.6rem * 1.25 * 1); }
+        .meal-type { font-size: 0.9rem; padding: 0.3rem 0.9rem; }
+        .meal-message { font-size: 1rem; -webkit-line-clamp: 3; min-height: calc(1rem * 1.4 * 1);}
+        .button-container { gap: 0.8rem; }
+        .action-btn { padding: 10px; }
+        .heart-btn :global(svg), .recipe-btn svg { width: 30px; height: 30px; }
+        .edit-btn :global(svg) { width: 26px; height: 26px; }
     }
 
     /* Problem screens, specific styling */

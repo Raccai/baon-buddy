@@ -1,41 +1,68 @@
 <script>
   import { format } from 'date-fns';
-  import { createEventDispatcher } from 'svelte';
+  import { createEventDispatcher, onMount } from 'svelte'; // Added onMount if needed
   import { fade, scale } from 'svelte/transition';
   import { quintOut } from 'svelte/easing';
-  import BaonCardSelector from './BaonCardSelector.svelte'; // Correct import
+  import BaonCardSelector from './BaonCardSelector.svelte';
+  import { get as getStoreValue } from 'svelte/store';
+  import { allMeals as allMealsStore } from '../lib/mealStore.js'; // For looking up meals
 
   export let date;
-  export let meals = [];
-  export const mode = 'view';
-  export let copiedMeals = null;
+  export let mealIdsForDay = []; // Prop from Calendar.svelte: Now an array of meal IDs
+  export const mode = 'view';      // 'view', 'copySource', 'copyTarget'
+  export let copiedMealIds = []; // Prop from Calendar.svelte: Array of meal IDs
 
   const dispatch = createEventDispatcher();
 
-  function handleAdd(mealsArray) {
-    dispatch('add', mealsArray);
+  let mealsForSelector = []; // This will be an array of FULL MEAL OBJECTS for BaonCardSelector
+
+  // Reactive statement to derive full meal objects for BaonCardSelector
+  // whenever mealIdsForDay (from Calendar.svelte via prop) or $allMealsStore changes
+  $: {
+    const currentAllMeals = getStoreValue(allMealsStore);
+    if (Array.isArray(mealIdsForDay) && currentAllMeals && currentAllMeals.length > 0) {
+      mealsForSelector = mealIdsForDay
+        .map(id => currentAllMeals.find(m => m.id === id))
+        .filter(Boolean); // Filter out any undefined if an ID wasn't found
+    } else {
+      mealsForSelector = [];
+    }
+    // console.log('[DayModal] mealsForSelector updated:', mealsForSelector.map(m=>m.name));
   }
 
-  // This function is needed if BaonCardSelector needs to dispatch recipe view
+
+  // Called when BaonCardSelector dispatches 'select' (payload is array of full meal objects)
+  function handleSelectionChangeFromSelector(event) {
+    const selectedFullMeals = event.detail; // Array of full meal objects from BaonCardSelector
+    const selectedMealIds = selectedFullMeals.map(meal => meal.id).filter(Boolean); // Get IDs
+
+    // Dispatch 'add' event with an array of meal IDs to Calendar.svelte
+    dispatch('add', selectedMealIds);
+  }
+
   function handleViewRecipe(event) {
-    dispatch('viewRecipe', event.detail); // Forward the event if needed
+    dispatch('viewRecipe', event.detail); // Forward full meal object
   }
 
   function handleCopy() {
-    if (meals.length > 0) {
-      dispatch('copy', meals);
+    // mealsForSelector contains the currently displayed (and thus selected for this day) full meal objects
+    if (mealsForSelector.length > 0) {
+      const idsToCopy = mealsForSelector.map(meal => meal.id).filter(Boolean);
+      dispatch('copy', idsToCopy); // Dispatch array of IDs
     }
   }
 
   function handlePaste() {
-    if (copiedMeals) {
-      dispatch('paste');
+    // copiedMealIds prop is an array of IDs from Calendar.svelte
+    if (copiedMealIds && copiedMealIds.length > 0) {
+      // Calendar.svelte's on:paste handler will use its `copiedMeals` (which are IDs)
+      dispatch('paste'); // No detail needed, Calendar.svelte has the IDs
     }
   }
 
   function handleClearAll() {
-    if (meals.length > 0) {
-      dispatch('add', []); // Dispatch 'add' with empty array to clear
+    if (mealsForSelector.length > 0) {
+      dispatch('add', []); // Dispatch 'add' with empty array of IDs to clear
     }
   }
 
@@ -46,41 +73,29 @@
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <!-- svelte-ignore a11y_click_events_have_key_events -->
-<div
-    class="modal-backdrop"
-    on:click|self={handleClose}
-    transition:fade={{ duration: 200 }}
->
-  <div
-    class="modal"
-    transition:scale={{ duration: 300, opacity: 0.5, start: 0.95, easing: quintOut }}
-    role="dialog"
-    aria-labelledby="modal-title"
-    aria-modal="true"
-  >
+<div class="modal-backdrop" on:click|self={handleClose} transition:fade={{ duration: 200 }}>
+  <div class="modal" transition:scale={{ duration: 300, opacity: 0.5, start: 0.95, easing: quintOut }}
+    role="dialog" aria-labelledby="modal-title" aria-modal="true">
     <div class="modal-header">
       <h2 id="modal-title">Select Baon for {format(date, 'MMMM d, yyyy')}</h2>
       <button class="close-button" on:click={handleClose} aria-label="Close modal">×</button>
     </div>
-
-    <!-- Wrapper for BaonCardSelector to apply global styles effectively -->
     <div class="baon-selector-wrapper">
       <BaonCardSelector
-        currentSelection={meals}
-        on:select={e => handleAdd(e.detail)}
+        currentSelection={mealsForSelector} 
+        on:select={handleSelectionChangeFromSelector}
         on:viewRecipe={handleViewRecipe} 
+        on:limitReached={() => console.log("Limit reached event received in DayModal")}
       />
     </div>
-
-
     <div class="actions">
-      <button class="action-btn copy-btn" on:click={handleCopy} disabled={!meals || meals.length === 0}>
+      <button class="action-btn copy-btn" on:click={handleCopy} disabled={!mealsForSelector || mealsForSelector.length === 0}>
         <span class="icon" aria-hidden="true">📋</span> Copy
       </button>
-      <button class="action-btn paste-btn" on:click={handlePaste} disabled={!copiedMeals}>
-        <span class="icon" aria-hidden="true">📌</span> Paste
+      <button class="action-btn paste-btn" on:click={handlePaste} disabled={copiedMealIds.length === 0}>
+          <span class="icon" aria-hidden="true">📌</span> Paste
       </button>
-      <button class="action-btn clear-btn" on:click={handleClearAll} disabled={!meals || meals.length === 0}>
+      <button class="action-btn clear-btn" on:click={handleClearAll} disabled={!mealsForSelector || mealsForSelector.length === 0}>
         <span class="icon" aria-hidden="true">🗑️</span> Clear All
       </button>
     </div>

@@ -1,498 +1,310 @@
-// --- LocalStorage Keys ---
+// src/lib/storage.js
+import { showToast } from './toast.js';
+import { _allMealsStore } from './mealStore.js'; // Import the actual store instance
+import { meals as defaultMealsFromFile } from './meals.js';
+import { calendarData, saveCalendarDataFS, CALENDAR_DATA_FILENAME } from './calendar.js'; // FS save and filename
+import { get as getStoreValue } from 'svelte/store';
+import { refreshStreakStore } from './streakStore.js';
+import { Capacitor } from '@capacitor/core';
+import { Filesystem as CapacitorFilesystem, Directory as CapacitorDirectory } from '@capacitor/filesystem';
+import { readFile, writeFile, deleteFsFile } from './filesystemStorage.js';
+import { checkAndUnlockAchievements, resetAchievements } from './achievementStore.js';
+import { isSameDay, subDays, formatISO, parseISO, startOfDay } from 'date-fns';
+
+// --- Filenames for Filesystem ---
+export const ALL_MEALS_FILENAME = 'baonAllEntries_fs.json';
+export const DELETED_DEFAULT_MEAL_IDS_FILENAME = 'baonDeletedDefaultMealIds_fs.json';
+export const FAVORITES_FILENAME = 'baonFavorites_fs.json';
+
+// --- LocalStorage Keys (for migration flags and small settings/data) ---
+const OLD_ALL_BAON_KEY_LS = "baonAllEntries";
+const OLD_DELETED_DEFAULT_IDS_LS = "baonDeletedDefaultMealIds";
+const OLD_FAVORITES_KEY_LS = "baonFavorites";
+const OLD_CALENDAR_KEY_LS = "baonCalendarData"; // Checked by calendar.js during its init
+
+const MIGRATION_CORE_FS_DONE_KEY = 'migrationToFilesystem_Core_v1'; // For meals, deletedIds, favorites
+
+// Keys for data that REMAINS in localStorage
+const SEEN_KEY = "seenMeals";
+const ONBOARDING_KEY = 'baonBuddyOnboardingStatus'; // Example, manage as needed
+const MUSIC_KEY = 'musicEnabled';
+const LAST_SCREEN_KEY = 'lastScreen';
 const STREAK_DATA_KEY = "baonDailyActionStreak";
-const ALL_BAON_KEY = "baonAllEntries";       // Unified key for all meals
-const FAVORITES_KEY = "baonFavorites";       // Key for favorite meal IDs/names
-const SEEN_KEY = "seenMeals";                // Key for seen meal names
-const ONBOARDING_KEY = 'baonBuddyOnboardingStatus'; // Onboarding status
-const MUSIC_KEY = 'musicEnabled';            // Music preference
-const LAST_SCREEN_KEY = 'lastScreen';          // Last visited screen
-const DELETED_DEFAULT_MEAL_IDS_KEY = "baonDeletedDefaultMealIds";
+const APP_VERSION_KEY = 'baonAppVersion';
 
-import { showToast } from './toast.js'; // For user feedback
-// Import refresh function from the store file
-import { refreshMealsStore } from './mealStore.js';
-import { meals as defaultMeals } from './meals.js'; // Import default meal data
-import { get } from 'svelte/store';
-import { calendarData, saveCalendarData, CALENDAR_STORAGE_KEY } from './calendar.js';
-import { refreshStreakStore, streakStore } from './streakStore.js';
-import { Filesystem, Directory } from '@capacitor/filesystem';
-import { isSameDay, subDays, formatISO, parseISO, differenceInCalendarDays } from 'date-fns';
-import { checkAndUnlockAchievements } from './achievementStore.js';
-import { resetAchievements } from './achievementStore.js';
 
-// --- Simple In-Memory Cache ---
-let allMealsCache = null;
+export async function initializeAppStorageAndMeals(currentAppVersionFromApp) {
+    console.log("[storage] initializeAppStorageAndMeals (FS) called. App Version:", currentAppVersionFromApp);
 
-let _refreshMealsStore;
-let _refreshStreakStore;
-// Only import in browser environment if needed immediately, otherwise import within functions
-if (typeof window !== 'undefined') {
-    import('./mealStore.js')
-        .then(mod => _refreshMealsStore = mod.refreshMealsStore)
-        .catch(e => console.error("Failed to load mealStore refresh", e));
-    import('./streakStore.js')
-        .then(mod => _refreshStreakStore = mod.refreshStreakStore)
-        .catch(e => console.error("Failed to load streakStore refresh", e));
-}
-
-// --- Meal Data Initialization ---
-export function initializeDefaultMealsIfEmpty() {
-    try {
-        if (localStorage.getItem(ALL_BAON_KEY) === null) { // Only if COMPLETELY empty
-            console.log("[storage] No meals found in storage. Running forceUpdateDefaultMeals to initialize ALL defaults...");
-            forceUpdateDefaultMeals(); // This will handle adding all current defaults
-        } else {
-            if (allMealsCache === null) {
-                getAllMeals();
-            }
-        }
-    } catch (e) {
-        console.error("[storage] Error initializing default meals:", e);
-    }
-}
-
-// --- Meal CRUD Operations ---
-export const getAllMeals = () => {
-     if (allMealsCache !== null) {
-        return [...allMealsCache];
-     }
-    try {
-        const stored = localStorage.getItem(ALL_BAON_KEY);
-        const meals = stored ? JSON.parse(stored) : [];
-        allMealsCache = meals;
-        return [...allMealsCache];
-    } catch (e) {
-        console.error("[storage] Error reading all meals:", e);
-        allMealsCache = [];
-        return [];
-    }
-};
-
-const saveAllMeals = (mealsArray) => {
-    try {
-        localStorage.setItem(ALL_BAON_KEY, JSON.stringify(mealsArray || []));
-        allMealsCache = [...(mealsArray || [])];
-        if (typeof _refreshMealsStore === 'function') {
-            _refreshMealsStore();
-        } else { console.warn("Meal store refresh function not yet loaded."); }
-    } catch (e) {
-        console.error("[storage] Error saving all meals:", e);
-    }
-};
-
-export const addMeal = (newMealData) => {
-    console.log("storage.js addMeal received:", JSON.stringify(newMealData, null, 2));
-     if (!newMealData || !newMealData.name || !newMealData.name.trim()) {
-        showToast("Baon name cannot be empty!", "error");
-        return false;
-     }
-    const currentMeals = getAllMeals();
-    const nameExists = currentMeals.some(m => m.name.trim().toLowerCase() === newMealData.name.trim().toLowerCase());
-
-    if (nameExists) {
-        showToast("A Baon with this name already exists!", "error");
-        return false;
-    }
-    const newMealWithId = {
-        name: newMealData.name.trim(),
-        type: newMealData.type || 'custom',
-        message: newMealData.message || '',
-        emoji: newMealData.emoji || '🍽️',
-        image: newMealData.image || null,
-        recipe: newMealData.recipe || { ingredients: [], steps: [], talaTip: null },
-        id: `user_${Date.now()}_${Math.random().toString(16).slice(2)}`,
-        isUserDefined: true
-    };
-    saveAllMeals([...currentMeals, newMealWithId]);
-    showToast(`"${newMealWithId.name}" added!`, "success");
-    return true;
-};
-
-export const updateMeal = (updatedMeal) => {
-    console.log("storage.js updateMeal received:", JSON.stringify(updatedMeal, null, 2));
-    if (!updatedMeal || !updatedMeal.id) {
-        showToast("Error updating Baon: Invalid data provided.", "error");
-        console.error("updateMeal called with invalid data:", updatedMeal);
-        return false;
-    }
-    if (!updatedMeal.name || !updatedMeal.name.trim()) {
-        showToast("Baon name cannot be empty!", "error");
-        return false;
-    }
-
-    const currentMeals = getAllMeals();
-    const index = currentMeals.findIndex(m => m.id === updatedMeal.id);
-    console.log(`Found index for ID ${updatedMeal.id}: ${index}`); 
-    if (index !== -1) {
-        const nameConflict = currentMeals.some(m =>
-            m.id !== updatedMeal.id &&
-            m.name.trim().toLowerCase() === updatedMeal.name.trim().toLowerCase()
-        );
-        if (nameConflict) {
-            showToast("Another Baon already has this name!", "error");
-            return false;
-        }
-
-        const mealToUpdate = {
-            ...currentMeals[index],
-            ...updatedMeal,
-            name: updatedMeal.name.trim(),
-            recipe: updatedMeal.recipe && typeof updatedMeal.recipe === 'object'
-                ? {
-                    ingredients: Array.isArray(updatedMeal.recipe.ingredients) ? updatedMeal.recipe.ingredients : [],
-                    steps: Array.isArray(updatedMeal.recipe.steps) ? updatedMeal.recipe.steps : [],
-                    talaTip: updatedMeal.recipe.talaTip || null
-                    }
-                : { ingredients: [], steps: [], talaTip: null },
-            isUserDefined: currentMeals[index].isUserDefined
-        };
-
-        currentMeals[index] = mealToUpdate;
-        saveAllMeals(currentMeals);
-        showToast(`"${mealToUpdate.name}" updated!`, "success");
-        return true;
-    } else {
-        showToast("Could not find Baon to update.", "error");
-        console.warn(`Meal with ID ${updatedMeal.id} not found for update.`);
-        return false;
-    }
-};
-
-// --- Function to get the list of deleted default meal IDs ---
-export const getDeletedDefaultMealIds = () => {
-    try {
-        const stored = localStorage.getItem(DELETED_DEFAULT_MEAL_IDS_KEY);
-        return stored ? JSON.parse(stored) : [];
-    } catch (e) {
-        console.error("Error reading deleted default meal IDs:", e);
-        return [];
-    }
-};
-
-// --- Function to add an ID to the deleted list ---
-const addDeletedDefaultMealId = (mealId) => {
-    if (!mealId) return;
-    try {
-        const currentDeleted = getDeletedDefaultMealIds();
-        if (!currentDeleted.includes(mealId)) {
-            localStorage.setItem(DELETED_DEFAULT_MEAL_IDS_KEY, JSON.stringify([...currentDeleted, mealId]));
-        }
-    } catch (e) {
-        console.error("Error saving deleted default meal ID:", e);
-    }
-};
-
-export const deleteMeal = async (mealId) => { 
-    if (!mealId) return false;
-    let currentMeals = getAllMeals();
-    // const mealIndex = currentMeals.findIndex(m => m.id === mealId);
-    const mealToDelete = currentMeals.find(m => m.id === mealId);
-
-    // --- If it was a default meal, record its deletion ---
-    if (mealToDelete.isUserDefined === false) { // Or check if ID starts with 'default_'
-        addDeletedDefaultMealId(mealToDelete.id);
-        console.log(`Default meal ${mealToDelete.name} (ID: ${mealToDelete.id}) marked as deleted by user.`);
-    }
-
-    const updatedMeals = currentMeals.filter(m => m.id !== mealId);
-
-    if (updatedMeals.length < currentMeals.length) {
-        // Try deleting image file BEFORE updating localStorage list
-        if (mealToDelete.image && mealToDelete.image.startsWith('capacitor://')) { // Check if it's a capacitor file URI
-            try {
-                const filename = mealToDelete.image.substring(mealToDelete.image.lastIndexOf('/') + 1);
-                if (filename) {
-                    console.log(`Attempting to delete image file: ${filename}`);
-                    await Filesystem.deleteFile({
-                        path: filename,
-                        directory: Directory.Data
-                    });
-                    console.log(`Deleted image file ${filename}`);
-                }
-            } catch (deleteError) {
-                console.warn(`Could not delete image file ${mealToDelete.image}:`, deleteError);
-                // Don't block meal deletion if image deletion fails
-            }
-        }
-
-        // Save the updated meal list
-        saveAllMeals(updatedMeals);
-
+    if (!localStorage.getItem(MIGRATION_CORE_FS_DONE_KEY)) {
+        console.log("[storage] Performing one-time migration of core data from localStorage to Filesystem...");
         try {
-            let currentCalendar = get(calendarData); // Get current calendar object { 'YYYY-MM-DD': [meal1, meal2] }
-            let calendarWasModified = false;
-
-            // Iterate over each date in the calendar
-            for (const dateKey in currentCalendar) {
-                const originalDayMeals = currentCalendar[dateKey];
-                // Filter out the deleted meal from this day's list
-                // IMPORTANT: Assumes meals in calendarData have IDs matching the main list
-                const updatedDayMeals = originalDayMeals.filter(m => m.id !== mealId);
-
-                // If the list for this day changed, update it
-                if (updatedDayMeals.length < originalDayMeals.length) {
-                    if (updatedDayMeals.length > 0) {
-                        currentCalendar[dateKey] = updatedDayMeals; // Update day with remaining meals
-                    } else {
-                        delete currentCalendar[dateKey]; // Remove date key if no meals left
-                    }
-                    calendarWasModified = true;
-                }
+            const oldMealsDataLS = localStorage.getItem(OLD_ALL_BAON_KEY_LS);
+            if (oldMealsDataLS) {
+                try {
+                    const mealsToMigrate = JSON.parse(oldMealsDataLS);
+                    const cleanedMeals = mealsToMigrate.map(meal => ({
+                        ...meal,
+                        image: (meal.image && meal.image.startsWith('data:image')) ? null : meal.image,
+                    }));
+                    await writeFile(ALL_MEALS_FILENAME, cleanedMeals);
+                    console.log("[storage] Migrated allMeals to FS.");
+                } catch (e) { console.error("Error migrating allMeals:", e); }
             }
 
-            // 4. If the calendar was changed, save it and update the store
-            if (calendarWasModified) {
-                console.log("Removing deleted meal from calendar entries.");
-                saveCalendarData(currentCalendar); // Persist changes (assuming this updates the store too)
+            const oldDeletedIdsLS = localStorage.getItem(OLD_DELETED_DEFAULT_IDS_LS);
+            if (oldDeletedIdsLS) {
+                try {
+                    await writeFile(DELETED_DEFAULT_MEAL_IDS_FILENAME, JSON.parse(oldDeletedIdsLS));
+                    console.log("[storage] Migrated deletedDefaultMealIds to FS.");
+                } catch (e) { console.error("Error migrating deleted IDs:", e); }
             }
-
-        } catch (e) {
-            console.error("Error removing deleted meal from calendar data:", e);
-            // Proceed with deletion from main list anyway
+            
+            const oldFavoritesLS = localStorage.getItem(OLD_FAVORITES_KEY_LS);
+            if (oldFavoritesLS) {
+                try {
+                    const favoritesToMigrate = JSON.parse(oldFavoritesLS);
+                    const favoriteIds = favoritesToMigrate.map(fav => fav.id || fav.name).filter(Boolean);
+                    await writeFile(FAVORITES_FILENAME, favoriteIds);
+                    console.log("[storage] Migrated favorites (as IDs) to FS.");
+                } catch (e) { console.error("Error migrating favorites:", e); }
+            }
+            localStorage.setItem(MIGRATION_CORE_FS_DONE_KEY, 'true');
+            console.log("[storage] Core data Filesystem migration marked as done.");
+        } catch (migrationError) {
+            console.error("[storage] CRITICAL ERROR during core data migration:", migrationError);
         }
-
-        // Remove from favorites
-        removeFavorite(mealToDelete.name); // Assuming name is still the key here
-
-        showToast(`"${mealToDelete.name}" deleted.`, "info");
-        return true;
     }
-    return false;
+
+    const storedAppVersion = localStorage.getItem(APP_VERSION_KEY);
+    let allMealsDataFS = await readFile(ALL_MEALS_FILENAME);
+
+    if (allMealsDataFS === null) {
+        console.log("[storage-FS] No meal file. Initializing default meals...");
+        await forceUpdateDefaultMeals(); // Creates and saves file
+        allMealsDataFS = await getAllMeals(); // Re-read after creation
+    } else if (storedAppVersion !== currentAppVersionFromApp) {
+        console.log(`[storage-FS] App version mismatch. Updating defaults...`);
+        await forceUpdateDefaultMeals();
+        allMealsDataFS = await getAllMeals(); // Re-read
+    }
+    _allMealsStore.set(allMealsDataFS || []); // Ensure store is updated after potential forceUpdate
+
+    if (storedAppVersion !== currentAppVersionFromApp) {
+        localStorage.setItem(APP_VERSION_KEY, currentAppVersionFromApp);
+    }
+    console.log("[storage] initializeAppStorageAndMeals finished.");
+}
+
+export const getAllMeals = async () => {
+    const meals = await readFile(ALL_MEALS_FILENAME);
+    return meals || [];
 };
 
-// --- Favorites ---
-export const getFavorites = () => {
-    try {
-        const stored = localStorage.getItem(FAVORITES_KEY);
-        const parsed = stored ? JSON.parse(stored) : null;
-        return Array.isArray(parsed) ? parsed : [];
-    } catch (e) { console.error("Error reading favorites:", e); return []; }
+const saveAllMeals = async (mealsArray) => {
+    const mealsToSave = Array.isArray(mealsArray) ? mealsArray : [];
+    await writeFile(ALL_MEALS_FILENAME, mealsToSave);
+    _allMealsStore.set(mealsToSave); // Update Svelte store
 };
 
-export const saveFavorite = (meal) => {
-    if (!meal || !meal.name) return;
-    const current = getFavorites();
-    const exists = current.some(fave => fave.name === meal.name);
-    if (!exists) {
-        const mealToSave = { ...meal };
-        const updated = [...current, mealToSave];
-        localStorage.setItem(FAVORITES_KEY, JSON.stringify(updated));
+export const addMeal = async (newMealData) => {
+    if (!newMealData?.name?.trim()) { showToast("Baon name is required.", "error"); return false; }
+    const currentMeals = await getAllMeals();
+    if (currentMeals.some(m => m.name.trim().toLowerCase() === newMealData.name.trim().toLowerCase() && m.id !== newMealData.id)) {
+        showToast("A Baon with this name already exists.", "error"); return false;
     }
-};
-
-export const removeFavorite = (mealName) => {
-    if (!mealName) return;
-    const current = getFavorites();
-    const updated = current.filter(fave => fave.name !== mealName);
-    localStorage.setItem(FAVORITES_KEY, JSON.stringify(updated));
-};
-
-export function clearFavorites() {
-    localStorage.removeItem(FAVORITES_KEY);
-    console.log("Favorites cleared.");
-}
-
-// --- Seen Meals ---
-export function getSeenMeals() { // Corrected spelling
-    try {
-        const stored = localStorage.getItem(SEEN_KEY);
-        const parsed = stored ? JSON.parse(stored) : null;
-        return Array.isArray(parsed) ? parsed : [];
-    } catch (e) {
-        console.error("Error reading seen meals:", e);
-        return [];
-    }
-}
-
-export function markMealAsSeen(mealName) {
-    if (!mealName) return;
-    const current = getSeenMeals(); // Use corrected function name
-    if (!current.includes(mealName)) {
-        const updated = [...current, mealName];
-        localStorage.setItem(SEEN_KEY, JSON.stringify(updated));
-    }
-}
-
-export function clearSeenMeals() { // Corrected spelling
-    localStorage.removeItem(SEEN_KEY);
-    console.log("Seen meals cleared.");
-}
-
-// --- Counters ---
-export function getCounter(key) {
-    if (!key) return 0;
-    try {
-        const value = localStorage.getItem(`counter_${key}`);
-        return value ? parseInt(value, 10) : 0;
-    } catch (e) {
-        console.error(`Error getting counter ${key}:`, e);
-        return 0;
-    }
-}
-
-export function incrementCounter(key) {
-    if (!key) return;
-    try {
-        let currentValue = getCounter(key);
-        currentValue++;
-        localStorage.setItem(`counter_${key}`, currentValue.toString());
-        console.log(`Counter ${key} incremented to ${currentValue}`);
-        return currentValue;
-    } catch (e) {
-        console.error(`Error incrementing counter ${key}:`, e);
-        return getCounter(key);
-    }
-}
-
-// --- Refined forceUpdateDefaultMeals ---
-export function forceUpdateDefaultMeals() {
-    console.log("[storage] Forcing update of default meals based on meals.js...");
-
-    const currentStoredMeals = getAllMeals(); // Get all meals currently in storage
-    const userDefinedMeals = currentStoredMeals.filter(meal => meal.isUserDefined === true);
-    const storedDefaultMeals = currentStoredMeals.filter(meal => meal.isUserDefined === false);
-    const deletedDefaultIds = getDeletedDefaultMealIds();
-
-    console.log("[storage] User defined meals in storage:", userDefinedMeals.length);
-    console.log("[storage] Stored default meals in storage:", storedDefaultMeals.length);
-    console.log("[storage] User-deleted default IDs:", deletedDefaultIds);
-
-    const newOrUpdatedDefaults = [];
-
-    defaultMeals.forEach((newDefaultMealData, index) => {
-        const potentialId = newDefaultMealData.id || `default_${newDefaultMealData.name.toLowerCase().replace(/[^a-z0-9]+/g, '_')}_${index}`;
-
-        // 1. Skip if this default meal ID was previously deleted by the user
-        if (deletedDefaultIds.includes(potentialId)) {
-            console.log(`[storage] Skipping default meal "${newDefaultMealData.name}" (ID: ${potentialId}) as it was previously deleted by user.`);
-            return; // Skip to next default meal
-        }
-
-        // 2. Check if this default meal (by ID) already exists in storage
-        const existingStoredDefault = storedDefaultMeals.find(m => m.id === potentialId);
-
-        const processedDefault = {
-            ...newDefaultMealData, // Start with fresh data from meals.js
-            id: potentialId,
-            isUserDefined: false
-        };
-
-        if (existingStoredDefault) {
-            // It's an existing default meal. Update it with data from meals.js.
-            // You might want more sophisticated merging here if users could edit defaults
-            // (but current setup implies defaults are static until a new app version).
-            console.log(`[storage] Updating existing default meal "${processedDefault.name}" (ID: ${potentialId}).`);
-            newOrUpdatedDefaults.push(processedDefault);
-        } else {
-            // It's a NEW default meal (not in storage, not deleted)
-            console.log(`[storage] Adding NEW default meal "${processedDefault.name}" (ID: ${potentialId}).`);
-            newOrUpdatedDefaults.push(processedDefault);
-        }
-    });
-
-    // Combine the user's own meals with the new/updated list of defaults
-    const finalMealList = [...userDefinedMeals, ...newOrUpdatedDefaults];
-
-    // Final de-duplication by ID to be absolutely sure (e.g., if a user meal somehow got a default ID)
-    const uniqueFinalMealList = Array.from(new Map(finalMealList.map(meal => [meal.id, meal])).values());
-
-    console.log(`[storage] Saving ${uniqueFinalMealList.length} meals after force update.`);
-    saveAllMeals(uniqueFinalMealList);
-
-    showToast("Baon list updated with latest defaults!", "success");
+    const mealToAdd = {
+        ...newMealData,
+        id: (newMealData.id && (newMealData.id.startsWith('user_') || newMealData.id.startsWith('user_mod_')))
+            ? newMealData.id
+            : `user_${Date.now()}_${Math.random().toString(16).slice(2)}`,
+        isUserDefined: true,
+    };
+    await saveAllMeals([...currentMeals, mealToAdd]);
+    showToast(`"${mealToAdd.name}" added!`, "success");
     return true;
-}
+};
 
-// --- Streak Data ---
-export function getStreakData() {
-    try {
-        const stored = localStorage.getItem(STREAK_DATA_KEY);
-        // Provide default values if parsing fails or data is missing
-        const defaults = { lastActionDate: null, currentStreak: 0, longestStreak: 0 };
-        if (!stored) return defaults;
-        const parsed = JSON.parse(stored);
-        // Return parsed data merged with defaults to ensure all keys exist
-        return { ...defaults, ...parsed };
-    } catch (e) {
-        console.error("[storage] Error reading streak data:", e);
-        return { lastActionDate: null, currentStreak: 0, longestStreak: 0 };
+export const updateMeal = async (updatedMealData) => {
+    if (!updatedMealData?.id) { showToast("Error: No ID for update.", "error"); return false; }
+    if (!updatedMealData?.name?.trim()) { showToast("Baon name is required.", "error"); return false; }
+    let currentMeals = await getAllMeals();
+    const index = currentMeals.findIndex(m => m.id === updatedMealData.id);
+    if (index === -1) { showToast("Could not find Baon to update.", "error"); return false; }
+    if (currentMeals.some(m => m.id !== updatedMealData.id && m.name.trim().toLowerCase() === updatedMealData.name.trim().toLowerCase())) {
+        showToast("Another Baon has this name.", "error"); return false;
     }
-}
+    currentMeals[index] = { ...currentMeals[index], ...updatedMealData, isUserDefined: true };
+    await saveAllMeals(currentMeals);
+    showToast(`"${currentMeals[index].name}" updated!`, "success");
+    return true;
+};
 
-function saveStreakData(data) {
-    try {
-        localStorage.setItem(STREAK_DATA_KEY, JSON.stringify(data));
-        // Refresh the Svelte store after saving
-        if (typeof refreshStreakStore === 'function') {
-            _refreshStreakStore();
-        } else {
-            console.warn("[storage] refreshStreakStore function not available to update streak UI.");
-        }
-    } catch (e) {
-        console.error("[storage] Error saving streak data:", e);
+export const getDeletedDefaultMealIds = async () => {
+    const ids = await readFile(DELETED_DEFAULT_MEAL_IDS_FILENAME);
+    return Array.isArray(ids) ? ids : [];
+};
+
+const addDeletedDefaultMealId = async (mealId) => {
+    if (!mealId) return;
+    const currentDeleted = await getDeletedDefaultMealIds();
+    if (!currentDeleted.includes(mealId)) {
+        await writeFile(DELETED_DEFAULT_MEAL_IDS_FILENAME, [...currentDeleted, mealId]);
     }
-}
+};
 
-export async function updateStreakOnAction() {
-    // Dynamically import date-fns functions only when needed
-    const { isSameDay, subDays, formatISO, parseISO, startOfDay } = await import('date-fns');
+export const deleteMeal = async (mealId) => {
+    if (!mealId) return false;
+    let currentMeals = await getAllMeals();
+    const mealToDelete = currentMeals.find(m => m.id === mealId);
+    if (!mealToDelete) { console.warn(`Meal ID ${mealId} not found for deletion.`); return false; }
 
-    const streakData = getStreakData();
-    const today = startOfDay(new Date()); // Get start of today for consistent comparison
-    const todayKey = formatISO(today, { representation: 'date' }); // 'YYYY-MM-DD'
+    if (mealToDelete.isUserDefined === false || mealToDelete.id.startsWith('default_')) {
+        await addDeletedDefaultMealId(mealToDelete.id);
+    }
 
-    console.log(`[storage] updateStreakOnAction called. Today: ${todayKey}, Last Action: ${streakData.lastActionDate}, Current: ${streakData.currentStreak}`);
-
-    if (!streakData.lastActionDate) {
-        // First ever planning action recorded
-        console.log("[storage] First planning action, starting streak.");
-        streakData.currentStreak = 1;
-    } else {
-        const lastActionDay = startOfDay(parseISO(streakData.lastActionDate));
-        const yesterday = subDays(today, 1);
-
-        if (isSameDay(lastActionDay, yesterday)) {
-            // Action occurred yesterday, continue streak
-            console.log("[storage] Streak continued.");
-            streakData.currentStreak++;
-        } else if (!isSameDay(lastActionDay, today)) {
-            // Last action was not yesterday OR today, streak broken. Start new streak.
-            console.log("[storage] Streak broken, starting new streak.");
-            streakData.currentStreak = 1;
-        } else {
-             // Action already recorded for today, do nothing to current streak
-             console.log("[storage] Action already recorded for today, streak unchanged.");
+    if (Capacitor.isNativePlatform() && mealToDelete.image?.startsWith('capacitor://')) {
+        const filename = mealToDelete.image.substring(mealToDelete.image.lastIndexOf('/') + 1);
+        if (filename) {
+            try {
+                await CapacitorFilesystem.deleteFile({ path: filename, directory: CapacitorDirectory.Data });
+            } catch (e) { console.warn(`Failed to delete image ${filename}:`, e); }
         }
     }
+    await saveAllMeals(currentMeals.filter(m => m.id !== mealId));
 
-    // Always update lastActionDate to today
-    streakData.lastActionDate = todayKey;
-    // Update longest streak if current is greater
-    streakData.longestStreak = Math.max(streakData.longestStreak, streakData.currentStreak);
+    try {
+        let liveCalendar = getStoreValue(calendarData);
+        let newCalendar = JSON.parse(JSON.stringify(liveCalendar));
+        let modified = false;
+        for (const dateKey in newCalendar) {
+            if (Array.isArray(newCalendar[dateKey])) {
+                const initialCount = newCalendar[dateKey].length;
+                newCalendar[dateKey] = newCalendar[dateKey].filter(id => id !== mealId);
+                if (newCalendar[dateKey].length < initialCount) modified = true;
+                if (newCalendar[dateKey].length === 0) delete newCalendar[dateKey];
+            }
+        }
+        if (modified) await saveCalendarDataFS(newCalendar);
+    } catch (e) { console.error("Error removing meal from calendar:", e); }
 
-    console.log("[storage] Saving updated Streak Data:", streakData);
-    saveStreakData(streakData);
-    checkAndUnlockAchievements(); // Re-check achievements related to streaks
+    try {
+        let favIds = await getFavorites();
+        if (favIds.includes(mealId)) {
+            await writeFile(FAVORITES_FILENAME, favIds.filter(id => id !== mealId));
+        }
+    } catch (e) { console.error("Error removing meal from favorites:", e); }
+    
+    showToast(`"${mealToDelete.name}" deleted.`, "info");
+    return true;
+};
+
+export async function forceUpdateDefaultMeals() {
+    const currentStoredMeals = await getAllMeals();
+    const userDefinedMeals = currentStoredMeals.filter(meal => meal.isUserDefined === true);
+    const deletedDefaultIds = await getDeletedDefaultMealIds();
+    const finalDefaultSet = defaultMealsFromFile.reduce((acc, defMeal) => {
+        const mealId = defMeal.id || `default_${defMeal.name?.toLowerCase().replace(/[^a-z0-9]+/g, '_') || 'meal'}_${acc.length}`;
+        if (defMeal.name && !deletedDefaultIds.includes(mealId)) {
+            acc.push({ ...defMeal, id: mealId, isUserDefined: false });
+        }
+        return acc;
+    }, []);
+    const mealMap = new Map();
+    finalDefaultSet.forEach(meal => mealMap.set(meal.id, meal));
+    userDefinedMeals.forEach(meal => mealMap.set(meal.id, meal));
+    await saveAllMeals(Array.from(mealMap.values()));
 }
 
-// --- General Reset ---
-export function resetStorage() {
-    console.log("Resetting application storage...");
-    localStorage.removeItem(ALL_BAON_KEY);
-    localStorage.removeItem(DELETED_DEFAULT_MEAL_IDS_KEY);
-    localStorage.removeItem(FAVORITES_KEY);
+export const getFavorites = async () => {
+    const ids = await readFile(FAVORITES_FILENAME);
+    return Array.isArray(ids) ? ids : [];
+};
+export const saveFavorite = async (meal) => {
+    if (!meal?.id) return;
+    const favIds = await getFavorites();
+    if (!favIds.includes(meal.id)) {
+        await writeFile(FAVORITES_FILENAME, [...favIds, meal.id]);
+        showToast("Added to faves!", "faves");
+    }
+};
+export const removeFavorite = async (mealId) => {
+    if (!mealId) return;
+    const favIds = await getFavorites();
+    if (favIds.includes(mealId)) {
+        await writeFile(FAVORITES_FILENAME, favIds.filter(id => id !== mealId));
+        showToast("Removed from faves!", "info");
+    }
+};
+export async function clearFavorites() {
+    try {
+        await writeFile(FAVORITES_FILENAME, []);
+        showToast("All favorites cleared!", "info");
+        // Consider dispatching an event or directly updating a favorites Svelte store if one exists
+    } catch (e) { console.error("Error clearing FS favorites:", e); showToast("Failed to clear faves.", "error");}
+}
+
+export function getSeenMeals() { /* ... (LS based) ... */ 
+    if (typeof window === 'undefined') return [];
+    const stored = localStorage.getItem(SEEN_KEY); return stored ? JSON.parse(stored) : [];
+}
+export function markMealAsSeen(mealName) { /* ... (LS based) ... */
+    if (typeof window === 'undefined' || !mealName) return;
+    const current = getSeenMeals(); if (!current.includes(mealName)) localStorage.setItem(SEEN_KEY, JSON.stringify([...current, mealName]));
+}
+export function clearSeenMeals() { /* ... (LS based) ... */
+    if (typeof window === 'undefined') return;
     localStorage.removeItem(SEEN_KEY);
-    localStorage.removeItem(ONBOARDING_KEY);
-    localStorage.removeItem(MUSIC_KEY);
-    localStorage.removeItem(LAST_SCREEN_KEY);
-    localStorage.removeItem(STREAK_DATA_KEY);
-    localStorage.removeItem(CALENDAR_STORAGE_KEY);
-    localStorage.removeItem('counter_baonAppOpens');
-    localStorage.removeItem('counter_baonMealGenerations');
-    // Add any other keys used by your app here
-    allMealsCache = null;
-    initializeDefaultMealsIfEmpty();
-    refreshMealsStore();
-    resetAchievements();
-    console.log("Application storage reset, defaults re-initialized.");
+}
+export function getCounter(key) { /* ... (LS based) ... */
+    if (typeof window === 'undefined' || !key) return 0;
+    const val = localStorage.getItem(`counter_${key}`); return val ? parseInt(val, 10) : 0;
+}
+export function incrementCounter(key) { /* ... (LS based) ... */
+    if (typeof window === 'undefined' || !key) return;
+    let val = getCounter(key); val++; localStorage.setItem(`counter_${key}`, val.toString()); return val;
+}
+
+export function getStreakData() { /* ... (LS based) ... */
+    if (typeof window === 'undefined') return { lastActionDate: null, currentStreak: 0, longestStreak: 0 };
+    const stored = localStorage.getItem(STREAK_DATA_KEY);
+    const defaults = { lastActionDate: null, currentStreak: 0, longestStreak: 0 };
+    return stored ? { ...defaults, ...JSON.parse(stored) } : defaults;
+}
+function saveStreakData(data) { /* ... (LS based) ... */
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(STREAK_DATA_KEY, JSON.stringify(data));
+    if (typeof refreshStreakStore === 'function') refreshStreakStore();
+}
+export async function updateStreakOnAction() { /* ... (LS based, but needs date-fns) ... */
+    const streakData = getStreakData();
+    const today = startOfDay(new Date());
+    const todayKey = formatISO(today, { representation: 'date' });
+    if (!streakData.lastActionDate) streakData.currentStreak = 1;
+    else {
+        const lastActionDay = startOfDay(parseISO(streakData.lastActionDate));
+        if (isSameDay(lastActionDay, subDays(today, 1))) streakData.currentStreak++;
+        else if (!isSameDay(lastActionDay, today)) streakData.currentStreak = 1;
+    }
+    streakData.lastActionDate = todayKey;
+    streakData.longestStreak = Math.max(streakData.longestStreak, streakData.currentStreak);
+    saveStreakData(streakData);
+    await checkAndUnlockAchievements(); // checkAndUnlockAchievements itself is async
+}
+
+export async function resetStorage() {
+    const fsFiles = [ALL_MEALS_FILENAME, DELETED_DEFAULT_MEAL_IDS_FILENAME, 
+        FAVORITES_FILENAME, CALENDAR_DATA_FILENAME];
+    for (const file of fsFiles) await deleteFsFile(file);
+    const lsKeys = [SEEN_KEY, ONBOARDING_KEY, MUSIC_KEY, LAST_SCREEN_KEY, 
+        STREAK_DATA_KEY, APP_VERSION_KEY, MIGRATION_CORE_FS_DONE_KEY, 
+        'counter_baonAppOpens', 'counter_baonMealGenerations', 
+        'baonCalendarDataVersion', 'migrationCalendarToFS_Done_v1'];
+    lsKeys.forEach(key => localStorage.removeItem(key));
+    await initializeAppStorageAndMeals(null); // Re-init defaults
+    _allMealsStore.set(await getAllMeals()); // Re-populate
+    if (typeof refreshStreakStore === 'function') refreshStreakStore();
+    resetAchievements(); // This should also be async if it interacts with FS/LS for its state
+    showToast("App data has been reset.", "info");
+    // Consider window.location.reload(); for a full app state reset if UI doesn't fully update
 }

@@ -4,13 +4,15 @@
   import { fade, fly } from 'svelte/transition';
 
   // App-specific imports
-  import { calendarData, addBaon, removeBaon, copyBaon, pasteBaon } from '../../lib/calendar.js';
+  import { calendarData, addBaon as addBaonToCalendarFile, removeBaon as removeBaonFromCalendarFile, pasteBaon as pasteBaonToCalendarFile, pasteBaon } from '../../lib/calendar.js';
   import { tagStyles } from '../../lib/tags.js';
   import RecipeSheet from '../RecipeSheet.svelte';
   import DayModal from '../DayModal.svelte';
   import Sparkle from '../../assets/Sparkle.svelte';
   import StreakCalendar from "../StreakCalendar.svelte";
   import BaonBuddyPlanner from "/titles/BaonBuddyPlanner.png";
+  import { get } from 'svelte/store'; // Make sure 'get' is imported
+  import { allMeals as allMealsStore } from '../../lib/mealStore.js'; 
 
   // --- Onboarding Imports ---
   import { onMount, tick } from 'svelte';
@@ -23,7 +25,7 @@
   let currentMonth = new Date();
   let selectedDate = null;
   let modalMode = 'view';
-  let copiedMeals = null;
+  let copiedMealIds = [];
   let transitionDirection = 1;
 
   // This reactive variable is passed to StreakCalendar
@@ -103,7 +105,7 @@
   // --- Functions ---
   function openModal(day) {
     selectedDate = day;
-    modalMode = copiedMeals ? 'copyTarget' : 'view';
+    modalMode = copiedMealIds ? 'copyTarget' : 'view';
   }
 
   function closeModal() {
@@ -117,14 +119,14 @@
   }
 
   function handleCopy({ detail }) {
-    copiedMeals = detail; // detail should be the meals array from DayModal
+    copiedMealIds = detail; // detail should be the meals array from DayModal
     modalMode = 'copySource';
     // Keep modal open
   }
 
   function handlePaste() {
-    if (!copiedMeals || !selectedDate) return;
-    pasteBaon(format(selectedDate, 'yyyy-MM-dd'), copiedMeals);
+    if (!copiedMealIds || !selectedDate) return;
+    pasteBaon(format(selectedDate, 'yyyy-MM-dd'), copiedMealIds);
     modalMode = 'copyTarget'; // Remain in paste mode
     // Keep modal open
   }
@@ -168,6 +170,34 @@
   $: leadingBlanks = Array(getDay(start)).fill(null);
   $: xOffset = 75 * transitionDirection;
 
+
+// --- Calendar Event Handlers from DayModal ---
+  async function handleAddOrUpdateDay(dateKey, mealIdsArray) { // mealIdsArray from DayModal
+    console.log(`[Calendar] Updating day ${dateKey} with meal IDs:`, mealIdsArray);
+    await addBaonToCalendarFile(dateKey, mealIdsArray);
+    // $calendarData store will update, triggering reactivity
+  }
+
+  async function handleRemoveFromDay(dateKey, mealIdToRemove) { // mealIdToRemove from DayModal
+    console.log(`[Calendar] Removing meal ID ${mealIdToRemove} from ${dateKey}`);
+    await removeBaonFromCalendarFile(dateKey, mealIdToRemove);
+  }
+
+  function handleCopyDay(idsToCopy) { // idsToCopy is an array of meal IDs from DayModal
+    copiedMealIds = idsToCopy; // Store the IDs
+    modalMode = 'copySource'; // Or however you manage this state
+    console.log('[Calendar] Copied meal IDs for paste:', copiedMealIds);
+    // No need to close modal here if DayModal handles its own state post-copy
+  }
+
+  async function handlePasteToDay(targetDateKey) {
+    if (!copiedMealIds || !targetDateKey) return;
+    console.log(`[Calendar] Pasting meal IDs to ${targetDateKey}:`, copiedMealIds);
+    await pasteBaonToCalendarFile(targetDateKey, copiedMealIds);
+    modalMode = 'copyTarget'; // Update mode
+    // copiedMealIds = null; // Optionally clear after paste
+    // $calendarData store will update
+  }
 </script>
 
 <!-- Main container with background -->
@@ -269,8 +299,20 @@
               <span class="day-number">{format(day, 'd')}</span>
               {#if $calendarData[dayKey]?.length}
                 <div class="day-content">
-                  {#each $calendarData[dayKey] as meal (meal.id || meal.name) }
-                    <div class="meal-indicator" style="background-color: {tagStyles[meal.type]?.color || '#ccc'}" title="{meal.name} ({meal.type})"></div>
+                  {#each $calendarData[dayKey] as mealId (mealId)} <!-- Key by the mealId string itself -->
+                    {@const fullMeal = get(allMealsStore).find(m => m.id === mealId)}
+                    {#if fullMeal}
+                      <div
+                        class="meal-indicator"
+                        style="background-color: {tagStyles[fullMeal.type]?.color || '#ccc'}"
+                        title="{fullMeal.name} ({fullMeal.type})"
+                      ></div>
+                    {:else}
+                      <!-- Optional: Handle case where mealId exists in calendar but not in allMealsStore (data inconsistency) -->
+                      <!-- <div class="meal-indicator missing" title="Meal data not found for ID: {mealId}"></div> -->
+                      <!-- Or just silently skip, but logging a warning during development is good: -->
+                      <!-- {console.warn(`Meal with ID ${mealId} planned on ${dayKey} but not found in allMealsStore.`)} -->
+                    {/if}
                   {/each}
                 </div>
               {/if}
@@ -287,15 +329,18 @@
 </div> <!-- End calendar-main -->
 
 {#if selectedDate}
+  {@const dayKey = format(selectedDate, 'yyyy-MM-dd')}
+  {@const currentMealIdsForDay = $calendarData[dayKey] || []}
+  <!-- copiedMealIds is already an array of IDs from handleCopyDay -->
   <DayModal
     date={selectedDate}
-    meals={$calendarData[format(selectedDate, 'yyyy-MM-dd')] || []}
+    mealIdsForDay={currentMealIdsForDay} 
     mode={modalMode}
-    copiedMeals={copiedMeals}
-    on:add={(e) => addBaon(format(selectedDate, 'yyyy-MM-dd'), e.detail)}
-    on:remove={(e) => removeBaon(format(selectedDate, 'yyyy-MM-dd'), e.detail)}
-    on:copy={handleCopy}
-    on:paste={handlePaste}
+    copiedMealIds={copiedMealIds}       
+    on:add={(e) => handleAddOrUpdateDay(dayKey, e.detail)}     
+    on:remove={(e) => handleRemoveFromDay(dayKey, e.detail)} 
+    on:copy={(e) => handleCopyDay(e.detail)}                  
+    on:paste={() => handlePasteToDay(dayKey)}
     on:close={closeModal}
     on:viewRecipe={(e) => openRecipeSheet(e.detail)}
   />

@@ -35,7 +35,7 @@
         flex-direction: column;
         padding-top: env(safe-area-inset-top, 0rem);
         gap: 0.5rem;
-        z-index: 1005;
+        z-index: 99995;
         align-items: flex-start;
     }
 

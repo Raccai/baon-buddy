@@ -60,56 +60,59 @@
     function positionPopover() {
         if (!popoverElement || !foundTargetRect) return;
 
-        // console.log("Positioning popover relative to target.");
         const targetRect = foundTargetRect;
         const popoverRect = popoverElement.getBoundingClientRect();
-        const margin = 15; // Increased margin slightly
-        let top = 0, left = 0, transform = ''; // Transform no longer used for main position
+        const margin = 15; // Margin between popover and target element
+        let pTop = 0, pLeft = 0;
         const vw = window.innerWidth;
         const vh = window.innerHeight;
 
+        // Calculate Popover Position (pTop, pLeft) - This part is fine
         switch (position) {
             case 'top':
-                top = targetRect.top - popoverRect.height - margin;
-                left = targetRect.left + targetRect.width / 2 - popoverRect.width / 2;
+                pTop = targetRect.top - popoverRect.height - margin;
+                pLeft = targetRect.left + targetRect.width / 2 - popoverRect.width / 2;
                 break;
             case 'left':
-                 left = targetRect.left - popoverRect.width - margin;
-                 top = targetRect.top + targetRect.height / 2 - popoverRect.height / 2;
-                 break;
+                pLeft = targetRect.left - popoverRect.width - margin;
+                pTop = targetRect.top + targetRect.height / 2 - popoverRect.height / 2;
+                break;
             case 'right':
-                 left = targetRect.right + margin;
-                 top = targetRect.top + targetRect.height / 2 - popoverRect.height / 2;
-                 break;
+                pLeft = targetRect.right + margin;
+                pTop = targetRect.top + targetRect.height / 2 - popoverRect.height / 2;
+                break;
             default: // bottom
-                top = targetRect.bottom + margin;
-                left = targetRect.left + targetRect.width / 2 - popoverRect.width / 2;
+                pTop = targetRect.bottom + margin;
+                pLeft = targetRect.left + targetRect.width / 2 - popoverRect.width / 2;
                 break;
         }
 
-        // Boundary adjustments (clamping)
-        left = Math.max(margin, Math.min(left, vw - popoverRect.width - margin));
-        top = Math.max(margin, Math.min(top, vh - popoverRect.height - margin));
+        pLeft = Math.max(margin, Math.min(pLeft, vw - popoverRect.width - margin));
+        pTop = Math.max(margin, Math.min(pTop, vh - popoverRect.height - margin));
+        popoverStyle = `top: ${pTop}px; left: ${pLeft}px;`; // Removed transform:none, not strictly needed here
 
-        popoverStyle = `top: ${top}px; left: ${left}px; transform: none;`; // Apply final position
-
-        // --- Calculate Arrow Position ---
-        let arrowLeft = 'auto';
-        let arrowTop = 'auto';
-        const targetCenterX = targetRect.left + targetRect.width / 2;
-        const targetCenterY = targetRect.top + targetRect.height / 2;
-        const arrowSize = 14; // Match arrow width/height in CSS
-        const arrowHalfWidth = arrowSize / 2;
-
+        // --- Calculate Arrow Style (for its one dynamic coordinate) ---
+        const arrowSize = 10; // Size of the triangle base/height
+        let dynamicCoordValue = '50%'; // Default
+        
         if (position === 'top' || position === 'bottom') {
-             let idealArrowLeft = targetCenterX - left; // Target center relative to popover left
-             arrowLeft = `${Math.max(arrowHalfWidth + 2, Math.min(idealArrowLeft, popoverRect.width - arrowHalfWidth - 2))}px`; // Clamp within popover bounds + small margin
+            // Horizontal position of the arrow's tip/center
+            const targetCenterXRelToPopover = targetRect.left + targetRect.width / 2 - pLeft;
+            // Clamp so arrow doesn't go too close to popover edges
+            const minPos = arrowSize; // Give some padding from edge
+            const maxPos = popoverRect.width - arrowSize;
+            dynamicCoordValue = `${Math.max(minPos, Math.min(targetCenterXRelToPopover, maxPos))}px`;
+            // For top/bottom, JS will set the 'left' of the arrow
+            arrowStyle = `left: ${dynamicCoordValue}; transform: translateX(-50%);`; 
         } else if (position === 'left' || position === 'right') {
-             let idealArrowTop = targetCenterY - top; // Target center relative to popover top
-             arrowTop = `${Math.max(arrowHalfWidth + 2, Math.min(idealArrowTop, popoverRect.height - arrowHalfWidth - 2))}px`;
+            // Vertical position of the arrow's tip/center
+            const targetCenterYRelToPopover = targetRect.top + targetRect.height / 2 - pTop;
+            const minPos = arrowSize;
+            const maxPos = popoverRect.height - arrowSize;
+            dynamicCoordValue = `${Math.max(minPos, Math.min(targetCenterYRelToPopover, maxPos))}px`;
+            // For left/right, JS will set the 'top' of the arrow
+            arrowStyle = `top: ${dynamicCoordValue}; transform: translateY(-50%);`;
         }
-
-        arrowStyle = `left: ${arrowLeft}; top: ${arrowTop};`;
     }
 
     function handleNext() { dispatch('next'); }
@@ -164,67 +167,74 @@
 <style>
     .popover {
         position: fixed;
-        background-color: #2c2663;
+        background-color: #2c2663; /* Popover background */
         color: #fff5e1;
         border: 1px solid #4a4090;
-        border-radius: 10px;
-        padding: 1rem 1.2rem;
+        border-radius: 8px;
+        padding: 0.8rem 1rem;
         box-shadow: 0 4px 12px rgba(0,0,0,0.35);
-        width: 88%;
-        max-width: 300px;
-        z-index: 991;
-        line-height: 1.5;
-        font-size: 0.95rem;
+        width: auto;
+        max-height: max-content;
+        min-width: 150px;
+        max-width: 250px;
+        z-index: 9991;
+        line-height: 1.4;
+        font-size: 0.9rem;
         top: -9999px; left: -9999px;
-        transition: top 0.35s ease-out,
-                    left 0.35s ease-out,
-                    opacity 0.25s ease-out;
+        transition: top 0.35s ease-out, left 0.35s ease-out, opacity 0.25s ease-out;
         opacity: 0;
     }
-    .popover[style*="top:"] {
+    .popover[style*="top:"] { /* Or use the isVisible class if you prefer */
         opacity: 1;
     }
 
     .arrow {
         position: absolute;
-        width: 14px; height: 14px;
-        background-color: #2c2663;
-        border: 1px solid #4a4090;
-        transform-origin: center center;
-        transform: rotate(45deg);
-        left: 50%; top: -9999px; /* Default position offscreen */
-        margin-left: -7px; margin-top: -7px; /* Centering offset for default left: 50% */
-        z-index: -1;
-        transition: left 0.35s ease-out, top 0.35s ease-out; /* Animate position */
+        width: 0;
+        height: 0;
+        border-style: solid;
+        /* Dynamic left/top positioning and transform for centering set by JS via style={arrowStyle} */
     }
-    /* Position arrow based on parent class */
+
+    /* Popover is BELOW target, arrow (triangle) points UP from popover's TOP edge */
     .popover.bottom .arrow {
-        top: -8px; border-bottom: none; border-right: none;
-        /* left/transform set by inline style={arrowStyle} */
-        /* Reset margin-top when top is set */
-        margin-top: 0;
+        bottom: 100%; /* Position pseudo-element relative to this for actual triangle */
+        /* JS sets: left: 50%; transform: translateX(-50%); (or a calculated value) */
+        /* Triangle pointing up */
+        border-width: 0 7px 10px 7px; /* Left/Right base, Bottom height */
+        border-color: transparent transparent #b388eb transparent; /* Highlight color for arrow */
+        /* Adjust border-color to match popover background if you want it to look like a cutout:
+        border-color: transparent transparent #2c2663 transparent;
+        And then add a border to the popover that the arrow "cuts into",
+        but a highlighted triangle is simpler. */
     }
+
+    /* Popover is ABOVE target, arrow (triangle) points DOWN from popover's BOTTOM edge */
     .popover.top .arrow {
-       bottom: -8px; border-top: none; border-left: none;
-        /* left/transform set by inline style={arrowStyle} */
-        /* Reset margin-top when bottom is set */
-        margin-top: 0;
+        top: 100%;
+        /* JS sets: left: 50%; transform: translateX(-50%); */
+        /* Triangle pointing down */
+        border-width: 10px 7px 0 7px;
+        border-color: #b388eb transparent transparent transparent; /* Highlight color */
     }
+
+    /* Popover is to the LEFT of target, arrow (triangle) points RIGHT from popover's RIGHT edge */
     .popover.left .arrow {
-         right: -8px; border-bottom: none; border-left: none;
-         /* top/transform set by inline style={arrowStyle} */
-         /* Reset margin-left when right is set */
-         margin-left: 0;
-         /* Keep vertical centering offset */
-         margin-top: -7px;
-     }
+        left: 100%;
+        /* JS sets: top: 50%; transform: translateY(-50%); */
+        /* Triangle pointing right */
+        border-width: 7px 0 7px 10px;
+        border-color: transparent transparent transparent #b388eb; /* Highlight color */
+    }
+
+    /* Popover is to the RIGHT of target, arrow (triangle) points LEFT from popover's LEFT edge */
     .popover.right .arrow {
-         left: -8px; border-top: none; border-right: none;
-         /* top/transform set by inline style={arrowStyle} */
-         /* Reset margin-left when left is set */
-          margin-left: 0;
-          margin-top: -7px;
-     }
+        right: 100%;
+        /* JS sets: top: 50%; transform: translateY(-50%); */
+        /* Triangle pointing left */
+        border-width: 7px 10px 7px 0;
+        border-color: transparent #b388eb transparent transparent; /* Highlight color */
+    }
 
     .text-content { margin-bottom: 0.8rem; }
 
@@ -238,31 +248,4 @@
         font-weight: 500; transition: background-color 0.2s ease; font-size: 0.9rem;
     }
     .buttons button:hover { background-color: #6a5acd; }
-
-
-    /* --- RESPONSIVE STYLES --- */
-    @media (min-width: 700px) and (min-height: 1000px) {
-      .popover {
-          max-width: 380px; padding: 1.2rem 1.5rem;
-          font-size: 1.1rem; border-radius: 12px;
-      }
-      .buttons button { padding: 0.6rem 1.2rem; font-size: 1rem; }
-      .arrow { width: 18px; height: 18px; margin-left: -9px; margin-top: -9px; }
-      .popover.bottom .arrow { top: -10px; }
-      .popover.top .arrow { bottom: -10px; }
-      .popover.left .arrow { right: -10px; }
-      .popover.right .arrow { left: -10px; }
-    }
-    @media (min-width: 900px) and (min-height: 1300px) {
-      .popover{
-          max-width: 450px; padding: 1.5rem 1.8rem;
-          font-size: 1.25rem; border-radius: 14px;
-      }
-      .buttons button { padding: 0.8rem 1.5rem; font-size: 1.1rem; border-radius: 8px; }
-      .arrow { width: 20px; height: 20px; margin-left: -10px; margin-top: -10px; }
-      .popover.bottom .arrow { top: -11px; }
-      .popover.top .arrow { bottom: -11px; }
-      .popover.left .arrow { right: -11px; }
-      .popover.right .arrow { left: -11px; }
-    }
 </style>
