@@ -422,6 +422,8 @@
         /* Top and side padding for the content within the full-screen view.
         Bottom padding will be effectively provided by .form-actions' own padding. */
         padding: 1.5rem 1.8rem 0;
+        padding-top: var(--custom-safe-area-top);
+        padding-bottom: var(--custom-safe-area-bottom);
     }
 
     .form-title {

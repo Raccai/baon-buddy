@@ -273,7 +273,7 @@
         overflow: hidden; 
         background-color: #1a163f; color: #fff5e1;
         box-sizing: border-box;
-        padding-top: env(safe-area-inset-top, 0rem);
+        padding-top: calc(var(--custom-safe-area-top));
         padding-bottom: calc(var(--custom-safe-area-bottom, env(safe-area-inset-bottom, 0px)));
     }
     .page-header {

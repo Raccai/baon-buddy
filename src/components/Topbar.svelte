@@ -21,8 +21,7 @@
     color: #fff5e1; /* Changed default color */
     /* --- ADD Safe Area Padding --- */
     padding: 0 0.4rem; /* Keep horizontal */
-    padding-top: env(safe-area-inset-top);
-    padding-top: constant(safe-area-inset-top);
+    padding-top: calc(var(--custom-safe-area-top));
     /* --- Adjust height if background should fill safe area --- */
     /* height: calc(68px + env(safe-area-inset-top, 0px)); */
     /* If using calc for height, internal elements might need relative positioning */

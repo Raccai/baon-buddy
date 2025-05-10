@@ -96,7 +96,7 @@
       </button>
     </nav>
     <div class="menu-footer">
-      Baon Buddy v1.6
+      Baon Buddy v1.7
     </div>
   </aside>
 {/if}
@@ -119,7 +119,7 @@
     border-left: 1px solid #4a4090; /* Add border */
     box-sizing: border-box;
     /* Apply safe area padding directly */
-    padding-top: env(safe-area-inset-top, 0rem);
+    padding-top: calc(var(--custom-safe-area-top));
     padding-bottom: calc(var(--custom-safe-area-bottom, env(safe-area-inset-bottom, 0px)));
   }
 

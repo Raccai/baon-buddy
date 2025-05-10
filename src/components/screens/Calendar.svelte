@@ -474,8 +474,6 @@
     background-color: #1a163f; /* Dark base background */
     position: relative; /* For positioning background elements */
     color: #fff5e1; /* Default text color (creamy white) */
-    padding-top: env(safe-area-inset-top, 0rem);
-    padding-bottom: calc(60px + var(--custom-safe-area-bottom, env(safe-area-inset-bottom, 0px)));
   }
 
   .baon-buddy-planner {
