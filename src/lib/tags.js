@@ -32,3 +32,15 @@ export const tagStyles = {
     color: "#999999"
   }
 };
+
+export function getTagStyle(typeString) {
+    if (typeString && tagStyles[typeString]) {
+        return tagStyles[typeString];
+    }
+    // Fallback for custom primary types or types not in tagStyles
+    return {
+        label: typeString || 'Misc', // Use the type string itself as label, or 'Misc' if type is empty
+        color: '#777777',       // A neutral grey
+        textColor: '#FFFFFF'
+    };
+}

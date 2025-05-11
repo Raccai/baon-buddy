@@ -10,6 +10,7 @@ const defaultStreakState = { lastActionDate: null, currentStreak: 0, longestStre
 const streakStore = writable(defaultStreakState); // <<< Initialize with default object
 console.log("[streakStore] Store created with default state.");
 
+
 // --- Function to load initial data AFTER module resolution ---
 let storeInitialized = false;
 function loadInitialData() {

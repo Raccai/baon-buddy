@@ -119,6 +119,7 @@ export const addMeal = async (newMealData) => {
             ? newMealData.id
             : `user_${Date.now()}_${Math.random().toString(16).slice(2)}`,
         isUserDefined: true,
+        tags: Array.isArray(newMealData.tags) ? newMealData.tags : [] // <<< ENSURE tags is an array
     };
     await saveAllMeals([...currentMeals, mealToAdd]);
     showToast(`"${mealToAdd.name}" added!`, "success");
@@ -134,7 +135,17 @@ export const updateMeal = async (updatedMealData) => {
     if (currentMeals.some(m => m.id !== updatedMealData.id && m.name.trim().toLowerCase() === updatedMealData.name.trim().toLowerCase())) {
         showToast("Another Baon has this name.", "error"); return false;
     }
-    currentMeals[index] = { ...currentMeals[index], ...updatedMealData, isUserDefined: true };
+    
+    const existingMeal = currentMeals[index];
+    currentMeals[index] = { 
+        ...existingMeal, 
+        ...updatedMealData, 
+        isUserDefined: true,
+        // Ensure tags from updatedMealData is an array, or keep existing, or default to empty
+        tags: Array.isArray(updatedMealData.tags) 
+              ? updatedMealData.tags 
+              : (Array.isArray(existingMeal.tags) ? existingMeal.tags : []) 
+    };
     await saveAllMeals(currentMeals);
     showToast(`"${currentMeals[index].name}" updated!`, "success");
     return true;

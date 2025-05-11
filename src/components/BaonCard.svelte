@@ -2,12 +2,14 @@
     import AddedFaves from "../assets/AddedFaves.svelte";
     import NotFaves from "../assets/NotFaves.svelte";
     import EditIcon from "../assets/EditIcon.svelte";
+    import DeleteIcon from "../assets/DeleteIcon.svelte";
     import { showToast } from "../lib/toast.js";
     // Corrected import name
     import { markMealAsSeen, getSeenMeals, saveFavorite, removeFavorite } from "../lib/storage.js"; // Ensure getSeenMeals is correct
     import { createEventDispatcher } from "svelte";
     import { tagStyles } from "../lib/tags.js";
     import { checkAndUnlockAchievements } from "../lib/achievementStore.js";
+    import { getTagStyle } from "../lib/tags.js";
     // --- Capacitor Imports ---
     import { getDisplayImageSrc } from "../lib/imageUtils";
 
@@ -32,13 +34,12 @@
 
     // --- Reactive Computations ---
 
-    // Get tag data based on meal type
-    $: tagData = meal && meal.type ? tagStyles[meal.type] : null;
-
-    // Determine if this card is currently favorited
-    $: favorite = meal?.id ? favoriteNames.includes(meal.name) : false;
-
+    
+    $: tagData = meal && meal.type ? tagStyles[meal.type] : null; // Get tag data based on meal type
+    $: favorite = meal?.id ? favoriteNames.includes(meal.name) : false; // Determine if this card is currently favorited
     $: imageSrc = getDisplayImageSrc(meal?.image);
+    $: primaryTypeData = meal && meal.type ? getTagStyle(meal.type) : getTagStyle('unknown');
+    $: displayTags = meal && Array.isArray(meal.tags) ? meal.tags.slice(0, 3) : []; 
 
     // Trigger bounce animation
     $: if (triggerBounce) {
@@ -132,6 +133,12 @@
             dispatch("editBaon", meal);
         }
     }
+
+    function dispatchDeleteBaon() {
+        if (meal && meal.id) {
+            dispatch("deleteBaon", meal.id);
+        }
+    }
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -161,9 +168,18 @@
 
     <div class="baon-info">
         <h2 class="meal-name">{meal.name}</h2>
-        <span class="meal-type" style="background-color: {tagData?.color}">
-            {tagData?.label || meal.type}
+        <span class="meal-type" style="background-color: {primaryTypeData?.color}; color: {primaryTypeData?.textColor}">
+            {primaryTypeData?.label || meal.type}
         </span>
+        
+        {#if displayTags.length > 0}
+            <div class="hashtag-tags-container">
+                {#each displayTags as tag (tag)}
+                <span class="hashtag-chip">{tag}</span>
+                {/each}
+            </div>
+        {/if}
+
         <p class="meal-message">{meal.message}</p>
         
         <div class="button-container">
@@ -205,6 +221,16 @@
                 disabled={!meal}
             >
                 <EditIcon />
+            </button>
+
+            <button
+                class="delete-btn"
+                on:click|stopPropagation={dispatchDeleteBaon}
+                aria-label="Delete {meal.name}"
+                title="Delete this Baon"
+                disabled={!meal}
+            >
+                <DeleteIcon />
             </button>
         </div>
     </div>
@@ -288,6 +314,7 @@
         /* Optional: Limit to 2 lines with ellipsis */
         display: -webkit-box;
         -webkit-line-clamp: 2;
+        line-clamp: 2;
         -webkit-box-orient: vertical;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -307,6 +334,22 @@
         /* background-color and color are set by inline style */
     }
 
+    .hashtag-tags-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.3rem; /* Gap between tag chips */
+        margin-bottom: 0.5rem; /* Space below the tags */
+    }
+    .hashtag-chip {
+        background-color: #4a4090; /* Default tag color - same for all custom tags */
+        color: #fff5e1;
+        padding: 0.15rem 0.5rem;
+        border-radius: 0.3rem;
+        font-size: 0.7rem;
+        font-weight: 500;
+        line-height: 1.2;
+    }
+
     .meal-message {
         font-style: normal; /* Less italic, more direct */
         margin: 0 0 0.6rem 0; /* Control spacing */
@@ -318,6 +361,7 @@
         /* Optional: Limit to 2-3 lines */
         display: -webkit-box;
         -webkit-line-clamp: 3;
+        line-clamp: 3;
         -webkit-box-orient: vertical;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -349,8 +393,8 @@
         background-color: transparent;
     }
 
-    /* Heart Button & Recipe Button Base Styles */
-    .heart-btn, .recipe-btn, .edit-btn {
+    /* Button Base Styles */
+    .heart-btn, .recipe-btn, .edit-btn, .delete-btn {
         background: none;
         border: none;
         cursor: pointer;
@@ -385,13 +429,17 @@
     }
 
     /* Edit Button */
-    .edit-btn {
-        transform: scale(0.5);
-        margin-left: -0.4rem;
+    .edit-btn, .delete-btn {
+        transform: scale(0.4);
+        margin-left: -0.8rem;
     }
-    .edit-btn:hover {
+    .edit-btn:hover, .delete-btn:hover {
         background-color: rgba(35, 31, 71, 0.08); /* Subtle hover */
         transform: scale(0.58);
+    }
+
+    .delete-btn {
+        margin-left: -1.6rem;
     }
 
     @keyframes pop {
@@ -506,9 +554,9 @@
         .baon-card { padding: 1.5rem; gap: 1.5rem; min-height: 200px; border-radius: 20px; }
         .image-column { width: 120px; height: 120px; }
         .emoji { font-size: 4.5rem; }
-        .meal-name { font-size: 1.6rem; -webkit-line-clamp: 2; min-height: calc(1.6rem * 1.25 * 1); }
+        .meal-name { font-size: 1.6rem; -webkit-line-clamp: 2; line-clamp: 2; min-height: calc(1.6rem * 1.25 * 1); }
         .meal-type { font-size: 0.9rem; padding: 0.3rem 0.9rem; }
-        .meal-message { font-size: 1rem; -webkit-line-clamp: 3; min-height: calc(1rem * 1.4 * 1);}
+        .meal-message { font-size: 1rem; -webkit-line-clamp: 3; line-clamp: 3; min-height: calc(1rem * 1.4 * 1);}
         .button-container { gap: 0.8rem; }
         .action-btn { padding: 10px; }
         .heart-btn :global(svg), .recipe-btn svg { width: 30px; height: 30px; }

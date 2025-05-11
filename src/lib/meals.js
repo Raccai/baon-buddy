@@ -5,6 +5,7 @@ export const meals = [
     type: "budget",
     message: "Perfect for tipid days.",
     image: "/baon/LumpiangShanghai.png",
+    tags: [],
     recipe: {
       ingredients: [
         "½ kg ground pork",
@@ -32,6 +33,7 @@ export const meals = [
     type: "classic",
     message: "Klasikong paborito ni tatay.",
     image: "/baon/AdoboRice.png",
+    tags: [],
     recipe: {
       ingredients: [
         "½ kg chicken or pork",
@@ -59,6 +61,7 @@ export const meals = [
     type: "quick",
     message: "Light, simple, and satisfying.",
     image: "/baon/TunaSandwich.png",
+    tags: [],
     recipe: {
       ingredients: [
         "1 can tuna (in oil or water), drained",
@@ -82,6 +85,7 @@ export const meals = [
     type: "healthy",
     message: "Para sa #balikalindog goals.",
     image: "/baon/ChickenSalad.png",
+    tags: [],
     recipe: {
       ingredients: [
         "1 grilled chicken breast, sliced",
@@ -105,6 +109,7 @@ export const meals = [
     type: "instant",
     message: "Walang kamatayang gabing tamad meal.",
     image: "/baon/PancitCanton.png",
+    tags: [],
     recipe: {
       ingredients: [
         "1 pack instant pancit canton",
@@ -125,6 +130,7 @@ export const meals = [
     type: "classic",
     message: "Panalo kahit breakfast o lunch.",
     image: "/baon/CornedBeefRice.png",
+    tags: [],
     recipe: {
       ingredients: [
         "1 can corned beef",
@@ -150,6 +156,7 @@ export const meals = [
     type: "silog",
     message: "Tocino + sinangag + itlog = love!",
     image: "/baon/Tocilog.png",
+    tags: [],
     recipe: {
       ingredients: [
         "tocino slices",
@@ -169,6 +176,7 @@ export const meals = [
     type: "silog",
     message: "Sweet or garlicky? Your choice.",
     image: "/baon/Longsilog.jpg",
+    tags: [],
     recipe: {
       ingredients: [
         "longganisa",
@@ -188,6 +196,7 @@ export const meals = [
     type: "silog",
     message: "Crunchy outside, soft inside.",
     image: "/baon/Bangsilog.jpg",
+    tags: [],
     recipe: {
       ingredients: [
         "daing na bangus",
@@ -207,6 +216,7 @@ export const meals = [
     type: "quick",
     message: "Mabilisang baon, laging masarap.",
     image: "/baon/SpamSandwich.jpg",
+    tags: [],
     recipe: {
       ingredients: [
         "Spam slices",
@@ -228,6 +238,7 @@ export const meals = [
     type: "quick",
     message: "Creamy, classic, and easy.",
     image: "/baon/EggSaladSandwich.jpeg",
+    tags: [],
     recipe: {
       ingredients: [
         "2 hard-boiled eggs",
@@ -248,6 +259,7 @@ export const meals = [
     type: "classic",
     message: "Sosy pero simple lutuin.",
     image: "/baon/BistekTagalog.png",
+    tags: [],
     recipe: {
       ingredients: [
         "beef sirloin slices",
@@ -270,6 +282,7 @@ export const meals = [
     type: "budget",
     message: "Staple na ulam sa kahit anong bahay.",
     image: "/baon/Giniling.jpg",
+    tags: [],
     recipe: {
       ingredients: [
         "ground pork or beef",
@@ -292,6 +305,7 @@ export const meals = [
     type: "healthy",
     message: "Paborito ni nanay!",
     image: "/baon/TortangTalong.png",
+    tags: [],
     recipe: {
       ingredients: [
         "1 eggplant, grilled and peeled",
@@ -313,6 +327,7 @@ export const meals = [
     type: "instant",
     message: "Bata man o matanda, panalo.",
     image: "/baon/HotdogRice.jpg",
+    tags: [],
     recipe: {
       ingredients: [
         "hotdogs",
@@ -332,6 +347,7 @@ export const meals = [
     type: "classic",
     message: "Lutong bahay feels.",
     image: "/baon/Tilapia.jpg",
+    tags: [],
     recipe: {
       ingredients: [
         "1 tilapia, cleaned",

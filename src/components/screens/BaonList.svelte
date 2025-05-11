@@ -35,28 +35,27 @@
       const currentAllMeals = $allMeals || [];
 
       filteredMeals = currentAllMeals.filter(meal => {
-          if (!meal || !meal.name) return false;
+        if (!meal || !meal.name) return false;
 
-          // Check Type Filter
-          const matchFilter = currentFilters.length === 0 || (meal.type && currentFilters.includes(meal.type));
-          if (!matchFilter) return false;
+        // Check Primary Type Filter (existing)
+        const typeMatchFilter = currentFilters.length === 0 || (meal.type && currentFilters.includes(meal.type));
+        if (!typeMatchFilter) return false;
 
-          // Check Search Term Filter
-          if (currentSearch === '') return true; // No search term matches all
+        // Check Search Term Filter
+        if (currentSearch === '') return true; 
 
-          // --- EXPANDED SEARCH ---
-          const nameMatch = meal.name.toLowerCase().includes(currentSearch);
-          const messageMatch = meal.message && meal.message.toLowerCase().includes(currentSearch);
-          // Check if any ingredient includes the search term
-          const ingredientMatch = meal.recipe?.ingredients && Array.isArray(meal.recipe.ingredients) &&
-                                 meal.recipe.ingredients.some(ing =>
-                                     typeof ing === 'string' && ing.toLowerCase().includes(currentSearch)
-                                 );
+        const nameMatch = meal.name.toLowerCase().includes(currentSearch);
+        const messageMatch = meal.message?.toLowerCase().includes(currentSearch);
+        const primaryTypeSearchMatch = meal.type?.toLowerCase().includes(currentSearch); // Search in primary type
 
-          return nameMatch || messageMatch || ingredientMatch; // Return true if any part matches
-          // --- END EXPANDED SEARCH ---
+        // NEW: Search in tags array
+        const tagsMatch = meal.tags && Array.isArray(meal.tags) &&
+                          meal.tags.some(tag => 
+                            typeof tag === 'string' && tag.toLowerCase().includes(currentSearch)
+                          );
 
-      }).sort((a, b) => a.name.localeCompare(b.name));
+        return nameMatch || messageMatch || primaryTypeSearchMatch || tagsMatch;
+    }).sort((a, b) => a.name.localeCompare(b.name));
   }
 
   function forwardEditEvent(event) {
@@ -174,6 +173,9 @@
     finishHintsCommon();
   }
 
+  function forwardDeleteEvent(event) {
+    dispatch("requestDeleteBaon", event.detail);
+  }
 </script>
 
 <div class="baonlist-page">
@@ -240,6 +242,7 @@
               on:viewRecipe={(e) => openRecipe(e.detail.meal || e.detail)} 
               on:editBaon={forwardEditEvent}
               on:faveChange={handleFaveChangeFromCard} 
+              on:deleteBaon={forwardDeleteEvent}
             />
           </div>
         {/each}

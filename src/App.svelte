@@ -252,6 +252,31 @@
     baonFormInitialData = null;
   }
 
+  async function handleRequestDeleteBaon(event) {
+    const mealIdToDelete = event.detail;
+    if (!mealIdToDelete) return;
+
+    const allCurrentMeals = getStoreValue(allMealsStore);
+    const mealName = allCurrentMeals.find(m => m.id === mealIdToDelete)?.name || "this Baon";
+
+    if (confirm(`Are you sure you want to delete "${mealName}"? This action cannot be undone and will remove it from any planned calendar days.`)) {
+      try {
+        const success = await deleteMeal(mealIdToDelete);
+        if (success) {
+          // $allMealsStore is updated by deleteMeal -> saveAllMeals -> _allMealsStore.set()
+          // Need to refresh favoriteNames if the deleted meal was a favorite
+          await refreshAppFavorites();
+          // Calendar data should also be updated by deleteMeal in storage.js
+        } else {
+          showToast(`Could not delete "${mealName}".`, "error");
+        }
+      } catch (error) {
+        console.error("Error during Baon deletion:", error);
+        showToast("An error occurred while deleting the Baon.", "error");
+      }
+    }
+  }
+
   // --- Lifecycle & Platform Setup ---
   let appStateListener = null;
 
@@ -358,6 +383,7 @@
             on:editBaon={handleEditBaonRequest}
             {favoriteNames}
             on:requestFavoriteRefresh={refreshAppFavorites} 
+            on:requestDeleteBaon={handleRequestDeleteBaon}
           />
         {:else if currentScreen === 'calendar'}
           <Calendar />
@@ -367,6 +393,7 @@
             on:viewRecipe={(e) => openRecipeSheet(e.detail)}
             {favoriteNames}
             on:requestFavoriteRefresh={refreshAppFavorites}
+            on:requestDeleteBaon={handleRequestDeleteBaon}
           />
         {/if}
       </div>

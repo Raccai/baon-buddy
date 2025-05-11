@@ -1,10 +1,12 @@
 <script>
     // @ts-ignore
+    // @ts-ignore
     import { createEventDispatcher, onMount } from 'svelte';
     import { tagStyles } from '../lib/tags.js'; // Adjust path if needed
     import { fly } from 'svelte/transition';
     import { quintOut } from 'svelte/easing'; // Import easing
     import { Capacitor } from '@capacitor/core';
+    // @ts-ignore
     // @ts-ignore
     import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
     import { showToast } from '../lib/toast.js';
@@ -23,6 +25,8 @@
     let emoji = '';
     let ingredientsStr = '';
     let stepsStr = '';
+    // @ts-ignore
+    let tagsStr = '';
     let talaTip = '';
     let formTitle = 'Add New Baon';
     let internalId = null; // Store ID separately for edit mode
@@ -45,7 +49,8 @@
     // --- Initialize/Reset Form ---
     // @ts-ignore
    // @ts-ignore
-     $: {
+    // @ts-ignore
+      $: {
         // Reset relevant state on prop changes
         selectedFile = null; // Always clear selected file state
         imageAction = (formMode === 'add') ? 'add' : 'keep'; // Set initial action based on mode
@@ -75,6 +80,8 @@
             originalDefaultIdFromInitial = initialData.originalDefaultId || null; 
             // @ts-ignore
             isUserDefinedFromInitial = initialData.isUserDefined;
+            // @ts-ignore
+            tagsStr = initialData.tags ? initialData.tags.map(t => t.startsWith('#') ? t.substring(1) : t).join(', ') : '';
 
             // Set initial preview ONLY from currentImageUrl
             if (currentImageUrl) {
@@ -88,10 +95,24 @@
             internalId = null; name = ''; type = mealTypes[0] || 'custom'; message = ''; emoji = '';
             currentImageUrl = null; ingredientsStr = ''; stepsStr = ''; talaTip = '';
             formTitle = 'Add New Baon';
-            imagePreviewUrl = null; // Ensure preview is clear
-            originalDefaultIdFromInitial = null; // <<< CLEAR IT
+            imagePreviewUrl = null; 
+            originalDefaultIdFromInitial = null; 
             isUserDefinedFromInitial = false;
+            tagsStr = '';
         }
+    }
+
+    function parseTags(str) {
+        if (!str || typeof str !== 'string') return [];
+        return str.split(',')
+            .map(tag => {
+                const trimmedTag = tag.trim();
+                if (trimmedTag && !trimmedTag.startsWith('#')) {
+                    return `#${trimmedTag}`; // Add hashtag if not present
+                }
+                return trimmedTag; // Return as is if already has # or is empty after trim
+            })
+            .filter(tag => tag.length > 1); // Filter out empty tags or just "#"
     }
 
     function parseList(str, separator = ',') {
@@ -288,6 +309,7 @@
                 steps: parseList(stepsStr, '\n'),
                 talaTip: talaTip.trim() || null
             },
+            tags: parseTags(tagsStr),
             originalDefaultId: originalDefaultIdFromInitial,
             isUserDefined: isUserDefinedFromInitial   
         };
@@ -330,9 +352,21 @@
                                 <option value={typeOption}>{tagStyles[typeOption].label || typeOption}</option>
                                 {/if}
                             {/each}
-                            <option value="custom">Custom</option>
                         </select>
                     </div>
+
+                    <div class="form-group">
+                        <label for="baon-tags-{formMode}">Tags (Optional, comma-separated)</label>
+                        <input 
+                            type="text" 
+                            id="baon-tags-{formMode}" 
+                            bind:value={tagsStr} 
+                            placeholder="e.g. quick, spicy, kid-friendly"
+                        >
+                        <small class="form-hint">Add descriptive tags like #comfortfood, #15minmeal.</small>
+                    </div>
+
+                    <hr class="separator">
 
                     <div class="form-group">
                         <label for="baon-emoji-{formMode}">Emoji</label>
@@ -429,7 +463,7 @@
     .form-title {
         text-align: center; 
         color: #fff; 
-        margin: 0 0 1.2rem 0;
+        margin: 1.2rem 0 1.2rem 0;
         font-size: 1.4rem; 
         font-weight: 600;
         flex-shrink: 0; 

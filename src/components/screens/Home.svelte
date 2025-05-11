@@ -109,6 +109,10 @@
     dispatch('editBaon', event.detail);
   }
 
+  function forwardDeleteEvent(event) {
+    dispatch("requestDeleteBaon", event.detail);
+  }
+
   function handleFaveChangeFromCard() {
     dispatch('requestFavoriteRefresh');
   }
@@ -161,6 +165,7 @@
                 on:viewRecipe={dispatchViewRecipe}
                 on:editBaon={forwardEditEvent}
                 on:faveChange={handleFaveChangeFromCard} 
+                on:deleteBaon={forwardDeleteEvent}
               />
             {/each}
           </div>
