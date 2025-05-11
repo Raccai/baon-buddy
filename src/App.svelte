@@ -5,7 +5,7 @@
   import { SafeArea } from "capacitor-plugin-safe-area";
   import { Capacitor } from '@capacitor/core';
   import { fade, fly } from 'svelte/transition';
-  import { quintOut } from 'svelte/easing';
+  import { quintIn, quintOut } from 'svelte/easing';
 
   // Import ASYNC storage functions
   import {
@@ -14,7 +14,12 @@
     incrementCounter, // Assuming synchronous (uses localStorage for small counters)
     updateMeal,     // ASYNC
     addMeal,        // ASYNC
-    deleteMeal      // ASYNC
+    deleteMeal,      // ASYNC
+    resetStorage,
+
+    clearFavorites
+
+
     // forceUpdateDefaultMeals is now primarily called by initializeAppStorageAndMeals
   } from './lib/storage.js';
 
@@ -36,6 +41,7 @@
   import RecipeSheet from './components/RecipeSheet.svelte';
   import Toast from './components/Toast.svelte';
   import BaonForm from './components/BaonForm.svelte';
+  import ConfirmationModal from './components/ConfirmationModal.svelte';
 
   // Screens
   import AchievementScreen from './components/screens/AchievementScreen.svelte';
@@ -70,6 +76,43 @@
   // For FavoritesModal binding
   let favoritesRef;
 
+  // --- Confirmation Modal State ---
+  let showConfirmModal = false;
+  let confirmModalProps = {
+    title: 'Are you sure?',
+    message: 'This action cannot be undone.',
+    confirmText: 'Yes, Proceed',
+    cancelText: 'No, Cancel',
+    confirmClasses: 'btn-danger', // Default to danger
+    onConfirm: () => {},         // Placeholder for the action
+    onCancel: () => { showConfirmModal = false; },
+    isLoading: false,
+  };
+
+  function requestConfirmation({ title, message, confirmText = 'Confirm', cancelText = 'Cancel', confirmClasses = 'btn-danger', onConfirmAction, isDangerous = true }) {
+    confirmModalProps = {
+      title,
+      message,
+      confirmText,
+      cancelText,
+      confirmClasses: isDangerous ? 'btn-danger' : 'btn-primary',
+      onConfirm: async () => { // Make the wrapper async
+        confirmModalProps.isLoading = true;
+        try {
+          await onConfirmAction(); // Execute the actual async action
+        } catch (e) {
+          console.error("Error during confirmed action:", e);
+          // Optionally show a generic error toast here if the action itself doesn't
+        } finally {
+          confirmModalProps.isLoading = false;
+          showConfirmModal = false; // Close modal after action or error
+        }
+      },
+      onCancel: () => { showConfirmModal = false; confirmModalProps.isLoading = false; },
+      isLoading: false,
+    };
+    showConfirmModal = true;
+  }
 
   // --- Navigation & Modal Control ---
   function handleNavigate(event) {
@@ -232,9 +275,9 @@
         }
       }
     } catch (error) {
-        console.error("[App] Error during save/update operation:", error);
-        showToast("An unexpected error occurred while saving.", "error");
-        success = false;
+      console.error("[App] Error during save/update operation:", error);
+      showToast("An unexpected error occurred while saving.", "error");
+      success = false;
     }
 
     if (success) {
@@ -252,29 +295,65 @@
     baonFormInitialData = null;
   }
 
-  async function handleRequestDeleteBaon(event) {
+  async function confirmAndDeleteBaon(mealId, mealName) {
+    requestConfirmation({
+      title: 'Delete Baon?',
+      message: `Are you sure you want to delete "<strong>${mealName}</strong>"?<br>This will also remove it from all planned calendar days. This action cannot be undone.`,
+      confirmText: 'Delete',
+      onConfirmAction: async () => { // This is the actual async work
+        const success = await deleteMeal(mealId);
+        if (success) {
+          await refreshAppFavorites(); // Refresh relevant app state
+        } else {
+          // showToast(`Could not delete "${mealName}".`, "error");
+        }
+        // No need to close modal here, onConfirm wrapper does it.
+      }
+    });
+  }
+
+  async function handleRequestDeleteBaon(event) { // This comes from Home/BaonList
     const mealIdToDelete = event.detail;
     if (!mealIdToDelete) return;
-
     const allCurrentMeals = getStoreValue(allMealsStore);
-    const mealName = allCurrentMeals.find(m => m.id === mealIdToDelete)?.name || "this Baon";
+    const meal = allCurrentMeals.find(m => m.id === mealIdToDelete);
+    const mealName = meal ? meal.name : "this Baon";
+    
+    await confirmAndDeleteBaon(mealIdToDelete, mealName); // Call new confirm function
+  }
 
-    if (confirm(`Are you sure you want to delete "${mealName}"? This action cannot be undone and will remove it from any planned calendar days.`)) {
-      try {
-        const success = await deleteMeal(mealIdToDelete);
-        if (success) {
-          // $allMealsStore is updated by deleteMeal -> saveAllMeals -> _allMealsStore.set()
-          // Need to refresh favoriteNames if the deleted meal was a favorite
-          await refreshAppFavorites();
-          // Calendar data should also be updated by deleteMeal in storage.js
-        } else {
-          showToast(`Could not delete "${mealName}".`, "error");
-        }
-      } catch (error) {
-        console.error("Error during Baon deletion:", error);
-        showToast("An error occurred while deleting the Baon.", "error");
+  async function handleRequestClearFavorites() {
+    requestConfirmation({
+      title: 'Clear All Favorites?',
+      message: 'Are you sure you want to remove all Baon from your favorites list? This cannot be undone.',
+      confirmText: 'Clear All',
+      onConfirmAction: async () => {
+        await clearFavorites(); // from storage.js
+        // refreshAppFavorites is already called by the on:faveChange from SettingsModal
+        // but if clearFavorites itself doesn't trigger an update path for favoriteNames, call it here:
+        await refreshAppFavorites(); 
+        // Toast is handled by storage.js::clearFavorites
       }
-    }
+    });
+  }
+  
+  // --- Example Usage: Resetting App (called from SettingsModal) ---
+  // SettingsModal would dispatch 'requestResetApp'
+  // App.svelte: on:requestResetApp={handleRequestResetApp}
+  async function handleRequestResetApp() {
+    requestConfirmation({
+      title: 'Reset App Data?',
+      message: '<strong>DANGER ZONE!</strong><br>Are you absolutely sure you want to reset the entire app? All your Baon, calendar plans, favorites, and settings will be permanently deleted.',
+      confirmText: 'Yes, Reset App',
+      confirmClasses: 'btn-danger reset-app-btn', // Add custom class for more specific styling if needed
+      onConfirmAction: async () => {
+        await resetStorage(); // from storage.js
+        // resetStorage shows its own toast and might reload the page.
+        // If not reloading, you might need to re-initialize app state here.
+        // For a full reset, a page reload is often best:
+        setTimeout(() => window.location.reload(), 1000);
+      }
+    });
   }
 
   // --- Lifecycle & Platform Setup ---
@@ -435,6 +514,8 @@
   on:faveChange={refreshAppFavorites}
   on:toggleMusic={toggleMusic}
   on:openAchievements={openAchievements}
+  on:requestClearFavorites={handleRequestClearFavorites} 
+  on:requestResetApp={handleRequestResetApp}
 />
 
 <RecipeSheet
@@ -473,6 +554,47 @@
   </div>
 {/if}
 
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+{#if showConfirmModal}
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <div
+    class="confirm-modal-backdrop"
+    on:click|self={confirmModalProps.onCancel}
+    transition:fade={{ duration: 200 }}
+  >
+    <div
+      class="confirm-modal"
+      role="alertdialog"
+      aria-labelledby="confirm-title"
+      aria-describedby="confirm-message"
+      in:fly={{ 
+        y: 50,               
+        duration: 350,        
+        opacity: 0,           
+        easing: quintOut      
+      }}
+      out:fly={{ 
+        y: 50,                
+        duration: 250,        
+        opacity: 0,           
+        easing: quintIn       
+      }}
+    >
+      <ConfirmationModal
+        visible={showConfirmModal}
+        title={confirmModalProps.title}
+        message={confirmModalProps.message}
+        confirmText={confirmModalProps.confirmText}
+        cancelText={confirmModalProps.cancelText}
+        confirmClasses={confirmModalProps.confirmClasses}
+        isLoading={confirmModalProps.isLoading}
+        on:confirm={confirmModalProps.onConfirm}
+        on:cancel={confirmModalProps.onCancel}
+      />
+    </div>
+  </div>
+{/if}
+
 <style>
   .app-container {
     height: 100vh; /* Or 100dvh for dynamic viewport height */
@@ -501,6 +623,29 @@
   /* If Topbar height should include safe-area padding: */
   /* .topbar-wrapper { height: calc(68px + var(--custom-safe-area-top, env(safe-area-inset-top, 0px))); } */
 
+  .confirm-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 8, 30, 0.75); /* Slightly darker for more focus */
+    backdrop-filter: blur(4px);
+    z-index: 10050; /* Higher than other modals if it can appear on top */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 1rem;
+  }
+
+  .confirm-modal {
+    background: #2c2663; /* Theme background */
+    color: #fff5e1;
+    padding: 1.5rem 2rem; /* More padding */
+    border-radius: 12px;
+    width: 100%;
+    max-width: 380px; /* Control max width */
+    box-shadow: 0 8px 30px rgba(0,0,0,0.35);
+    border: 1px solid #4a4090;
+    text-align: center; /* Center text content */
+  }
 
   .main-content-area {
     flex-grow: 1;

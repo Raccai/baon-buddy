@@ -127,7 +127,7 @@
         suggestedMeals = [];
       }
     });
-    // If you need to clean up the subscription, though Svelte often handles it:
+    // If needed to clean up the subscription, though Svelte often handles it yo creo:
     // return () => unsubscribe();
   });
 </script>

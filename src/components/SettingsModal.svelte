@@ -1,11 +1,12 @@
 <script>
     import { createEventDispatcher } from 'svelte';
-    import { clearFavorites, resetStorage, getCounter } from '../lib/storage.js';
+    import { getCounter } from '../lib/storage.js';
     import { fade, fly } from 'svelte/transition';
     import { quintOut } from 'svelte/easing';
     import { showToast } from '../lib/toast.js';
     import BaonBuddySettings from "/titles/BaonBuddySettings.png";
     import AchievementsIcon from "../assets/AchievementsIcon.svelte";
+    import ConfirmationModal from './ConfirmationModal.svelte';
 
     const dispatch = createEventDispatcher();
     let timesOpened = 0;
@@ -24,21 +25,13 @@
     }
     // --- End Corrected Logic ---
 
-    function clearFaves() {
-        if (confirm("Are you sure you want to clear all your favorites?")) {
-            clearFavorites();
-            dispatch("faveChange");
-            showToast("Favorites cleared!", "success");
-            setTimeout(closeModal, 300);
-        }
+    function requestClearFaves() {
+        dispatch("requestClearFavorites");
     }
 
-    function resetApp() {
-        if (confirm("Are you sure you want to reset the app? All data including favorites and settings will be lost! This cannot be undone.")) {
-            resetStorage();
-            showToast("App reset! Reloading...", "success");
-            setTimeout(() => window.location.reload(), 1000);
-        }
+    function requestResetApp() {
+        dispatch("requestResetApp");
+
     }
 
     function closeModal() {
@@ -106,10 +99,10 @@
                 </section>
 
                 <section class="delete-actions">
-                    <button class="setting-btn danger" on:click={clearFaves}>
+                    <button class="setting-btn danger" on:click={requestClearFaves}>
                         <span class="btn-icon">🧹</span> Clear Favorites
                     </button>
-                    <button class="setting-btn danger reset" on:click={resetApp}>
+                    <button class="setting-btn danger reset" on:click={requestResetApp}>
                         <span class="btn-icon">♻️</span> Reset App
                     </button>
                 </section>

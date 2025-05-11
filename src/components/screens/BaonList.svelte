@@ -136,7 +136,6 @@
   }
 
   onMount(() => {
-    
     setTimeout(startOnboardingHints, 300); // Initial delay
   });
 

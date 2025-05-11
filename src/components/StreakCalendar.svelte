@@ -65,6 +65,7 @@
 
 <div class="streak-calendar-wrapper">
   <img src={BaonBuddyStreak} alt="Baon Buddy Streak" class="baon-buddy-streak">
+  <p class="instructions">Add to, update, or remove baon from the planner above to start or keep your streak going!</p>
   <div class="streak-info-container">
       <div class="streak-stat current-streak">
           <span class="streak-icon">🔥</span>
@@ -115,6 +116,13 @@
     border: 1px solid #4a4090;
     width: 100%; max-width: 440px; /* Slightly narrower than main cal */
     box-shadow: 0 8px 16px rgba(0,0,0,0.3); /* Deeper shadow */
+  }
+
+  .instructions {
+    margin-top: -0.8rem;
+    margin-bottom: 1rem;
+    font-size: 0.8rem;
+    color: rgb(255, 255, 255);
   }
 
   .baon-buddy-streak {
