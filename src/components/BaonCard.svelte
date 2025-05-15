@@ -300,7 +300,8 @@
     .meal-message {
         white-space: normal;       
         overflow-wrap: break-word; 
-        word-break: break-all;
+        word-break: normal;
+        hyphens: auto; 
     }
 
     .meal-name {

@@ -1,6 +1,6 @@
 <script>
-    import { getFavorites, removeFavorite } from "../lib/storage.js"; // removeFavorite is async
-    import { createEventDispatcher, onMount } from "svelte"; // onMount for initial load if visible by default
+    import { getFavorites } from "../lib/storage.js"; // removeFavorite is async
+    import { createEventDispatcher } from "svelte"; // onMount for initial load if visible by default
     import { fly, fade } from "svelte/transition";
     import { quintOut } from 'svelte/easing';
     import BaonBuddyFavorites from "/titles/BaonBuddyFavorites.png";
@@ -16,26 +16,24 @@
     let isLoading = false;
 
     async function loadFavorites() {
-        if (!visible) return; // Don't load if not visible
+        if (!visible) { 
+            // Nada for now
+        }
+        
         isLoading = true;
         console.log("[FavoritesModal] Loading favorites...");
         try {
-            const favoriteIds = await getFavorites(); // Returns array of IDs
+            const favoriteIds = await getFavorites();
             const allCurrentMeals = getStoreValue(allMealsStore);
 
             if (favoriteIds && Array.isArray(favoriteIds) && allCurrentMeals && Array.isArray(allCurrentMeals)) {
                 favoriteMealObjects = favoriteIds
-                    .map(id => {
-                        const foundMeal = allCurrentMeals.find(m => m.id === id);
-                        // if (!foundMeal) console.warn(`[FavoritesModal] Favorite meal with ID ${id} not found in allMealsStore.`);
-                        return foundMeal;
-                    })
-                    .filter(Boolean) // Remove any nulls if IDs weren't found
-                    .sort((a,b) => a.name.localeCompare(b.name)); // Sort by name
+                    .map(id => allCurrentMeals.find(m => m.id === id))
+                    .filter(Boolean)
+                    .sort((a,b) => a.name.localeCompare(b.name));
             } else {
                 favoriteMealObjects = [];
             }
-            console.log("[FavoritesModal] Favorites loaded:", favoriteMealObjects.map(m=>m.name));
         } catch (error) {
             console.error("[FavoritesModal] Error loading favorites:", error);
             favoriteMealObjects = [];
@@ -45,8 +43,7 @@
         }
     }
 
-    // Load favorites when panel becomes visible, or if $allMealsStore changes (in case a favorited meal's details updated)
-    $: if (visible || $allMealsStore) { // Re-evaluate if visible or if the source of meal data changes
+    $: if (visible && $allMealsStore) { 
         loadFavorites();
     }
 
@@ -54,20 +51,19 @@
         dispatch("close");
     }
 
-    async function removeFavAndUpdateList(event, mealId) { // Takes mealId now
+    function requestRemoveFavoriteConfirmation(event, mealId, mealName) {
         event.stopPropagation();
-        if (confirm("Remove this Baon from your favorites?")) {
-            await removeFavorite(mealId); // This is async and updates FS
-            // The `faveChange` event will tell App.svelte to refresh its global `favoriteNames`
-            // For this modal, we directly re-load its own list after removal.
-            await loadFavorites(); // Reload the local list in this modal
-            dispatch("faveChange"); // Notify App.svelte for global state updates
+        dispatch("requestRemoveFavorite", { id: mealId, name: mealName });
+    }
+
+    export async function refresh() {
+        if (visible) {
+            await loadFavorites();
         }
     }
 
     function viewRecipe(meal) {
-        dispatch("viewRecipe", meal); // meal is a full object
-        // closeModal(); // Decided by App.svelte whether to close this
+        dispatch("viewRecipe", meal);
     }
 </script>
 
@@ -124,7 +120,11 @@
                             <span class="meal-name">{meal.name}</span>
                         </div>
                         <!-- Pass meal.id to removeFavAndUpdateList -->
-                        <button class="remove-fav-btn" on:click={(e) => removeFavAndUpdateList(e, meal.id)} aria-label="Remove {meal.name} from Favorites">
+                        <button 
+                            class="remove-fav-btn" 
+                            on:click={(e) =>  requestRemoveFavoriteConfirmation(e, meal.id, meal.name)} 
+                            aria-label="Remove {meal.name} from Favorites"
+                        >
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                                 <g id="SVGRepo_iconCarrier">
                                     <path d="M2.75 6.16667C2.75 5.70644 3.09538 5.33335 3.52143 5.33335L6.18567 5.3329C6.71502 5.31841 7.18202 4.95482 7.36214 4.41691C7.36688 4.40277 7.37232 4.38532 7.39185 4.32203L7.50665 3.94993C7.5769 3.72179 7.6381 3.52303 7.72375 3.34536C8.06209 2.64349 8.68808 2.1561 9.41147 2.03132C9.59457 1.99973 9.78848 1.99987 10.0111 2.00002H13.4891C13.7117 1.99987 13.9056 1.99973 14.0887 2.03132C14.8121 2.1561 15.4381 2.64349 15.7764 3.34536C15.8621 3.52303 15.9233 3.72179 15.9935 3.94993L16.1083 4.32203C16.1279 4.38532 16.1333 4.40277 16.138 4.41691C16.3182 4.95482 16.8778 5.31886 17.4071 5.33335H19.9786C20.4046 5.33335 20.75 5.70644 20.75 6.16667C20.75 6.62691 20.4046 7 19.9786 7H3.52143C3.09538 7 2.75 6.62691 2.75 6.16667Z" fill="currentColor"></path>

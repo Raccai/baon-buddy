@@ -80,7 +80,7 @@
     margin-bottom: 1.5rem;
     color: #fff5e1b3; /* Slightly dimmer for message */
   }
-  .modal-message strong { /* For emphasis if you use <strong> in message */
+  .modal-message strong { /* For emphasis if using <strong> in message */
       color: #fff5e1;
       font-weight: 600;
   }

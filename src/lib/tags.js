@@ -23,9 +23,17 @@ export const tagStyles = {
     label: "Silog",
     color: "#8399FF"
   },
-  custom: { 
-    label: 'Custom', 
-    color: '#795548'
+  dessert: {
+    label: "Dessert",
+    color: "#ff83bb"
+  },
+  korean: {
+    label: "Korean",
+    color: "#171e80"
+  },
+  japanese: {
+    label: "Japanese",
+    color: "#801720"
   },
   dafeult: {
     label: "Unknown",
@@ -39,8 +47,8 @@ export function getTagStyle(typeString) {
     }
     // Fallback for custom primary types or types not in tagStyles
     return {
-        label: typeString || 'Misc', // Use the type string itself as label, or 'Misc' if type is empty
-        color: '#777777',       // A neutral grey
-        textColor: '#FFFFFF'
+      label: typeString || 'Misc', // Use the type string itself as label, or 'Misc' if type is empty
+      color: '#777777',       // A neutral grey
+      textColor: '#FFFFFF'
     };
 }

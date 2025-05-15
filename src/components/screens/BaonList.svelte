@@ -13,8 +13,8 @@
   import { quintOut } from 'svelte/easing';
   import { getFavorites } from '../../lib/storage';
 
-  let selectedFilters = [];
-  let filteredMeals = []; // Initialize empty, will be populated by reactive block
+  let activeTypeFilter = "";
+  let filteredMeals = [];
   let selectedMeal = null;
   let showRecipe = false;
   let searchTerm = ''; // State for search input
@@ -30,7 +30,7 @@
 
   // --- REACTIVE FILTERING (depends on store AND filters/search) ---
   $: {
-      const currentFilters = selectedFilters;
+      const currentFilters = activeTypeFilter;
       const currentSearch = searchTerm.toLowerCase().trim();
       const currentAllMeals = $allMeals || [];
 
@@ -66,11 +66,11 @@
     dispatch('requestFavoriteRefresh');
   }
 
-  function toggleFilter(tag) {
-    if (selectedFilters.includes(tag)) {
-      selectedFilters = selectedFilters.filter(f => f !== tag);
+  function setTypeFilter(typeToFilter) {
+    if (activeTypeFilter === typeToFilter) {
+      // Nada for now
     } else {
-      selectedFilters = [...selectedFilters, tag];
+      activeTypeFilter = typeToFilter;
     }
   }
 
@@ -211,13 +211,13 @@
         </button>
 
         <!-- All Filter Chip -->
-        <button class:selected={selectedFilters.length === 0} class="filter-all-btn" on:click={() => selectedFilters = []}>All</button>
+        <button class:selected={activeTypeFilter.length === 0} class="filter-all-btn" on:click={() => setTypeFilter("")}>All</button>
         {#each allTags as tag}
           {#if tagStyles[tag]}
             <button
               class="filter-tag-btn"
-              class:selected={selectedFilters.includes(tag)}
-              on:click={() => toggleFilter(tag)}
+              class:selected={activeTypeFilter.includes(tag)}
+              on:click={() => setTypeFilter(tag)}
               style="--tag-bg-color: {tagStyles[tag].color}; --tag-text-color: {tagStyles[tag].textColor || '#fff'}"
             >
               {tagStyles[tag].label || tag}

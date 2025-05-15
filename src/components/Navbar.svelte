@@ -86,7 +86,7 @@
     background: #191337;
 
     /* Add padding to the bottom of the entire navbar */
-    padding-bottom: env(safe-area-inset-bottom, 0px); /* <<< KEY CHANGE */
+    padding-bottom: safe-area-inset-bottom; /* <<< KEY CHANGE */
   }
 
   .navbar-content {

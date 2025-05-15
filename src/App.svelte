@@ -11,16 +11,13 @@
   import {
     initializeAppStorageAndMeals,
     getFavorites, // ASYNC
-    incrementCounter, // Assuming synchronous (uses localStorage for small counters)
+    incrementCounter,
     updateMeal,     // ASYNC
     addMeal,        // ASYNC
     deleteMeal,      // ASYNC
     resetStorage,
-
-    clearFavorites
-
-
-    // forceUpdateDefaultMeals is now primarily called by initializeAppStorageAndMeals
+    clearFavorites,
+    removeFavorite,
   } from './lib/storage.js';
 
   // Svelte Stores & Store Loaders
@@ -72,8 +69,7 @@
   let appIsActive = true;
   let musicShouldPlay = musicEnabled;
   // App Version (can be const if only used in onMount)
-  const CURRENT_APP_VERSION = '1.8'; // Bump for significant changes like storage
-  // For FavoritesModal binding
+  const CURRENT_APP_VERSION = '2.1'; // Bump for significant changes like storage
   let favoritesRef;
 
   // --- Confirmation Modal State ---
@@ -102,7 +98,6 @@
           await onConfirmAction(); // Execute the actual async action
         } catch (e) {
           console.error("Error during confirmed action:", e);
-          // Optionally show a generic error toast here if the action itself doesn't
         } finally {
           confirmModalProps.isLoading = false;
           showConfirmModal = false; // Close modal after action or error
@@ -156,33 +151,29 @@
   function closeManageBaon() { manageBaonVisible = false; }
 
   async function refreshAppFavorites() {
-    console.log("[App] Refreshing app favorites...");
+    console.log("[App] Refreshing app favorites (global state)...");
     try {
-      const favoriteMealIds = await getFavorites(); // Returns array of IDs
+      const favoriteMealIds = await getFavorites();
       const allCurrentMeals = getStoreValue(allMealsStore);
-
-      if (favoriteMealIds && Array.isArray(favoriteMealIds) && allCurrentMeals && Array.isArray(allCurrentMeals)) {
+      if (favoriteMealIds && allCurrentMeals) {
         favoriteNames = favoriteMealIds
-          .map(id => {
-            const foundMeal = allCurrentMeals.find(m => m.id === id);
-            return foundMeal ? foundMeal.name : null;
-          })
+          .map(id => allCurrentMeals.find(m => m.id === id)?.name)
           .filter(Boolean);
-        console.log("[App] Updated favoriteNames:", favoriteNames);
       } else {
-        console.warn("[App] Could not derive favorite names. fav IDs:", favoriteMealIds, "all meals count:", allCurrentMeals?.length);
         favoriteNames = [];
       }
-      console.log("[App] Updated favoriteNames:", favoriteNames);
+      console.log("[App] Updated global favoriteNames:", favoriteNames);
 
-      if (favoritesVisible && favoritesRef?.refresh) {
-        favoritesRef.refresh(); // If FavoritesModal has a sync refresh method
+      // If FavoritesModal is visible and has a refresh method, call it
+      if (favoritesVisible && favoritesRef && typeof favoritesRef.refresh === 'function') {
+        console.log("[App] Calling FavoritesModal.refresh()");
+        await favoritesRef.refresh(); // Calls the exported refresh method
       }
-
+      
       await checkAndUnlockAchievements();
     } catch (error) {
-        console.error("[App] Error refreshing app favorites:", error);
-        favoriteNames = []; // Fallback
+      console.error("[App] Error in refreshAppFavorites:", error);
+      favoriteNames = [];
     }
   }
 
@@ -191,12 +182,12 @@
     console.log(`[App] Attempting playMusic. musicEnabled: ${musicEnabled}, appIsActive: ${appIsActive}, audio object:`, audio);
     if (audio && !audio.paused) { console.log("[App] Music already playing."); return; }
     if (audio && musicEnabled && appIsActive) {
-        console.log("[App] Conditions met. Calling audio.play()...");
-        audio.play()
-            .then(() => console.log("[App] Music playback started."))
-            .catch(e => console.error("[App] Music play() failed:", e));
+      console.log("[App] Conditions met. Calling audio.play()...");
+      audio.play()
+        .then(() => console.log("[App] Music playback started."))
+        .catch(e => console.error("[App] Music play() failed:", e));
     } else {
-        console.log("[App] Conditions not met for playing music.");
+      console.log("[App] Conditions not met for playing music.");
     }
   }
   function pauseMusic() {
@@ -283,11 +274,8 @@
     if (success) {
       showBaonForm = false;
       baonFormInitialData = null;
-      await refreshAppFavorites(); // Refresh favorites list which might impact UI
-      // The $allMeals store is updated directly by saveAllMeals in storage.js
+      await refreshAppFavorites(); 
     }
-    // If not success, form remains open. Toasts for specific errors (like name collision)
-    // are handled within addMeal/updateMeal.
   }
 
   function handleCancelBaonForm() {
@@ -307,12 +295,11 @@
         } else {
           // showToast(`Could not delete "${mealName}".`, "error");
         }
-        // No need to close modal here, onConfirm wrapper does it.
       }
     });
   }
 
-  async function handleRequestDeleteBaon(event) { // This comes from Home/BaonList
+  async function handleRequestDeleteBaon(event) { 
     const mealIdToDelete = event.detail;
     if (!mealIdToDelete) return;
     const allCurrentMeals = getStoreValue(allMealsStore);
@@ -328,30 +315,37 @@
       message: 'Are you sure you want to remove all Baon from your favorites list? This cannot be undone.',
       confirmText: 'Clear All',
       onConfirmAction: async () => {
-        await clearFavorites(); // from storage.js
-        // refreshAppFavorites is already called by the on:faveChange from SettingsModal
-        // but if clearFavorites itself doesn't trigger an update path for favoriteNames, call it here:
+        await clearFavorites(); 
         await refreshAppFavorites(); 
-        // Toast is handled by storage.js::clearFavorites
       }
     });
   }
   
-  // --- Example Usage: Resetting App (called from SettingsModal) ---
-  // SettingsModal would dispatch 'requestResetApp'
-  // App.svelte: on:requestResetApp={handleRequestResetApp}
   async function handleRequestResetApp() {
     requestConfirmation({
       title: 'Reset App Data?',
       message: '<strong>DANGER ZONE!</strong><br>Are you absolutely sure you want to reset the entire app? All your Baon, calendar plans, favorites, and settings will be permanently deleted.',
       confirmText: 'Yes, Reset App',
-      confirmClasses: 'btn-danger reset-app-btn', // Add custom class for more specific styling if needed
+      confirmClasses: 'btn-danger reset-app-btn',
       onConfirmAction: async () => {
-        await resetStorage(); // from storage.js
-        // resetStorage shows its own toast and might reload the page.
-        // If not reloading, you might need to re-initialize app state here.
-        // For a full reset, a page reload is often best:
+        await resetStorage(); 
         setTimeout(() => window.location.reload(), 1000);
+      }
+    });
+  }
+
+  async function handleRequestRemoveFavorite(event) {
+    const { id: mealIdToRemove, name: mealName } = event.detail;
+    if (!mealIdToRemove) return;
+
+    requestConfirmation({
+      title: 'Remove Favorite?',
+      message: `Are you sure you want to remove "<strong>${mealName}</strong>" from your favorites?`,
+      confirmText: 'Remove',
+      confirmClasses: 'btn-danger', 
+      onConfirmAction: async () => {
+        await removeFavorite(mealIdToRemove); 
+        await refreshAppFavorites(); 
       }
     });
   }
@@ -366,8 +360,8 @@
     await initializeAppStorageAndMeals(CURRENT_APP_VERSION);
 
     // 2. Load data from Filesystem into Svelte stores.
-    await loadMealsIntoStoreFromFS(); // Populates $allMeals
-    await initializeCalendarStore();  // Populates $calendarData
+    await loadMealsIntoStoreFromFS();
+    await initializeCalendarStore();  
 
     // 3. Populate UI-dependent data like favoriteNames.
     await refreshAppFavorites();
@@ -403,7 +397,7 @@
     }
     
     // 5. Other initializations
-    incrementCounter("baonAppOpens"); // Assuming this uses localStorage and is quick
+    incrementCounter("baonAppOpens"); 
     await checkAndUnlockAchievements();
 
     // --- Preloader ---
@@ -420,10 +414,10 @@
 
     // --- Audio ---
     try {
-      audio = new Audio("/music/InVain.mp3"); // Path relative to public folder
+      audio = new Audio("/music/InVain.mp3"); 
       audio.loop = true; audio.volume = 0.8;
-      musicShouldPlay = musicEnabled; // musicEnabled is from localStorage
-      if (musicShouldPlay && appIsActive) playMusic(); // playMusic checks musicEnabled and appIsActive again
+      musicShouldPlay = musicEnabled;
+      if (musicShouldPlay && appIsActive) playMusic(); 
     } catch (err) { console.error("Audio init error:", err); }
 
     // --- App State Listener ---
@@ -441,10 +435,9 @@
     if (appStateListener) appStateListener.remove();
     if (audio) {
       audio.pause();
-      audio.src = ''; // Release audio resource
+      audio.src = ''; 
       audio = null;
     }
-    // Remove other listeners if any were added directly to window/document
   });
 </script>
 
@@ -506,6 +499,7 @@
   on:faveChange={refreshAppFavorites} 
   on:close={() => favoritesVisible = false}
   on:viewRecipe={(e) => openRecipeSheet(e.detail)} 
+  on:requestRemoveFavorite={handleRequestRemoveFavorite}
 />
 
 <SettingsModal
@@ -603,7 +597,7 @@
     display: flex;
     flex-direction: column;
     background-color: #1a163f;
-    padding-bottom: calc(60px + var(--custom-safe-area-bottom, env(safe-area-inset-bottom, 0px)));
+    padding-bottom: var(--custom-safe-area-bottom);
     box-sizing: border-box;
   }
 
