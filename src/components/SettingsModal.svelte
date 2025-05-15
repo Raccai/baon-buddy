@@ -1,5 +1,6 @@
 <script>
     import { createEventDispatcher } from 'svelte';
+    import { getNotificationSettings, saveNotificationSettings} from "../lib/settingsStore.js";
     import { getCounter } from '../lib/storage.js';
     import { fade, fly } from 'svelte/transition';
     import { quintOut } from 'svelte/easing';
@@ -7,13 +8,19 @@
     import BaonBuddySettings from "/titles/BaonBuddySettings.png";
     import AchievementsIcon from "../assets/AchievementsIcon.svelte";
     import ConfirmationModal from './ConfirmationModal.svelte';
+    import { onMount } from 'svelte';
 
     const dispatch = createEventDispatcher();
     let timesOpened = 0;
     let timesGenerated = 0;
     let musicEnabled = localStorage.getItem("musicEnabled") === "true"; // Correct initial read
-
+    let settings = { dayBeforeEnabled: false, dayBeforeTime: '20:00', dayOfEnabled: true, dayOfTime: '08:00' };
+    
     export let visible = false;
+    
+    onMount(() => {
+        settings = getNotificationSettings();
+    });
 
     // --- CORRECTED Interaction Logic ---
     function handleMusicToggle() {
@@ -38,7 +45,13 @@
         dispatch('close');
     }
 
-   $: if (visible) {
+
+    function handleSettingsChange() {
+        saveNotificationSettings(settings);
+        dispatch('notificationSettingsChanged'); // Notify App.svelte
+    }
+
+    $: if (visible) {
         timesOpened = getCounter("baonAppOpens");
         timesGenerated = getCounter("baonMealGenerations");
         const storedValue = localStorage.getItem("musicEnabled") === "true";
@@ -97,6 +110,39 @@
                        <span class="btn-icon"><AchievementsIcon /></span> View Achievements
                     </button>
                 </section>
+
+                <!-- Notification Settings Section -->
+                <div class="setting-group">
+                    <h4 class="setting-group-title">Baon Reminders ⏰</h4>
+
+                    <!-- Day Before Reminder -->
+                    <section class="setting notification-setting">
+                        <label class="toggle">
+                            <span class="toggle-label">Reminder for Tomorrow's Baon</span>
+                            <input type="checkbox" bind:checked={settings.dayBeforeEnabled} on:change={handleSettingsChange}/>
+                            <span class="slider"></span>
+                        </label>
+                        {#if settings.dayBeforeEnabled}
+                            <div class="time-input-wrapper" transition:fly={{ y: -10, duration: 200, easing: quintOut }}>
+                                <input type="time" class="time-input" bind:value={settings.dayBeforeTime} on:change={handleSettingsChange}/>
+                            </div>
+                        {/if}
+                    </section>
+
+                    <!-- Day Of Reminder -->
+                    <section class="setting notification-setting">
+                        <label class="toggle">
+                            <span class="toggle-label">Reminder for Today's Baon</span>
+                            <input type="checkbox" bind:checked={settings.dayOfEnabled} on:change={handleSettingsChange}/>
+                            <span class="slider"></span>
+                        </label>
+                        {#if settings.dayOfEnabled}
+                            <div class="time-input-wrapper" transition:fly={{ y: -10, duration: 200, easing: quintOut }}>
+                                <input type="time" class="time-input" bind:value={settings.dayOfTime} on:change={handleSettingsChange}/>
+                            </div>
+                        {/if}
+                    </section>
+                </div>
 
                 <section class="delete-actions">
                     <button class="setting-btn danger" on:click={requestClearFaves}>
@@ -258,6 +304,7 @@
         font-weight: 600; /* Bolder label */
         color: #fff5e1;
         font-size: 1rem;
+        text-align: left;
     }
 
     /* Delete Buttons Section */
@@ -362,5 +409,62 @@
         height: 20px;
         stroke-width: 2; /* Adjust stroke */
         color: #b388eb; /* Use accent color */
+    }
+
+    .setting-group {
+        background-color: rgba(0,0,0,0.1); /* Slightly different background to group them */
+        padding: 1rem;
+        border-radius: 0.75rem;
+        border: 1px solid #403870; /* Slightly different border */
+        display: flex;
+        flex-direction: column;
+        gap: 0.8rem; /* Gap between reminder settings */
+    }
+
+    .setting-group-title {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #b388eb; /* Accent color */
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin: 0 0 0.5rem 0;
+        text-align: left; /* Align title to the left */
+    }
+
+    /* Styles for individual notification setting (checkbox + time input) */
+    .notification-setting {
+        padding: 0; /* Remove padding from individual setting if group has it */
+        border: none; /* Remove border from individual if group has it */
+        background-color: transparent; /* Transparent if group has bg */
+        /* display: flex;
+        flex-direction: column;
+        gap: 0.5rem; */ /* Let the label and time-input-wrapper handle their layout */
+    }
+
+    .notification-setting .toggle { /* The label part with the Svelte toggle */
+        width: 100%;
+        margin-bottom: 0.5rem; /* Space before time input appears */
+    }
+
+    .time-input-wrapper {
+        margin-top: 0.5rem; /* Space above time input */
+        width: 100%;
+        display: flex;
+    }
+
+    .time-input {
+        background-color: #1a163f; /* Darker input background */
+        color: #fff5e1;
+        border: 1px solid #4a4090;
+        border-radius: 6px;
+        padding: 0.5rem 0.7rem;
+        font-size: 0.95rem;
+        /* Consider width, e.g., width: 120px; or make it responsive */
+        max-width: 130px; /* Max width for time input */
+    }
+    .time-input:focus {
+        outline: none;
+        border-color: #b388eb;
+        box-shadow: 0 0 0 2px rgba(179, 136, 235, 0.2);
     }
 </style>

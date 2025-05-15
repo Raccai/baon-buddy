@@ -13,6 +13,8 @@
   import BaonBuddyPlanner from "/titles/BaonBuddyPlanner.png";
   import { get } from 'svelte/store'; // Make sure 'get' is imported
   import { allMeals as allMealsStore } from '../../lib/mealStore.js'; 
+  import { navigateToDateStore } from '../../lib/notificationsScheduler.js'; // The store created above
+  import { parseISO } from 'date-fns';
 
   // --- Onboarding Imports ---
   import { onMount, tick } from 'svelte';
@@ -158,9 +160,45 @@
     selectedRecipeMeal = null; 
   }
 
+  let unsubscribeFromNavigateToDate;
+
   onMount(() => {
     // Delay the onboarding check
     setTimeout(startOnboardingHints, 300);
+
+    unsubscribeFromNavigateToDate = navigateToDateStore.subscribe(targetDateString => {
+      if (targetDateString && typeof targetDateString === 'string') {
+        console.log('[Calendar] navigateToDateStore changed, targetDateString:', targetDateString);
+        try {
+          const targetDate = parseISO(targetDateString); // Make sure targetDateString is valid ISO
+          
+          // Navigate calendar to the correct month if not already there
+          if (!isSameMonth(currentMonth, targetDate)) {
+            console.log('[Calendar] Month is different, changing currentMonth.');
+            // Determine transition direction if you want the fly animation
+            transitionDirection = targetDate > currentMonth ? 1 : -1;
+            currentMonth = startOfMonth(targetDate);
+          }
+
+          // Use tick to ensure DOM updates from month change (if any) before opening modal
+          tick().then(() => {
+            console.log('[Calendar] Opening modal for date:', targetDate);
+            openModal(targetDate); // Your existing function to open DayModal
+          });
+          
+          navigateToDateStore.set(null); // Reset the store after handling to prevent re-triggering
+        } catch (e) {
+          console.error("[Calendar] Error parsing targetDateString from navigateToDateStore:", targetDateString, e);
+          navigateToDateStore.set(null); // Reset on error too
+        }
+      }
+    });
+
+    return () => { // Cleanup on component destroy
+      if (unsubscribeFromNavigateToDate) {
+        unsubscribeFromNavigateToDate();
+      }
+    };
   });
 
   // --- Reactive Calculations ---

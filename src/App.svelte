@@ -6,6 +6,8 @@
   import { Capacitor } from '@capacitor/core';
   import { fade, fly } from 'svelte/transition';
   import { quintIn, quintOut } from 'svelte/easing';
+  import { requestNotificationPermission, scheduleBaonReminders, navigateToDateStore } from './lib/notificationsScheduler.js';
+  import { LocalNotifications } from '@capacitor/local-notifications';
 
   // Import ASYNC storage functions
   import {
@@ -350,6 +352,13 @@
     });
   }
 
+  async function handleNotificationSettingsChanged() {
+    console.log("[App] Notification settings changed, re-scheduling reminders.");
+    if (Capacitor.isNativePlatform()) {
+      await scheduleBaonReminders();
+    }
+  }
+
   // --- Lifecycle & Platform Setup ---
   let appStateListener = null;
 
@@ -368,6 +377,35 @@
 
     // 4. Capacitor Platform Specific Setup
     if (Capacitor.isNativePlatform()) {
+
+      LocalNotifications.addListener('localNotificationActionPerformed',
+        (action) => {
+          console.log('Notification action performed', action);
+          const notificationData = action.notification.extra;
+          // Check for your specific 'extra' data structure
+          if (notificationData && (notificationData.type === 'baon_reminder_dayof' || notificationData.type === 'baon_reminder_daybefore') && notificationData.date) {
+            console.log(`[App] Notification tap for date: ${notificationData.date}. Navigating to calendar.`);
+            
+            currentScreen = 'calendar'; // Navigate to Calendar screen
+            localStorage.setItem("lastScreen", 'calendar');
+            closeAllModals();
+            closeSideMenu();
+
+            // Set the store AFTER navigating to ensure Calendar.svelte is mounted or will mount
+            // A small delay can help if the screen transition takes time.
+            setTimeout(() => {
+              navigateToDateStore.set(notificationData.date); // <<< SET THE STORE
+              console.log(`[App] navigateToDateStore set to: ${notificationData.date}`);
+            }, 100); // Adjust delay if needed, or if navigation is instant, can be 0
+          }
+        }
+      );
+      
+      const permissionGranted = await requestNotificationPermission(); 
+      if (permissionGranted) {
+        await scheduleBaonReminders();
+      }
+
       try {
         await StatusBar.setOverlaysWebView({ overlay: true });
       } catch (e) { console.error('Error configuring StatusBar:', e); }
@@ -510,6 +548,7 @@
   on:openAchievements={openAchievements}
   on:requestClearFavorites={handleRequestClearFavorites} 
   on:requestResetApp={handleRequestResetApp}
+  on:notificationSettingsChanged={handleNotificationSettingsChanged}
 />
 
 <RecipeSheet
@@ -597,8 +636,8 @@
     display: flex;
     flex-direction: column;
     background-color: #1a163f;
-    padding-bottom: var(--custom-safe-area-bottom);
     box-sizing: border-box;
+    padding-bottom: safe-area-inset-bottom;
   }
 
   .topbar-wrapper {

@@ -3,6 +3,8 @@ import { writable, get } from 'svelte/store';
 import { updateStreakOnAction } from './storage.js';
 import { readFile, writeFile } from './filesystemStorage.js';
 import { showToast } from './toast.js'; // Assuming you have this utility
+import { scheduleBaonReminders } from './notificationsScheduler.js';
+import { Capacitor } from '@capacitor/core';
 
 export const CALENDAR_DATA_FILENAME = 'baonCalendarData_fs.json';
 
@@ -71,6 +73,10 @@ export async function initializeCalendarStore() {
 }
 
 export async function saveCalendarDataFS(dataToSave) {
+    if (Capacitor.isNativePlatform()) { // Re-schedule after any save
+        await scheduleBaonReminders();
+    }
+    
     try {
         const currentData = dataToSave || get(calendarData);
         await writeFile(CALENDAR_DATA_FILENAME, currentData);

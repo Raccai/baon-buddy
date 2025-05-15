@@ -96,7 +96,7 @@
       </button>
     </nav>
     <div class="menu-footer">
-      Baon Buddy v1.8
+      Baon Buddy v1.9
     </div>
   </aside>
 {/if}

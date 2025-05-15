@@ -210,6 +210,7 @@
     overflow: hidden;
     display: flex;
     background: linear-gradient(160deg, #2c2663 0%, #4a4090 40%, #b388eb 100%);
+    padding-bottom: 60px;
   }
 
   .home-content {
