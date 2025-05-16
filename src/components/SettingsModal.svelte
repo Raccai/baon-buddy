@@ -1,108 +1,164 @@
 <script>
-    import { createEventDispatcher } from 'svelte';
-    import { getNotificationSettings, saveNotificationSettings} from "../lib/settingsStore.js";
-    import { getCounter } from '../lib/storage.js';
-    import { fade, fly } from 'svelte/transition';
-    import { quintOut } from 'svelte/easing';
-    import { showToast } from '../lib/toast.js';
-    import BaonBuddySettings from "/titles/BaonBuddySettings.png";
-    import AchievementsIcon from "../assets/AchievementsIcon.svelte";
-    import ConfirmationModal from './ConfirmationModal.svelte';
-    import { onMount } from 'svelte';
+  import { createEventDispatcher, onMount } from 'svelte';
+  // Assuming settingsStore.js handles notification settings specifically
+  // If these are in storage.js, adjust the import path.
+  import { getNotificationSettings, saveNotificationSettings } from '../lib/settingsStore.js';
+  import { getCounter } from '../lib/storage.js'; // For fun stats
+  import { fade, fly } from 'svelte/transition';
+  import { quintOut } from 'svelte/easing';
+  import { showToast } from '../lib/toast.js';
+  import BaonBuddySettings from "/titles/BaonBuddySettings.png";
+  import AchievementsIcon from "../assets/AchievementsIcon.svelte";
 
-    const dispatch = createEventDispatcher();
-    let timesOpened = 0;
-    let timesGenerated = 0;
-    let musicEnabled = localStorage.getItem("musicEnabled") === "true"; // Correct initial read
-    let settings = { dayBeforeEnabled: false, dayBeforeTime: '20:00', dayOfEnabled: true, dayOfTime: '08:00' };
+  const dispatch = createEventDispatcher();
+
+  export let visible = false;
+
+  // --- State for Tabs ---
+  let activeTab = 'general';
+
+  // --- State for Settings ---
+  let timesOpened = 0;
+  let timesGenerated = 0;
+  
+  // musicEnabled will be initialized based on localStorage when the modal becomes visible
+  let musicEnabled = false; 
+  
+  let notificationSettings = {
+    dayBeforeEnabled: false,
+    dayBeforeTime: '20:00',
+    dayOfEnabled: true,
+    dayOfTime: '08:00'
+  };
+
+  function loadAndSyncSettings() {
+    // Sync music setting
+    musicEnabled = localStorage.getItem("musicEnabled") === "true";
     
-    export let visible = false;
+    // Load notification settings
+    notificationSettings = getNotificationSettings();
+
+    // Load stats
+    timesOpened = getCounter("baonAppOpens");
+    timesGenerated = getCounter("baonMealGenerations");
+    console.log("[SettingsModal] Settings loaded/synced. Music:", musicEnabled);
+  }
+
+  // Load settings when the component is first mounted AND visible,
+  // OR when it becomes visible again.
+  onMount(() => {
+    if (visible) {
+      loadAndSyncSettings();
+    }
+  });
+
+  // This reactive statement handles the case where the modal might be re-used
+  // and `visible` prop changes from false to true.
+  let wasVisible = false;
+  $: if (visible && !wasVisible) { // Became visible
+    loadAndSyncSettings();
+    wasVisible = true;
+  } else if (!visible && wasVisible) { // Became hidden
+    wasVisible = false;
+  }
+
+
+  // --- General Settings Handlers ---
+  function handleMusicToggle() {
+    // The `bind:checked={musicEnabled}` on the input means `musicEnabled`
+    // is already updated to the new state by Svelte when this function is called.
+    console.log("[SettingsModal] Music toggle changed by user. New state for musicEnabled:", musicEnabled);
     
-    onMount(() => {
-        settings = getNotificationSettings();
-    });
+    // 1. Save the new state to localStorage
+    localStorage.setItem("musicEnabled", musicEnabled.toString());
+    
+    // 2. Dispatch event to App.svelte so it can react (e.g., play/pause audio)
+    dispatch("toggleMusic"); 
+    // App.svelte's toggleMusic handler should also read from localStorage to get the definitive state.
+  }
 
-    // --- CORRECTED Interaction Logic ---
-    function handleMusicToggle() {
-        const newState = !musicEnabled;
-        musicEnabled = newState; // Update local UI state
-        console.log("Music toggled via UI, new state:", musicEnabled);
-        localStorage.setItem("musicEnabled", musicEnabled.toString()); // Save to LS
-        dispatch("toggleMusic"); // Tell App.svelte to react
-    }
-    // --- End Corrected Logic ---
+  function requestClearFaves() {
+    dispatch("requestClearFavorites");
+  }
 
-    function requestClearFaves() {
-        dispatch("requestClearFavorites");
-    }
+  function requestResetApp() {
+    dispatch("requestResetApp");
+  }
 
-    function requestResetApp() {
-        dispatch("requestResetApp");
+  // --- Notification Settings Handlers ---
+  function handleNotificationSettingsChange() {
+    // `notificationSettings` is already up-to-date due to `bind:checked` and `bind:value`
+    saveNotificationSettings(notificationSettings);
+    dispatch('notificationSettingsChanged');
+    showToast("Reminder settings saved!", "success");
+  }
 
-    }
-
-    function closeModal() {
-        dispatch('close');
-    }
-
-
-    function handleSettingsChange() {
-        saveNotificationSettings(settings);
-        dispatch('notificationSettingsChanged'); // Notify App.svelte
-    }
-
-    $: if (visible) {
-        timesOpened = getCounter("baonAppOpens");
-        timesGenerated = getCounter("baonMealGenerations");
-        const storedValue = localStorage.getItem("musicEnabled") === "true";
-        if (musicEnabled !== storedValue) {
-            musicEnabled = storedValue;
-        }
-    }
+  function closeModal() {
+    dispatch('close');
+  }
 </script>
 
-
+<!-- svelte-ignore a11y_click_events_have_key_events -->
 {#if visible}
-    <!-- svelte-ignore a11y_click_events_have_key_events -->
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <!-- svelte-ignore a11y_interactive_supports_focus -->
+  <!-- svelte-ignore a11y_interactive_supports_focus -->
+  <div
+    class="modal-backdrop"
+    in:fade={{ duration: 200 }}
+    out:fade={{ duration: 200 }}
+    on:click|self={closeModal}
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="settings-title-img"
+  >
     <div
-        class="modal-backdrop"
-        in:fade={{ duration: 200 }}
-        out:fade={{ duration: 200 }}
-        on:click|self={closeModal}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="settings-title"
+      class="modal"
+      in:fly={{ y: 50, duration: 300, easing: quintOut }}
+      out:fly={{ y: 50, duration: 250, easing: quintOut }}
     >
-        <div
-            class="modal"
-            in:fly={{ y: 50, duration: 300, easing: quintOut }}
-            out:fly={{ y: 50, duration: 250, easing: quintOut }}
-        >
-            <header class="modal-header">
-                 <!-- Add an explicit close button -->
-                 <button class="header-close-btn" on:click={closeModal} aria-label="Close Settings">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="currentColor" aria-hidden="true">
-                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
-                    </svg>
-                </button>
-                <img src={BaonBuddySettings} alt="Settings" id="settings-title" class="settings-title-image">
-            </header>
+      <header class="modal-header">
+        <button class="header-close-btn" on:click={closeModal} aria-label="Close Settings">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="currentColor" aria-hidden="true">
+            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+          </svg>
+        </button>
+        <img src={BaonBuddySettings} alt="Settings" id="settings-title-img" class="settings-title-image">
+      </header>
 
-            <section class="settings-content">
+      <nav class="tabs-nav">
+        <button 
+          class="tab-btn" 
+          class:active={activeTab === 'general'} 
+          on:click={() => activeTab = 'general'}
+          aria-pressed={activeTab === 'general'}
+        >
+          General
+        </button>
+        <button 
+          class="tab-btn" 
+          class:active={activeTab === 'notifications'} 
+          on:click={() => activeTab = 'notifications'}
+          aria-pressed={activeTab === 'notifications'}
+        >
+          Notifications
+        </button>
+      </nav>
+
+      <div class="tab-content-wrapper">
+        {#if activeTab === 'general'}
+          <section class="settings-tab-content general-settings" transition:fade={{ duration: 150, delay: 50 }}>
+            <div class="setting-group">
+                <h4 class="setting-group-title">App Settings</h4>
                 <section class="setting toggle-setting">
-                    <label class="toggle">
+                    <label class="toggle" for="music-toggle-input">
                         <span class="toggle-label">{musicEnabled ? 'Music On 🎶' : 'Music Off 🔇'}</span>
                         <input
+                            id="music-toggle-input"
                             type="checkbox"
-                            checked={musicEnabled}  
-                            on:change={handleMusicToggle} 
-                            aria-labelledby="music-label"
+                            bind:checked={musicEnabled}  
+                            on:change={handleMusicToggle}
                         />
                         <span class="slider"></span>
                     </label>
-                    <span id="music-label" class="visually-hidden">Toggle background music</span>
                 </section>
 
                 <section class="setting link-setting">
@@ -110,40 +166,10 @@
                        <span class="btn-icon"><AchievementsIcon /></span> View Achievements
                     </button>
                 </section>
-
-                <!-- Notification Settings Section -->
-                <div class="setting-group">
-                    <h4 class="setting-group-title">Baon Reminders ⏰</h4>
-
-                    <!-- Day Before Reminder -->
-                    <section class="setting notification-setting">
-                        <label class="toggle">
-                            <span class="toggle-label">Reminder for Tomorrow's Baon</span>
-                            <input type="checkbox" bind:checked={settings.dayBeforeEnabled} on:change={handleSettingsChange}/>
-                            <span class="slider"></span>
-                        </label>
-                        {#if settings.dayBeforeEnabled}
-                            <div class="time-input-wrapper" transition:fly={{ y: -10, duration: 200, easing: quintOut }}>
-                                <input type="time" class="time-input" bind:value={settings.dayBeforeTime} on:change={handleSettingsChange}/>
-                            </div>
-                        {/if}
-                    </section>
-
-                    <!-- Day Of Reminder -->
-                    <section class="setting notification-setting">
-                        <label class="toggle">
-                            <span class="toggle-label">Reminder for Today's Baon</span>
-                            <input type="checkbox" bind:checked={settings.dayOfEnabled} on:change={handleSettingsChange}/>
-                            <span class="slider"></span>
-                        </label>
-                        {#if settings.dayOfEnabled}
-                            <div class="time-input-wrapper" transition:fly={{ y: -10, duration: 200, easing: quintOut }}>
-                                <input type="time" class="time-input" bind:value={settings.dayOfTime} on:change={handleSettingsChange}/>
-                            </div>
-                        {/if}
-                    </section>
-                </div>
-
+            </div>
+            
+            <div class="setting-group">
+                <h4 class="setting-group-title">Data Management</h4>
                 <section class="delete-actions">
                     <button class="setting-btn danger" on:click={requestClearFaves}>
                         <span class="btn-icon">🧹</span> Clear Favorites
@@ -152,110 +178,226 @@
                         <span class="btn-icon">♻️</span> Reset App
                     </button>
                 </section>
-            </section>
+            </div>
+          </section>
+        {/if}
 
-            <section class="more-info">
-                <div class="fun-stats">
-                    <span class="stat-item" title="Number of times the app has been opened.">
-                        <span class="stat-icon">🚀</span> {timesOpened} Opens
-                    </span>
-                    <span class="stat-item" title="Number of times meals have been generated.">
-                        <span class="stat-icon">🍲</span> {timesGenerated} Meals
-                    </span>
-                </div>
-                <!-- <div class="version-info">
-                    <p>📦 Version 1.0.0</p>
-                </div> -->
-            </section>
-
-            <!-- Removed separate close button, using header one -->
-            <!-- <button class="close-btn" on:click={closeModal}>Close</button> -->
+        {#if activeTab === 'notifications'}
+          <section class="settings-tab-content notification-settings" transition:fade={{ duration: 150, delay: 50 }}>
+            <div class="setting-group">
+              <h4 class="setting-group-title">Baon Reminders ⏰</h4>
+              <section class="setting notification-setting">
+                <label class="toggle" for="daybefore-toggle-input">
+                  <span class="toggle-label">Reminder for Tomorrow's Baon</span>
+                  <input id="daybefore-toggle-input" type="checkbox" bind:checked={notificationSettings.dayBeforeEnabled} on:change={handleNotificationSettingsChange}/>
+                  <span class="slider"></span>
+                </label>
+                {#if notificationSettings.dayBeforeEnabled}
+                  <div class="time-input-wrapper" transition:fly={{ y: -10, duration: 200, easing: quintOut }}>
+                    <input type="time" class="time-input" bind:value={notificationSettings.dayBeforeTime} on:change={handleNotificationSettingsChange}/>
+                  </div>
+                {/if}
+              </section>
+              <section class="setting notification-setting">
+                <label class="toggle" for="dayof-toggle-input">
+                  <span class="toggle-label">Reminder for Today's Baon</span>
+                  <input id="dayof-toggle-input" type="checkbox" bind:checked={notificationSettings.dayOfEnabled} on:change={handleNotificationSettingsChange}/>
+                  <span class="slider"></span>
+                </label>
+                {#if notificationSettings.dayOfEnabled}
+                  <div class="time-input-wrapper" transition:fly={{ y: -10, duration: 200, easing: quintOut }}>
+                    <input type="time" class="time-input" bind:value={notificationSettings.dayOfTime} on:change={handleNotificationSettingsChange}/>
+                  </div>
+                {/if}
+              </section>
+            </div>
+            <p class="reminder-note">
+                Reminders are updated when settings change. Ensure Baon Buddy has notification permissions in your device settings.
+            </p>
+          </section>
+        {/if}
+      </div>
+      
+      <section class="more-info">
+        <div class="fun-stats">
+          <span class="stat-item" title="Number of times the app has been opened.">
+            <span class="stat-icon">🚀</span> {timesOpened} Opens
+          </span>
+          <span class="stat-item" title="Number of times meals have been generated.">
+            <span class="stat-icon">🍲</span> {timesGenerated} Meals
+          </span>
         </div>
+      </section>
     </div>
+  </div>
 {/if}
 
 <style>
-    .visually-hidden { /* Added for accessibility */
-        position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
-        overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+    .visually-hidden { 
+        position: absolute; 
+        width: 1px; 
+        height: 1px; 
+        padding: 0; 
+        margin: -1px;
+        overflow: hidden; 
+        clip: rect(0, 0, 0, 0); 
+        white-space: nowrap; 
+        border: 0;
     }
+
     .modal-backdrop {
         position: fixed;
-        inset: 0; /* Replaces top/left/width/height */
-        background: rgba(10, 8, 30, 0.7); /* Themed backdrop */
+        inset: 0;
+        background: rgba(10, 8, 30, 0.7);
         backdrop-filter: blur(4px);
-        z-index: 999;
+        z-index: 10020; /* Ensure it's high enough */
         display: flex;
         justify-content: center;
         align-items: center;
-        padding: 1rem; /* Padding for smaller screens */
+        padding: 1rem;
     }
 
     .modal {
-        background: #231d52; /* Dark theme background */
-        color: #fff5e1; /* Creamy text */
-        padding: 1.5rem; /* Increased padding */
+        background: #231d52;
+        color: #fff5e1;
+        padding: 0; /* Padding will be applied to inner sections */
         border-radius: 1rem;
-        width: 100%; /* Use padding on backdrop */
-        max-width: 360px; /* Slightly wider */
-        box-shadow: 0 5px 25px rgba(0,0,0,0.4); /* Themed shadow */
-        border: 1px solid #4a4090; /* Subtle border */
+        width: 100%;
+        max-width: 380px;
+        height: 80vh; /* Limit height for viewport friendliness */
+        box-shadow: 0 5px 25px rgba(0,0,0,0.4);
+        border: 1px solid #4a4090;
         display: flex;
         flex-direction: column;
-        gap: 1.5rem; /* Space between sections */
+        overflow: hidden; /* Modal itself doesn't scroll; tab-content-wrapper does */
     }
 
+    /* --- Modal Header --- */
     .modal-header {
         display: flex;
-        flex-direction: column; /* Stack button and image */
+        flex-direction: column;
         align-items: center;
-        position: relative; /* For absolute positioning of close button */
-        margin-bottom: -0.5rem; /* Pull content up slightly */
+        position: relative;
+        padding: 1rem 1.5rem 0.8rem 1.5rem; /* Inner padding for header content */
+        border-bottom: 1px solid #4a4090;
+        flex-shrink: 0; /* Prevent header from shrinking */
     }
 
     .header-close-btn {
         position: absolute;
-        top: -8px; /* Adjust position */
-        right: -8px;
+        top: 8px;     /* Position inside padding */
+        right: 8px;   /* Position inside padding */
         background: transparent;
         border: none;
         color: #fff5e1a8;
         cursor: pointer;
         padding: 0.5rem;
-        margin: 0;
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
         transition: color 0.2s ease, background-color 0.2s ease;
     }
-    .header-close-btn:hover, .header-close-btn:focus-visible {
+    .header-close-btn:hover, 
+    .header-close-btn:focus-visible {
         color: #fff;
         background-color: #4a409060;
         outline: none;
     }
-    .header-close-btn svg { width: 22px; height: 22px; }
+    .header-close-btn svg { 
+        width: 22px; 
+        height: 22px; 
+    }
 
     .settings-title-image {
         width: 100%;
-        max-width: 200px; /* Adjusted size */
-        margin-top: 0.5rem; /* Space below close button */
+        max-width: 180px; /* Or your preferred size */
+        margin-top: 0.2rem; /* Space if close button is above */
         display: block;
     }
 
-    .settings-content {
+    /* --- Tab Navigation --- */
+    .tabs-nav {
         display: flex;
-        flex-direction: column;
-        gap: 1.2rem;
+        border-bottom: 1px solid #403870; /* Slightly different color for tab underline */
+        flex-shrink: 0;
+        background-color: #2c2663; /* Optional: slight bg difference for tab bar */
     }
 
-    .toggle-setting {
-        background-color: #2c2663; /* Slightly lighter background */
+    .tab-btn {
+        flex-grow: 1;
+        padding: 0.8rem 0.5rem;
+        background-color: transparent;
+        border: none;
+        border-bottom: 3px solid transparent; /* Indicator line */
+        color: #fff5e1a8; /* Inactive tab text */
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: color 0.2s ease, border-bottom-color 0.2s ease;
+        text-align: center;
+        border-radius: 0;
+    }
+    .tab-btn:hover {
+        color: #fff5e1; /* Brighter on hover */
+    }
+    .tab-btn.active {
+        color: #b388eb; /* Active tab text color */
+        border-bottom-color: #b388eb; /* Active indicator line */
+    }
+
+    /* --- Tab Content --- */
+    .tab-content-wrapper {
+        flex-grow: 1; /* Takes available vertical space */
+        position: relative;
+        overflow-x: hidden;
+        overflow-y: auto; /* Makes this area scrollable if content overflows */
+        padding: 1.2rem 1.5rem; /* Padding for the content within the tabs */
+        scrollbar-width: thin;
+        scrollbar-color: #6a5acd #3a3375; /* Themed scrollbar */
+    }
+    .tab-content-wrapper::-webkit-scrollbar { width: 6px; }
+    .tab-content-wrapper::-webkit-scrollbar-track { background: #3a3375; border-radius:3px; }
+    .tab-content-wrapper::-webkit-scrollbar-thumb { background-color: #6a5acd; border-radius:3px;}
+
+    .settings-tab-content { /* Container for each tab's specific settings */
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem; /* Space between distinct setting groups */
+        width: 100%;
+    }
+
+    /* --- Setting Groups & Individual Settings --- */
+    .setting-group {
+        /* No specific background/border, inherits from tab-content or modal */
+        padding: 0; /* No extra padding if content is directly inside */
+        display: flex;
+        flex-direction: column;
+        gap: 1rem; /* Space between individual settings within this group */
+    }
+
+    .setting-group-title {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #b388eb; /* Accent color for group titles */
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin: 0 0 0.2rem 0;
+        text-align: left;
+        padding-bottom: 0.3rem;
+        border-bottom: 1px dashed #4a4090; /* Dashed separator for titles */
+    }
+
+    .setting, /* General wrapper for a setting item */
+    .toggle-setting,
+    .link-setting {
+        background-color: #2c2663; /* Background for individual setting items */
         padding: 0.8rem 1rem;
         border-radius: 0.75rem;
         border: 1px solid #4a4090;
     }
 
+    /* Toggle Switch (Music, Notification Enables) */
     .toggle {
         display: flex;
         align-items: center;
@@ -264,58 +406,73 @@
         cursor: pointer;
         width: 100%;
     }
-
-    .toggle input { display: none; }
-
+    .toggle input[type="checkbox"] { 
+        display: none; /* Hide native checkbox */
+    }
     .slider {
-        width: 48px; /* Adjusted size */
+        width: 48px;
         height: 26px;
-        background-color: #4a4090; /* Off state color */
+        background-color: #4a4090; /* "Off" state */
         border-radius: 999px;
         position: relative;
         transition: background-color 0.3s ease;
         flex-shrink: 0;
-        border: 1px solid #6a5acd; /* Subtle border */
+        border: 1px solid #6a5acd;
     }
-
     .slider::before {
         content: "";
         position: absolute;
         height: 18px;
         width: 18px;
-        background: #fff5e1; /* Handle color */
+        background: #fff5e1;
         box-shadow: 0 1px 3px rgba(0,0,0,0.3);
         border-radius: 50%;
         top: 3px;
         left: 3px;
         transition: transform 0.3s cubic-bezier(0.3, 1.6, 0.5, 1);
     }
-
-    .toggle input:checked + .slider {
-        background-color: #b388eb; /* On state color */
+    .toggle input[type="checkbox"]:checked + .slider {
+        background-color: #b388eb; /* "On" state */
         border-color: #fff5e1;
     }
-
-    .toggle input:checked + .slider::before {
-        transform: translateX(22px); /* Move handle */
+    .toggle input[type="checkbox"]:checked + .slider::before {
+        transform: translateX(22px);
     }
-
     .toggle-label {
-        font-weight: 600; /* Bolder label */
+        font-weight: 500; /* Adjusted from 600 */
         color: #fff5e1;
-        font-size: 1rem;
+        font-size: 0.95rem; /* Adjusted from 1rem */
         text-align: left;
+        flex-grow: 1; /* Allow label to take space */
     }
 
-    /* Delete Buttons Section */
-    .delete-actions {
-        display: grid; /* Use grid for equal width */
-        grid-template-columns: 1fr 1fr;
-        gap: 0.8rem;
-        margin-top: 0.5rem; /* Space above delete buttons */
+    /* Notification Specific Time Inputs */
+    .notification-setting .toggle { /* The label part of notification setting */
+        margin-bottom: 0.3rem; /* Space if time input appears below */
+    }
+    .time-input-wrapper {
+        margin-top: 0.6rem; /* Space above the time input field */
+        width: auto; /* Let it be natural width or set max-width on input */
+        display: flex; /* If you want to align anything next to it later */
+    }
+    .time-input {
+        background-color: #1a163f;
+        color: #fff5e1;
+        border: 1px solid #4a4090;
+        border-radius: 6px;
+        padding: 0.5rem 0.7rem;
+        font-size: 0.95rem;
+        width: auto; /* Fit content */
+        min-width: 100px; /* Ensure it's not too small */
+    }
+    .time-input:focus {
+        outline: none;
+        border-color: #b388eb;
+        box-shadow: 0 0 0 2px rgba(179, 136, 235, 0.2);
     }
 
-    .setting-btn { /* Common styles for all settings buttons */
+    /* General Button Styles (Achievements link, Danger buttons) */
+    .setting-btn {
         padding: 0.7rem 1rem;
         border: none;
         border-radius: 0.6rem;
@@ -336,135 +493,90 @@
         transform: translateY(0);
         filter: brightness(0.95);
     }
+    .btn-icon { 
+        font-size: 1.1em; /* Make icon slightly larger than text */
+    }
 
-    .danger { /* Specific danger styles */
-        background: #c0392b; /* Adjusted red */
+    /* Achievements Link Button */
+    .setting-btn.achievements-link {
+        background-color: #2c2663; /* Match other setting items */
+        color: #fff5e1;
+        border: 1px solid #4a4090;
+        width: 100%;
+        box-shadow: none;
+    }
+    .setting-btn.achievements-link:hover {
+        background-color: #3a3375;
+        border-color: #6a5acd;
+        filter: brightness(1.05);
+    }
+    .setting-btn.achievements-link .btn-icon :global(svg) { /* For SVG icons */
+        width: 20px;
+        height: 20px;
+        stroke-width: 2; /* If using stroke-based SVGs */
+        color: #b388eb; /* Accent color for icon */
+    }
+
+    /* Delete Actions Section & Danger Buttons */
+    .delete-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr; /* Equal width buttons */
+        gap: 0.8rem;
+        margin-top: 0; /* No extra margin if it's the content of a setting-group */
+    }
+    .danger {
+        background: #c0392b; /* Main danger red */
         color: white;
         box-shadow: 0 2px 5px rgba(192, 57, 43, 0.3);
     }
-    .danger.reset {
+    .danger.reset { /* Specific style for Reset App button */
         background: transparent;
         border: 2px solid #c0392b;
         color: #e74c3c; /* Lighter red text */
         box-shadow: none;
     }
     .danger.reset:hover {
-        background-color: #c0392b20; /* Subtle hover background */
-        color: #c0392b;
+        background-color: rgba(192, 57, 43, 0.15); /* Subtle red hover */
+        color: #c0392b; /* Darker red text on hover */
     }
 
-    .btn-icon { font-size: 1.1em; }
-
-    /* More Info Section */
+    /* --- More Info / Footer Section --- */
     .more-info {
-        background-color: #1a163f; /* Darker section bg */
-        padding: 0.8rem 1rem;
-        border-radius: 0.75rem;
-        border: 1px dashed #4a4090; /* Dashed border */
+        background-color: #1a163f; /* Darkest background */
+        padding: 1rem 1.5rem; /* Match tab content horizontal padding */
+        border-top: 1px solid #403870; /* Separator */
         display: flex;
         flex-direction: column;
         gap: 0.8rem;
-        margin-top: 0.5rem;
+        flex-shrink: 0; /* Prevent shrinking */
     }
-
     .fun-stats {
         display: flex;
-        justify-content: space-between; /* Space out stats */
+        justify-content: space-around; /* Evenly space stats */
         align-items: center;
-        flex-wrap: wrap; /* Allow wrapping on small screens */
-        gap: 0.5rem;
+        flex-wrap: wrap;
+        gap: 1rem; /* Space between stat items */
     }
-
     .stat-item {
-        color: #fff5e1b3; /* Semi-transparent text */
+        color: #fff5e1b3;
         font-weight: 500;
         font-size: 0.85rem;
         display: flex;
         align-items: center;
         gap: 0.3rem;
     }
-    .stat-icon { font-size: 1.1em; }
-
-
-    /* --- Link Setting Style (for Achievements Button) --- */
-    .setting-btn.achievements-link {
-        background-color: #2c2663; /* Match toggle background */
-        color: #fff5e1;
-        border: 1px solid #4a4090;
-        width: 100%; /* Make it full width like toggle */
-        justify-content: center; /* Center content */
-        box-shadow: none; /* Remove danger shadow */
-    }
-    .setting-btn.achievements-link:hover {
-        background-color: #3a3375; /* Similar hover to toggle */
-        border-color: #6a5acd;
-        filter: brightness(1.05); /* Slightly brighter instead of 1.1 */
-    }
-    .setting-btn.achievements-link:active {
-        filter: brightness(0.95);
-    }
-    /* Style icon within the achievements button */
-    .setting-btn.achievements-link .btn-icon :global(svg) {
-        width: 20px; /* Adjust icon size */
-        height: 20px;
-        stroke-width: 2; /* Adjust stroke */
-        color: #b388eb; /* Use accent color */
+    .stat-icon { 
+        font-size: 1.1em; 
     }
 
-    .setting-group {
-        background-color: rgba(0,0,0,0.1); /* Slightly different background to group them */
-        padding: 1rem;
-        border-radius: 0.75rem;
-        border: 1px solid #403870; /* Slightly different border */
-        display: flex;
-        flex-direction: column;
-        gap: 0.8rem; /* Gap between reminder settings */
-    }
-
-    .setting-group-title {
-        font-size: 0.9rem;
-        font-weight: 600;
-        color: #b388eb; /* Accent color */
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        margin: 0 0 0.5rem 0;
-        text-align: left; /* Align title to the left */
-    }
-
-    /* Styles for individual notification setting (checkbox + time input) */
-    .notification-setting {
-        padding: 0; /* Remove padding from individual setting if group has it */
-        border: none; /* Remove border from individual if group has it */
-        background-color: transparent; /* Transparent if group has bg */
-        /* display: flex;
-        flex-direction: column;
-        gap: 0.5rem; */ /* Let the label and time-input-wrapper handle their layout */
-    }
-
-    .notification-setting .toggle { /* The label part with the Svelte toggle */
-        width: 100%;
-        margin-bottom: 0.5rem; /* Space before time input appears */
-    }
-
-    .time-input-wrapper {
-        margin-top: 0.5rem; /* Space above time input */
-        width: 100%;
-        display: flex;
-    }
-
-    .time-input {
-        background-color: #1a163f; /* Darker input background */
-        color: #fff5e1;
-        border: 1px solid #4a4090;
-        border-radius: 6px;
-        padding: 0.5rem 0.7rem;
-        font-size: 0.95rem;
-        /* Consider width, e.g., width: 120px; or make it responsive */
-        max-width: 130px; /* Max width for time input */
-    }
-    .time-input:focus {
-        outline: none;
-        border-color: #b388eb;
-        box-shadow: 0 0 0 2px rgba(179, 136, 235, 0.2);
+    .reminder-note {
+        font-size: 0.8rem;
+        color: #fff5e199;
+        text-align: left;
+        margin-top: 0.5rem;
+        padding: 0.5rem;
+        background-color: rgba(0,0,0,0.1);
+        border-radius: 4px;
+        line-height: 1.4;
     }
 </style>

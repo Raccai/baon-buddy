@@ -1,6 +1,6 @@
 <!-- src/components/SideMenu.svelte -->
 <script>
-  import { createEventDispatcher } from 'svelte';
+  import { createEventDispatcher, onDestroy as svelteOnDestroy } from 'svelte';
   import { fly, fade } from 'svelte/transition';
   import { quintOut } from 'svelte/easing'; // Good easing for slide
   import FavoritesIcon from "../assets/Favorites.svelte";
@@ -12,8 +12,122 @@
   import AddIcon from '../assets/AddIcon.svelte';
 
   export let visible = false;
-
   const dispatch = createEventDispatcher();
+
+  let panelElement;        // Bound to the <aside> element
+  let isDragging = false;
+  let dragStartX = 0;        // X position where drag started
+  let currentAppliedTranslateX = 0; // The actual translateX value last applied
+  let panelWidth = 0;
+  let menuNavElement; // To bind to the scrollable .menu-nav
+
+  const SWIPE_CLOSE_THRESHOLD_PIXELS = 80; // e.g., swipe 80 pixels to close
+
+  let panelInlineStyle = '';
+  let backdropInlineStyle = '';
+
+  function handleTouchStart(event) {
+    if (!panelElement || !visible) return;
+
+    // Similar to RecipeSheet: allow dragging if touch starts near edge or if content isn't horizontally scrollable to the left
+    // For a right-side menu, this means if the content is scrolled fully to the right (scrollLeft + clientWidth === scrollWidth)
+    // OR if the touch is on a non-scrollable part (e.g., header/footer of the panel).
+
+    // For simplicity, let's assume for now any horizontal drag attempt on the panel should try to close it,
+    // as horizontal scrolling *within* a side menu is rare.
+    // If .menu-nav *could* scroll horizontally, we'd add checks like:
+    // if (menuNavElement.scrollLeft > 0 && event.target.closest('.menu-nav')) {
+    //   isDragging = false; return;
+    // }
+    
+    isDragging = true;
+    dragStartX = event.touches[0].clientX;
+    // Get current transform. Start with 0 as it's assumed to be fully open.
+    // If mid-animation, this could be more complex, but Svelte's out:fly handles it.
+    currentAppliedTranslateX = 0; 
+    panelWidth = panelElement.offsetWidth;
+    panelElement.style.transition = 'none';
+    
+    const backdrop = panelElement.previousElementSibling;
+    if (backdrop?.classList.contains('menu-backdrop')) {
+        backdrop.style.transition = 'none';
+    }
+    // console.log(`[SideMenu] Touch START. StartX: ${dragStartX.toFixed(2)}, PanelWidth: ${panelWidth}`);
+  }
+
+  function handleTouchMove(event) {
+    if (!isDragging || !panelElement) return;
+
+    let currentTouchX = event.touches[0].clientX;
+    let deltaX = currentTouchX - dragStartX;
+
+    // We are dragging a right-side panel further TO THE RIGHT to close.
+    // So, deltaX should be positive.
+    
+    // Prevent default browser horizontal scroll/navigation IF we are actually moving the panel.
+    // This is important.
+    if (deltaX > 0) { // Only prevent default if actually dragging in the close direction
+        event.preventDefault();
+    }
+
+
+    let newTranslateX = Math.max(0, deltaX); // Don't allow dragging "more open" (further left than 0)
+    
+    panelInlineStyle = `transform: translateX(${newTranslateX}px); transition: none;`;
+    currentAppliedTranslateX = newTranslateX; // Store the applied value
+
+    const backdrop = panelElement.previousElementSibling;
+    if (backdrop?.classList.contains('menu-backdrop') && panelWidth > 0) {
+        const opacity = Math.max(0, 1 - (newTranslateX / panelWidth) * 1.2);
+        backdropInlineStyle = `opacity: ${opacity.toFixed(2)}; transition: none;`;
+    }
+    // console.log(`[SideMenu] Touch MOVE. DeltaX: ${deltaX.toFixed(2)}, TranslateX: ${newTranslateX.toFixed(2)}`);
+  }
+
+  function handleTouchEnd(event) {
+    if (!isDragging || !panelElement) return;
+    isDragging = false;
+
+    // currentAppliedTranslateX holds the last transform value from touchmove
+    console.log(`[SideMenu] Touch END. Last Applied TranslateX: ${currentAppliedTranslateX.toFixed(2)}`);
+
+    panelElement.style.transition = 'transform 0.3s cubic-bezier(0.25, 0.1, 0.25, 1)';
+    const backdrop = panelElement.previousElementSibling;
+    if (backdrop?.classList.contains('menu-backdrop')) {
+        backdrop.style.transition = 'opacity 0.3s ease-out';
+    }
+
+    if (currentAppliedTranslateX > SWIPE_CLOSE_THRESHOLD_PIXELS) { // Use pixel threshold
+        console.log('[SideMenu] Swipe threshold MET. Dispatching close.');
+        panelInlineStyle = ''; 
+        backdropInlineStyle = '';
+        dispatch('close'); 
+    } else {
+        console.log('[SideMenu] Swipe threshold NOT met. Snapping back.');
+        panelInlineStyle = `transform: translateX(0px); transition: transform 0.2s ease-out;`;
+        backdropInlineStyle = `opacity: ''; transition: opacity 0.2s ease-out;`;
+        setTimeout(() => {
+            if (!isDragging) {
+                 panelInlineStyle = '';
+                 backdropInlineStyle = '';
+            }
+        }, 250);
+    }
+  }
+
+  function dispatchCloseAndReset() { // Used by X button and backdrop click
+      // If it was being dragged and then X is clicked, reset transform before Svelte transition
+      if (panelElement) {
+          panelElement.style.transition = 'none'; // Prevent conflict
+          panelElement.style.transform = '';
+      }
+      const backdrop = panelElement?.previousElementSibling;
+      if (backdrop && backdrop.classList.contains('menu-backdrop')) {
+          backdrop.style.transition = 'none';
+          backdrop.style.opacity = '';
+      }
+      dispatch('close');
+  }
 
   function handleMenuAction(actionType, detail = null) {
     console.log("Menu action:", actionType, detail);
@@ -39,7 +153,8 @@
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
     class="menu-backdrop"
-    on:click={closeMenu}
+    style={backdropInlineStyle}
+    on:click={dispatchCloseAndReset}
     in:fade={{ duration: 200 }}
     out:fade={{ duration: 200 }}
   ></div>
@@ -47,10 +162,15 @@
   <!-- svelte-ignore a11y_no_noninteractive_element_to_interactive_role -->
   <aside
     class="menu-panel"
+    bind:this={panelElement}
+    on:touchstart|passive={handleTouchStart} 
+    on:touchmove={handleTouchMove}       
+    on:touchend={handleTouchEnd}
+    on:touchcancel={handleTouchEnd}       
+    style="{panelInlineStyle} touch-action: none;" 
     in:fly={{ x: '100%', duration: 350, easing: quintOut }} 
-    out:fly={{ x: '100%', duration: 300, easing: quintOut }}
-    role="menu"
-    aria-label="Main Menu"
+    out:fly={{ x: '100%', duration: 300, easing: quintOut }} 
+    role="menu" aria-label="Main Menu"
   >
     <!-- Optional: Add a header inside the menu -->
     <div class="menu-header">
@@ -69,11 +189,6 @@
         <span class="menu-icon"><FavoritesIcon /></span>
         <span class="menu-label">Favorites</span>
       </button>
-      <!-- Manage Baon Screen Toggle -->
-      <!-- <button class="menu-item" on:click={() => handleMenuAction('openManageBaon')}>
-        <span class="menu-icon"><ManageBaonIcon /></span>
-        <span class="menu-label">Manage My Baon</span>
-      </button> -->
       <!-- Settings Modal Toggle -->
       <button class="menu-item" on:click={() => handleMenuAction('openSettings')}>
         <span class="menu-icon"><SettingsIcon /></span>
@@ -96,7 +211,7 @@
       </button>
     </nav>
     <div class="menu-footer">
-      Baon Buddy v1.9
+      Baon Buddy v2.0
     </div>
   </aside>
 {/if}
@@ -121,6 +236,10 @@
     /* Apply safe area padding directly */
     padding-top: calc(var(--custom-safe-area-top));
     padding-bottom: calc(var(--custom-safe-area-bottom, env(safe-area-inset-bottom, 0px)));
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
   }
 
   .menu-header {
@@ -157,6 +276,8 @@
     gap: 0.6rem;
     scrollbar-width: thin;
     scrollbar-color: #6a5acd #3a3375;
+    touch-action: pan-y; /* Explicitly allow vertical scroll for the nav area */
+    -webkit-overflow-scrolling: touch
   }
   .menu-nav::-webkit-scrollbar { width: 6px; }
   .menu-nav::-webkit-scrollbar-track { background: #3a3375; }

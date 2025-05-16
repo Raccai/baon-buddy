@@ -1,6 +1,7 @@
 <script>
     import { getFavorites } from "../lib/storage.js"; // removeFavorite is async
-    import { createEventDispatcher } from "svelte"; // onMount for initial load if visible by default
+    // @ts-ignore
+    import { createEventDispatcher, onDestroy as svelteOnDestroy } from "svelte"; // onMount for initial load if visible by default
     import { fly, fade } from "svelte/transition";
     import { quintOut } from 'svelte/easing';
     import BaonBuddyFavorites from "/titles/BaonBuddyFavorites.png";
@@ -14,6 +15,23 @@
     export let visible = false;
     let favoriteMealObjects = []; // Renamed to be clear it holds full objects
     let isLoading = false;
+
+    // --- Swipe Gesture State ---
+    let panelElement;        // Bound to the <aside> element
+    let isDragging = false;
+    let dragStartX = 0;        // X position where drag started (was startY)
+    let currentAppliedTranslateX = 0; // The actual translateX value last applied (was currentY related)
+    let panelWidth = 0;
+    // @ts-ignore
+    let scrollableContentElement; // To bind to the scrollable .favorites-list
+
+    const SWIPE_CLOSE_THRESHOLD_PIXELS = 80; // Pixels to the right to trigger close
+
+    // Inline styles for smooth drag
+    // @ts-ignore
+    let panelInlineStyle = '';
+    // @ts-ignore
+    let backdropInlineStyle = '';
 
     async function loadFavorites() {
         if (!visible) { 
@@ -43,7 +61,9 @@
         }
     }
 
-    $: if (visible && $allMealsStore) { 
+   // @ts-ignore
+    // @ts-ignore
+      $: if (visible && $allMealsStore) { 
         loadFavorites();
     }
 
@@ -65,26 +85,118 @@
     function viewRecipe(meal) {
         dispatch("viewRecipe", meal);
     }
+
+    // --- Swipe Gesture Handlers ---
+    // @ts-ignore
+    function handleTouchStart(event) {
+        if (!panelElement || !visible) return;
+
+        const touchX = event.touches[0].clientX;
+        // @ts-ignore
+        const rect = panelElement.getBoundingClientRect();
+        // Define an "edge" area for drag initiation if needed, or allow anywhere
+        // For a side panel, often dragging from anywhere is fine, unless there's internal horizontal scroll.
+        // Assuming .favorites-list only scrolls vertically.
+
+        // Check if touch is on an interactive element like a button inside the panel
+        let target = event.target;
+        while (target && target !== panelElement) {
+            if (target.tagName === 'BUTTON' || target.hasAttribute('on:click')) {
+                isDragging = false; // Don't start panel drag if clicking a button
+                return;
+            }
+            target = target.parentNode;
+        }
+        
+        isDragging = true;
+        dragStartX = touchX;
+        currentAppliedTranslateX = 0; // Assuming it starts at translateX(0) when open
+        // @ts-ignore
+        panelWidth = panelElement.offsetWidth;
+        // @ts-ignore
+        panelElement.style.transition = 'none';
+        
+        // @ts-ignore
+        const backdrop = panelElement.previousElementSibling; // Assumes backdrop is sibling before
+        if (backdrop) backdrop.style.transition = 'none';
+    }
+
+    // @ts-ignore
+    function handleTouchMove(event) {
+        if (!isDragging || !panelElement) return;
+
+        let currentTouchX = event.touches[0].clientX;
+        let deltaX = currentTouchX - dragStartX;
+
+        // Panel is on the right, swiping RIGHT to close it (positive deltaX)
+        if (deltaX > 0) { // Only act if dragging in the close direction
+            event.preventDefault(); // Prevent browser default horizontal actions
+            // Apply rightward transform, don't let it go "more open" (left of 0)
+            const newTranslateX = Math.max(0, deltaX);
+            panelInlineStyle = `transform: translateX(${newTranslateX}px);`;
+            currentAppliedTranslateX = newTranslateX; // Store for touchend
+
+            // @ts-ignore
+            const backdrop = panelElement.previousElementSibling;
+            if (backdrop && panelWidth > 0) {
+                const opacity = Math.max(0, 1 - (newTranslateX / panelWidth) * 1.5);
+                backdropInlineStyle = `opacity: ${opacity.toFixed(2)};`;
+            }
+        } else {
+            // If dragging left (trying to open more, or accidental),
+            // reset to initial or do nothing to allow internal scroll
+            // For now, simply don't update transform if deltaX is not positive.
+            // This also means if user scrolls vertically within .favorites-list, this won't interfere.
+        }
+    }
+
+    // @ts-ignore
+    function handleTouchEnd() {
+        if (!isDragging || !panelElement) return;
+        isDragging = false;
+
+        // @ts-ignore
+        panelElement.style.transition = 'transform 0.3s ease-out';
+        // @ts-ignore
+        const backdrop = panelElement.previousElementSibling;
+        if (backdrop) backdrop.style.transition = 'opacity 0.3s ease-out';
+
+        if (currentAppliedTranslateX > SWIPE_CLOSE_THRESHOLD_PIXELS) {
+            panelInlineStyle = ''; // Clear for Svelte's out:fly
+            backdropInlineStyle = '';
+            dispatch('close');
+        } else {
+            panelInlineStyle = 'transform: translateX(0px);'; // Snap back
+            backdropInlineStyle = ''; // Reset opacity, CSS will handle fade if any
+            setTimeout(() => {
+                if (!isDragging) panelInlineStyle = ''; // Clear after snap
+            }, 300);
+        }
+    }
 </script>
 
 {#if visible}
     <div
-        class="modal-backdrop"
+        class="modal-backdrop favorites-modal-backdrop"
+        style={backdropInlineStyle}
+        on:click={closeModal}
         in:fade={{ duration: 200 }}
         out:fade={{ duration: 200 }}
-        on:click={closeModal}
-        role="button"
-        tabindex="-1" 
-        aria-label="Close favorites panel"
+        role="button" tabindex="-1" aria-label="Close favorites panel"
         on:keydown={(e) => (e.key === 'Escape') && closeModal()} 
     ></div>
     <!-- svelte-ignore a11y_no_noninteractive_element_to_interactive_role -->
-    <aside class="modal-panel"
+    <aside 
+        class="modal-panel"
+        bind:this={panelElement}
+        on:touchstart|passive={handleTouchStart} 
+        on:touchmove={handleTouchMove}         
+        on:touchend={handleTouchEnd}
+        on:touchcancel={handleTouchEnd}         
+        style="{panelInlineStyle} touch-action: none;" 
         in:fly={{ x: '100%', duration: 350, easing: quintOut }} 
         out:fly={{ x: '100%', duration: 300, easing: quintOut }}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="favorites-title-img"
+        role="dialog" aria-modal="true" aria-labelledby="favorites-title-img"
     >
         <header class="panel-header">
             <img src={BaonBuddyFavorites} alt="Favorites" id="favorites-title-img" class="favorites-title">
@@ -167,6 +279,9 @@
         border-left: 1px solid #4a4090; /* Left border */
         display: flex;
         flex-direction: column;
+        user-select: none;
+        -webkit-user-select: none;
+        -ms-user-select: none;
     }
 
     .panel-header {
@@ -175,6 +290,7 @@
         align-items: center;
         margin-bottom: 1.5rem; /* Space below header */
         padding-bottom: 0.5rem; /* Padding below title */
+        padding-top: 1rem;
         border-bottom: 1px solid #4a4090; /* Separator */
         flex-shrink: 0;
     }
@@ -231,6 +347,8 @@
         margin: 0; /* Remove default margins */
         flex-grow: 1; /* Allow list to scroll */
         overflow-y: auto; /* Enable scroll if needed */
+        touch-action: pan-y; /* Allow vertical scroll on the list ITSELF */
+        -webkit-overflow-scrolling: touch;
     }
 
     li {
