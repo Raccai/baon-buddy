@@ -6,6 +6,7 @@
   import BaonCardSelector from './BaonCardSelector.svelte';
   import { get as getStoreValue } from 'svelte/store';
   import { allMeals as allMealsStore } from '../lib/mealStore.js'; // For looking up meals
+  import { playSound } from '../lib/soundManager';
 
   export let date;
   export let mealIdsForDay = []; // Prop from Calendar.svelte: Now an array of meal IDs
@@ -48,6 +49,7 @@
     // mealsForSelector contains the currently displayed (and thus selected for this day) full meal objects
     if (mealsForSelector.length > 0) {
       const idsToCopy = mealsForSelector.map(meal => meal.id).filter(Boolean);
+      playSound('click');
       dispatch('copy', idsToCopy); // Dispatch array of IDs
     }
   }
@@ -56,17 +58,20 @@
     // copiedMealIds prop is an array of IDs from Calendar.svelte
     if (copiedMealIds && copiedMealIds.length > 0) {
       // Calendar.svelte's on:paste handler will use its `copiedMeals` (which are IDs)
+      playSound('click');
       dispatch('paste'); // No detail needed, Calendar.svelte has the IDs
     }
   }
 
   function handleClearAll() {
     if (mealsForSelector.length > 0) {
+      playSound('click');
       dispatch('add', []); // Dispatch 'add' with empty array of IDs to clear
     }
   }
 
   function handleClose() {
+    playSound('click');
     dispatch('close');
   }
 </script>

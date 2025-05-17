@@ -12,6 +12,8 @@
     import { getTagStyle } from "../lib/tags.js";
     // --- Capacitor Imports ---
     import { getDisplayImageSrc } from "../lib/imageUtils";
+    import { sfxClick } from "../lib/sfxClick";
+    import { playSound } from "../lib/soundManager";
 
     // --- Props ---
     export let meal; // The meal object { name, image, type, message, emoji?, recipe?, id?, isUserDefined? }
@@ -124,6 +126,7 @@
 
     // Dispatch event to view recipe
     function dispatchViewRecipe() {
+        playSound('sheetOpenClose');
         if (meal) dispatch("viewRecipe", meal);
     }
 
@@ -207,7 +210,12 @@
                 </div>
             </button>
             
-            <button class="recipe-btn" on:click={() => dispatch("viewRecipe", meal)} aria-label="View Recipe">
+            <button 
+                class="recipe-btn" 
+                on:click={() => dispatchViewRecipe()} 
+                aria-label="View Recipe"
+                use:sfxClick
+            >
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52" width="24" height="24">
                     <path d="m31.2 4.24a2.24 2.24 0 1 1 -2.2-2.24 2.24 2.24 0 0 1 2.2 2.24zm-8.2 8.32a3 3 0 1 0 -3-3 3 3 0 0 0 3 3zm19.44 31-10-15.36v-8.2a2.14 2.14 0 0 0 2.4-2.24 2 2 0 0 0 -1.84-2.16h-13.8a2 2 0 0 0 -2 2 2.09 2.09 0 0 0 0 .25 2.16 2.16 0 0 0 2.4 2.24v8.31l-10 15.2a4.26 4.26 0 0 0 -.24 4.24 3.91 3.91 0 0 0 3.52 2.16h26.12a3.9 3.9 0 0 0 3.52-2.16 4 4 0 0 0 -.16-4.24zm-18.8-14v-9.16h4.8v9.28l4.72 7.52h-14.28z" fill="#231F47" fill-rule="evenodd"/>
                 </svg>
@@ -219,6 +227,7 @@
                 aria-label="Edit {meal.name}"
                 title="Edit this Baon"
                 disabled={!meal}
+                use:sfxClick
             >
                 <EditIcon />
             </button>
@@ -229,6 +238,7 @@
                 aria-label="Delete {meal.name}"
                 title="Delete this Baon"
                 disabled={!meal}
+                use:sfxClick
             >
                 <DeleteIcon />
             </button>

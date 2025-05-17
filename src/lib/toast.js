@@ -1,4 +1,5 @@
 import { writable } from 'svelte/store';
+import { playSound } from './soundManager';
 
 let id = 0;
 
@@ -11,4 +12,12 @@ export function showToast(message, type = 'info', duration = 2500) {
   setTimeout(() => {
     toasts.update(all => all.filter(t => t.id !== newToast.id));
   }, duration);
+
+  if (type === 'success') {
+    playSound('success');
+  } else if (type === 'error' || type === 'warning' || type === 'fail') {
+    playSound('error');
+  } else {
+    playSound('favorite');
+  }
 }

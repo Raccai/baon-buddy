@@ -2,6 +2,7 @@
   import { createEventDispatcher } from 'svelte';
   import { fly, fade } from 'svelte/transition';
   import { quintIn, quintOut } from 'svelte/easing';
+  import { playSound } from '../lib/soundManager';
 
   export let visible = false;
   export let title = 'Confirm Action';
@@ -16,12 +17,14 @@
 
   function handleConfirm() {
     if (isLoading) return;
+    playSound('click');
     dispatch('confirm');
     // The parent component will typically set visible=false after handling confirm
   }
 
   function handleCancel() {
     if (isLoading) return;
+    playSound('click');
     dispatch('cancel');
     // The parent component will typically set visible=false
   }

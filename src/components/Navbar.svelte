@@ -3,6 +3,8 @@
   import Calendar from "../assets/Calendar.svelte";
   import Menu from "../assets/Menu.svelte";
   import { createEventDispatcher } from 'svelte';
+  import { sfxClick } from "../lib/sfxClick";
+  import { playSound } from "../lib/soundManager";
 
   const dispatch = createEventDispatcher();
 
@@ -16,6 +18,7 @@
 
   // Function to dispatch event to open the side menu
   function openMenu() {
+    playSound('sideOpenClose');
     dispatch('toggleMenu'); // <<< Dispatch a new event type
   }
 </script>
@@ -29,6 +32,7 @@
       class="nav-btn"
       aria-label="Home"
       aria-current={current === 'home' ? 'page' : undefined}
+      use:sfxClick
     >
       <span class="icon-wrapper">
         <Home />
@@ -43,6 +47,7 @@
       class="nav-btn"
       aria-label="Calendar"
       aria-current={current === 'calendar' ? 'page' : undefined}
+      use:sfxClick
     >
       <span class="icon-wrapper">
         <Calendar />
@@ -57,6 +62,7 @@
       class="nav-btn"
       class:active={false} 
       aria-label="Open Menu"
+      use:sfxClick
     >
       <span 
         class="icon-wrapper"

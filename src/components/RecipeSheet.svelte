@@ -2,6 +2,7 @@
   import { fly, fade } from 'svelte/transition';
   import { quintOut } from 'svelte/easing';
   import { createEventDispatcher, onMount, onDestroy } from 'svelte'; // Added onMount/onDestroy
+  import { playSound } from '../lib/soundManager';
 
   export let visible = false;
   /** @type {{ name: string, image: string, type: string, message: string, recipe?: { ingredients: string[], steps: string[], talaTip?: string } } | null } */
@@ -81,6 +82,7 @@
 
   function closeSheet() {
     // Reset transform before dispatching close
+    playSound('sheetOpenClose');
     if (sheetElement) {
       sheetElement.style.transform = ''; // Or specific transform for exit animation
     }

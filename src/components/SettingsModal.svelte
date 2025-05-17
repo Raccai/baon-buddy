@@ -7,8 +7,14 @@
   import { fade, fly } from 'svelte/transition';
   import { quintOut } from 'svelte/easing';
   import { showToast } from '../lib/toast.js';
+  import {
+    setSoundEffectsEnabled,
+    areSoundEffectsEnabled,
+    playSound
+  } from '../lib/soundManager.js';
   import BaonBuddySettings from "/titles/BaonBuddySettings.png";
   import AchievementsIcon from "../assets/AchievementsIcon.svelte";
+  import { sfxClick } from '../lib/sfxClick.js';
 
   const dispatch = createEventDispatcher();
 
@@ -23,6 +29,7 @@
   
   // musicEnabled will be initialized based on localStorage when the modal becomes visible
   let musicEnabled = false; 
+  let sfxToggleEnabled = true;
   
   let notificationSettings = {
     dayBeforeEnabled: false,
@@ -34,6 +41,9 @@
   function loadAndSyncSettings() {
     // Sync music setting
     musicEnabled = localStorage.getItem("musicEnabled") === "true";
+
+    // Load sfxToggleEnabled
+    sfxToggleEnabled = areSoundEffectsEnabled();
     
     // Load notification settings
     notificationSettings = getNotificationSettings();
@@ -65,6 +75,7 @@
 
   // --- General Settings Handlers ---
   function handleMusicToggle() {
+    playSound('toggleOnOff');
     // The `bind:checked={musicEnabled}` on the input means `musicEnabled`
     // is already updated to the new state by Svelte when this function is called.
     console.log("[SettingsModal] Music toggle changed by user. New state for musicEnabled:", musicEnabled);
@@ -78,15 +89,18 @@
   }
 
   function requestClearFaves() {
+    playSound('click');
     dispatch("requestClearFavorites");
   }
 
   function requestResetApp() {
+    playSound('click');
     dispatch("requestResetApp");
   }
 
   // --- Notification Settings Handlers ---
   function handleNotificationSettingsChange() {
+    playSound('toggleOnOff');
     // `notificationSettings` is already up-to-date due to `bind:checked` and `bind:value`
     saveNotificationSettings(notificationSettings);
     dispatch('notificationSettingsChanged');
@@ -95,6 +109,14 @@
 
   function closeModal() {
     dispatch('close');
+  }
+
+  // For sound effects
+  function handleSfxToggle() {
+    // Update global user settings for sfx
+    setSoundEffectsEnabled(sfxToggleEnabled);
+    playSound('toggleOnOff');
+    dispatch('sfxSettingsChanges'); // I think this is optional. Forgot if this is actually needed lel
   }
 </script>
 
@@ -116,7 +138,7 @@
       out:fly={{ y: 50, duration: 250, easing: quintOut }}
     >
       <header class="modal-header">
-        <button class="header-close-btn" on:click={closeModal} aria-label="Close Settings">
+        <button class="header-close-btn" use:sfxClick on:click={closeModal} aria-label="Close Settings">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="currentColor" aria-hidden="true">
             <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
           </svg>
@@ -128,7 +150,10 @@
         <button 
           class="tab-btn" 
           class:active={activeTab === 'general'} 
-          on:click={() => activeTab = 'general'}
+          on:click={() => {
+            activeTab = 'general';
+            playSound('click');
+          }}
           aria-pressed={activeTab === 'general'}
         >
           General
@@ -136,7 +161,10 @@
         <button 
           class="tab-btn" 
           class:active={activeTab === 'notifications'} 
-          on:click={() => activeTab = 'notifications'}
+          on:click={
+            () => {activeTab = 'notifications'; 
+            playSound('click');
+          }}
           aria-pressed={activeTab === 'notifications'}
         >
           Notifications
@@ -161,8 +189,21 @@
                     </label>
                 </section>
 
+                <section class="setting toggle-setting">
+                    <label class="toggle" for="sfx-toggle-input">
+                        <span class="toggle-label">{sfxToggleEnabled ? 'Sound Effects On 🔊' : 'Sound Effects Off 🔇'}</span>
+                        <input
+                            id="sfx-toggle-input"
+                            type="checkbox"
+                            bind:checked={sfxToggleEnabled}  
+                            on:change={handleSfxToggle}
+                        />
+                        <span class="slider"></span>
+                    </label>
+                </section>
+
                 <section class="setting link-setting">
-                    <button class="setting-btn achievements-link" on:click={() => dispatch('openAchievements')}>
+                    <button class="setting-btn achievements-link" use:sfxClick on:click={() => dispatch('openAchievements')}>
                        <span class="btn-icon"><AchievementsIcon /></span> View Achievements
                     </button>
                 </section>

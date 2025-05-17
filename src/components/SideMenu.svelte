@@ -2,7 +2,9 @@
 <script>
   import { createEventDispatcher, onDestroy as svelteOnDestroy } from 'svelte';
   import { fly, fade } from 'svelte/transition';
-  import { quintOut } from 'svelte/easing'; // Good easing for slide
+  import { quintOut } from 'svelte/easing'; 
+  import { sfxClick } from '../lib/sfxClick';
+  import { playSound } from '../lib/soundManager';
   import FavoritesIcon from "../assets/Favorites.svelte";
   import SettingsIcon from "../assets/Settings.svelte";
   import ManageBaonIcon from "../assets/ManageBaonIcon.svelte";
@@ -28,22 +30,9 @@
 
   function handleTouchStart(event) {
     if (!panelElement || !visible) return;
-
-    // Similar to RecipeSheet: allow dragging if touch starts near edge or if content isn't horizontally scrollable to the left
-    // For a right-side menu, this means if the content is scrolled fully to the right (scrollLeft + clientWidth === scrollWidth)
-    // OR if the touch is on a non-scrollable part (e.g., header/footer of the panel).
-
-    // For simplicity, let's assume for now any horizontal drag attempt on the panel should try to close it,
-    // as horizontal scrolling *within* a side menu is rare.
-    // If .menu-nav *could* scroll horizontally, we'd add checks like:
-    // if (menuNavElement.scrollLeft > 0 && event.target.closest('.menu-nav')) {
-    //   isDragging = false; return;
-    // }
     
     isDragging = true;
     dragStartX = event.touches[0].clientX;
-    // Get current transform. Start with 0 as it's assumed to be fully open.
-    // If mid-animation, this could be more complex, but Svelte's out:fly handles it.
     currentAppliedTranslateX = 0; 
     panelWidth = panelElement.offsetWidth;
     panelElement.style.transition = 'none';
@@ -142,6 +131,7 @@
   }
 
   function closeMenu() {
+    playSound('sideOpenClose');
     visible = false;
     dispatch('close');
   }
@@ -175,37 +165,44 @@
     <!-- Optional: Add a header inside the menu -->
     <div class="menu-header">
       <img src={BaonBuddySideMenu} alt="Baon Buddy Side Menu" class="menu-title-image">
-      <button class="menu-close-btn" on:click={closeMenu} aria-label="Close Menu">×</button>
+      <button class="menu-close-btn" use:sfxClick on:click={closeMenu} aria-label="Close Menu">×</button>
     </div>
 
     <nav class="menu-nav" transition:fade={{duration: 200, delay: 100}}>
       <!-- Baon List Navigation -->
-      <button class="menu-item" on:click={() => handleMenuAction('navigate', 'baonlist')}>
+      <button class="menu-item" use:sfxClick on:click={() => handleMenuAction('navigate', 'baonlist')}>
         <span class="menu-icon"><BaonListIcon /></span>
         <span class="menu-label">Baon List</span>
       </button>
       <!-- Favorites Modal Toggle -->
-      <button class="menu-item" on:click={() => handleMenuAction('toggleFavorites')}>
+      <button 
+        class="menu-item" 
+        use:sfxClick 
+        on:click={() => {
+          handleMenuAction('toggleFavorites');
+          playSound('sideOpenClose');
+        }}
+      >
         <span class="menu-icon"><FavoritesIcon /></span>
         <span class="menu-label">Favorites</span>
       </button>
       <!-- Settings Modal Toggle -->
-      <button class="menu-item" on:click={() => handleMenuAction('openSettings')}>
+      <button class="menu-item" use:sfxClick on:click={() => handleMenuAction('openSettings')}>
         <span class="menu-icon"><SettingsIcon /></span>
         <span class="menu-label">Settings</span>
       </button>
       <!-- Achievements (can also be found in the settings modal for now) -->
-      <button class="menu-item" on:click={() => handleMenuAction('openAchievements')}>
+      <button class="menu-item" use:sfxClick on:click={() => handleMenuAction('openAchievements')}>
         <span class="menu-icon"><AchievementsIcon /></span>
         <span class="menu-label">Achievements</span>
       </button>
       <!-- Manage Baon -->
-      <button class="menu-item" on:click={() => handleMenuAction('openManageBaon')}>
+      <button class="menu-item" use:sfxClick on:click={() => handleMenuAction('openManageBaon')}>
         <span class="menu-icon"><ManageBaonIcon /></span>
         <span class="menu-label">Manage Baon</span>
       </button>
       <!-- Add Baon -->
-      <button class="menu-item" on:click={() => handleMenuAction('requestOpenAddForm')}>
+      <button class="menu-item" use:sfxClick on:click={() => handleMenuAction('requestOpenAddForm')}>
         <span class="menu-icon"><AddIcon /></span>
         <span class="menu-label">Add Baon</span>
       </button>

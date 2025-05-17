@@ -20,6 +20,8 @@
   import { onMount, tick } from 'svelte';
   import { markScreenAsDone, isScreenDone, isOverallOnboardingComplete } from '../../lib/onboardingStore.js';
   import HintPopover from '../HintPopover.svelte';
+  import { sfxClick } from '../../lib/sfxClick.js';
+  import { playSound } from '../../lib/soundManager.js';
 
   // Component state
   let showRecipeSheet = false;
@@ -134,6 +136,7 @@
   }
 
   function goToToday() {
+    playSound('click');
     const today = new Date();
     if (!isSameMonth(currentMonth, today)) {
       transitionDirection = today > currentMonth ? 1 : -1;
@@ -142,6 +145,7 @@
   }
 
   function changeMonth(direction) {
+    playSound('click');
     transitionDirection = direction;
     if (direction === 1) {
       currentMonth = addMonths(currentMonth, 1);

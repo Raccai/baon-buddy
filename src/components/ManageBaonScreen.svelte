@@ -12,6 +12,8 @@
   import BaonBuddyManageBaon from "/titles/BaonBuddyManageBaon.png";
   // If you need to react to the $allMeals store directly for updates from other places:
   import { allMeals as allMealsStore } from '../lib/mealStore.js';
+  import { sfxClick } from '../lib/sfxClick.js';
+  import { playSound } from '../lib/soundManager.js';
 
   const dispatch = createEventDispatcher();
 
@@ -74,6 +76,7 @@
   });
 
   function openAddForm() {
+    playSound('click');
     editingMeal = null;
     formMode = 'add';
     showForm = true;
@@ -88,6 +91,7 @@
     editingMeal.recipe.steps = Array.isArray(editingMeal.recipe.steps) ? editingMeal.recipe.steps : [];
     editingMeal.recipe.talaTip = editingMeal.recipe.talaTip || '';
     
+    playSound('click');
     formMode = 'edit';
     showForm = true;
   }
@@ -96,6 +100,7 @@
     if (!mealId) { console.error("Invalid mealId for delete"); return; }
     if (confirm(`Are you sure you want to delete "${mealName || 'this Baon'}"?`)) {
       isLoading = true;
+        playSound('click');
       try {
         const deleted = await deleteMeal(mealId); // ASYNC call
         if (deleted) {
@@ -112,6 +117,7 @@
   }
 
   async function handleSave(event) {
+    playSound('click');
     const mealDataFromForm = event.detail; // Data from BaonForm
     isLoading = true;
     let success = false;
@@ -153,11 +159,13 @@
   }
 
   function handleCancel() {
+    playSound('click');
     showForm = false;
     editingMeal = null;
   }
 
   function closeScreen() {
+    playSound('click');
     dispatch('close');
   }
 </script>
@@ -170,7 +178,7 @@
             </svg>
         </button>
         <img src={BaonBuddyManageBaon} alt="Manage Baon" id="manage-baon-title" class="title-image">
-        <button class="add-new-btn" on:click={openAddForm}>
+        <button use:sfxClick class="add-new-btn" on:click={openAddForm}>
             <span class="plus-icon">+</span> Add New
         </button>
     </header>
@@ -238,8 +246,20 @@
                                 <span class="meal-item-type">{meal.type}</span>
                             </div>
                             <div class="meal-actions">
-                                <button class="edit-btn" on:click|stopPropagation={() => openEditForm(meal)} aria-label="Edit {meal.name}">✏️</button>
-                                <button class="delete-btn" on:click|stopPropagation={() => handleDelete(meal.id, meal.name)} aria-label="Delete {meal.name}">🗑️</button>
+                                <button 
+                                    class="edit-btn" 
+                                    on:click|stopPropagation={() => openEditForm(meal)} 
+                                    aria-label="Edit {meal.name}"
+                                >
+                                    ✏️
+                                </button>
+                                <button 
+                                    class="delete-btn" 
+                                    on:click|stopPropagation={() => handleDelete(meal.id, meal.name)} 
+                                    aria-label="Delete {meal.name}"
+                                >
+                                    🗑️
+                                </button>
                             </div>
                         </div>
                     {/each}
@@ -254,7 +274,7 @@
             <!-- Show only if the user has NO meals AT ALL -->
             <div class="no-meals-message" transition:fade>
                 <p>You haven't created any custom Baon yet!</p>
-                <button class="add-first-btn" on:click={openAddForm}>+ Add your first Baon</button>
+                <button class="add-first-btn" use:sfxClick on:click={openAddForm}>+ Add your first Baon</button>
             </div>
         {/if}
     </div>

@@ -12,6 +12,7 @@
   import SearchIcon from '../../assets/SearchIcon.svelte';
   import { quintOut } from 'svelte/easing';
   import { getFavorites } from '../../lib/storage';
+  import { sfxClick } from '../../lib/sfxClick';
 
   let activeTypeFilter = "";
   let filteredMeals = [];
@@ -190,7 +191,14 @@
             aria-label="Search Baon List"
           />
           {#if searchTerm}
-            <button class="clear-search-btn" on:click={() => searchTerm = ''} aria-label="Clear search">×</button>
+            <button 
+              class="clear-search-btn" 
+              on:click={() => searchTerm = ''} 
+              aria-label="Clear search"
+              use:sfxClick
+            >
+              ×
+            </button>
           {/if}
         </div>
       </div>
@@ -206,12 +214,20 @@
           aria-label={showSearchBar ? "Hide Search Bar" : "Show Search Bar"}
           aria-expanded={showSearchBar}
           id="baonlist-search"
+          use:sfxClick
         >
           <span class="icon"><SearchIcon /></span> 
         </button>
 
         <!-- All Filter Chip -->
-        <button class:selected={activeTypeFilter.length === 0} class="filter-all-btn" on:click={() => setTypeFilter("")}>All</button>
+        <button 
+          class:selected={activeTypeFilter.length === 0} 
+          class="filter-all-btn" 
+          on:click={() => setTypeFilter("")}
+          use:sfxClick
+        >
+          All
+        </button>
         {#each allTags as tag}
           {#if tagStyles[tag]}
             <button
@@ -219,6 +235,7 @@
               class:selected={activeTypeFilter.includes(tag)}
               on:click={() => setTypeFilter(tag)}
               style="--tag-bg-color: {tagStyles[tag].color}; --tag-text-color: {tagStyles[tag].textColor || '#fff'}"
+              use:sfxClick
             >
               {tagStyles[tag].label || tag}
             </button>

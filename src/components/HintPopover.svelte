@@ -4,6 +4,7 @@
     import { createEventDispatcher } from 'svelte';
     import { fly, fade } from 'svelte/transition';
     import { quintOut } from 'svelte/easing';
+    import { playSound } from '../lib/soundManager';
 
     export let targetSelector = '';
     export let text = '';
@@ -115,9 +116,20 @@
         }
     }
 
-    function handleNext() { dispatch('next'); }
-    function handleDone() { isVisible = false; setTimeout(() => dispatch('done'), 300); } // Allow fade out
-    function handleSkip() { isVisible = false; setTimeout(() => dispatch('skip'), 300); } // Allow fade out
+    function handleNext() { 
+        playSound('click');
+        dispatch('next'); 
+    }
+    function handleDone() {
+        playSound('success');
+        isVisible = false; 
+        setTimeout(() => dispatch('done'), 300); 
+    } // Allow fade out
+    function handleSkip() { 
+        playSound('success');
+        isVisible = false; 
+        setTimeout(() => dispatch('skip'), 300);
+    } // Allow fade out
 
     onMount(() => {
         setTimeout(findTargetAndPrepare, 100);

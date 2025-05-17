@@ -9,6 +9,8 @@
     import { allMeals as allMealsStore } from "../lib/mealStore.js"; // Import the Svelte store
     import { get as getStoreValue } from "svelte/store"; // To read the store value
     import { showToast } from "../lib/toast.js"; // Assuming you have this
+    import { playSound } from "../lib/soundManager.js";
+  import { sfxClick } from "../lib/sfxClick.js";
 
     const dispatch = createEventDispatcher();
 
@@ -68,6 +70,7 @@
     }
 
     function closeModal() {
+        playSound('sideOpenClose');
         dispatch("close");
     }
 
@@ -83,6 +86,7 @@
     }
 
     function viewRecipe(meal) {
+        playSound('sheetOpenClose');
         dispatch("viewRecipe", meal);
     }
 
@@ -201,7 +205,7 @@
         <header class="panel-header">
             <img src={BaonBuddyFavorites} alt="Favorites" id="favorites-title-img" class="favorites-title">
             <!-- ADDED Close Button -->
-            <button class="panel-close-btn" on:click={closeModal} aria-label="Close Favorites">
+            <button class="panel-close-btn" use:sfxClick on:click={closeModal} aria-label="Close Favorites">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="currentColor" aria-hidden="true">
                 <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
                 </svg>
@@ -236,6 +240,7 @@
                             class="remove-fav-btn" 
                             on:click={(e) =>  requestRemoveFavoriteConfirmation(e, meal.id, meal.name)} 
                             aria-label="Remove {meal.name} from Favorites"
+                            use:sfxClick
                         >
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                                 <g id="SVGRepo_iconCarrier">

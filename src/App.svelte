@@ -30,6 +30,7 @@
   // Other Utilities
   import { checkAndUnlockAchievements } from './lib/achievementStore.js';
   import { showToast } from './lib/toast.js';
+  import { initializeSoundManager } from './lib/soundManager.js';
 
   // Components
   import Navbar from './components/Navbar.svelte';
@@ -368,9 +369,10 @@
     // 1. Initialize core storage: handles migrations, default meals to FS.
     await initializeAppStorageAndMeals(CURRENT_APP_VERSION);
 
-    // 2. Load data from Filesystem into Svelte stores.
+    // 2. Load data from Filesystem into Svelte stores + sound manager
     await loadMealsIntoStoreFromFS();
     await initializeCalendarStore();  
+    initializeSoundManager();
 
     // 3. Populate UI-dependent data like favoriteNames.
     await refreshAppFavorites();

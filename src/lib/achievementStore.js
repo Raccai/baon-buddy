@@ -12,7 +12,7 @@ let achievementSound;
 if (typeof window !== 'undefined') {
     setTimeout(() => {
         try {
-            achievementSound = new Audio('/music/achievementUnlocked.mp3');
+            achievementSound = new Audio('/music/successToast.mp3');
             achievementSound.volume = 0.7; // Adjust volume
             achievementSound.load(); // Attempt to load it
             console.log("Achievement sound loaded.");

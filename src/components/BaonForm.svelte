@@ -10,6 +10,7 @@
     // @ts-ignore
     import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
     import { showToast } from '../lib/toast.js';
+  import { playSound } from '../lib/soundManager.js';
 
     // Props
     export let initialData = null; // Pass meal object when editing, null when adding
@@ -201,6 +202,7 @@
 
     // --- Form Submission ---
     async function handleSubmit() {
+        playSound('click');
         console.log(`[BaonForm] Submit -> Mode: ${formMode}, Image Action: ${imageAction}`);
         if (!name.trim()) { showToast("Baon name is required!", "error"); return; }
 
@@ -321,6 +323,7 @@
     // --- End Form Submission ---
 
     function handleCancel() {
+        playSound('click');
         console.log("BaonForm handleCancel called");
         dispatch('cancel');
     }

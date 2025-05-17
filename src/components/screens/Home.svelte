@@ -11,6 +11,7 @@
   import HintPopover from '../HintPopover.svelte';
   import { checkAndUnlockAchievements } from '../../lib/achievementStore';
   import { allMeals } from '../../lib/mealStore';
+  import { sfxClick } from '../../lib/sfxClick';
 
   const dispatch = createEventDispatcher();
 
@@ -178,6 +179,7 @@
           id="home-suggest-button"
           class="randomize-btn"
           on:click={generateMeals}
+          use:sfxClick
         >
           Suggest Baon ✨
         </button>
